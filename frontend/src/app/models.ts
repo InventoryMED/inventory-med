@@ -1,0 +1,59 @@
+export type AppScreen = 'login' | 'hospital-select' | 'rooms' | 'prescription';
+
+export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE';
+
+export interface PrescriptionItem {
+  id: string;
+  medication: string;
+  dose: string;
+  route: string;
+  frequency: string;
+}
+
+export interface Prescription {
+  id: string;
+  createdAt: string;
+  notes: string;
+  items: PrescriptionItem[];
+}
+
+export interface Patient {
+  id: string;
+  name: string;
+  birthDate: string;
+  sex?: string;
+  weightKg: number;
+  document: string;
+  admissionAt: string;
+  prescriptions: Prescription[];
+}
+
+export interface PrescriptionDraftRow {
+  description: string;
+  route: string;
+  frequency: string;
+  hours: number[];
+}
+
+export interface Bed {
+  id: string;
+  code: string;
+  status: BedStatus;
+  patient?: Patient;
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  floor: string;
+  unit: string;
+  beds: Bed[];
+}
+
+export interface Hospital {
+  id: string;
+  name: string;
+  shortName: string;
+  city: string;
+  rooms: Room[];
+}

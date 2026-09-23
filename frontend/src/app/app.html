@@ -1,0 +1,566 @@
+@if (screen() === 'login') {
+  <main class="login-page">
+    <section class="login-brand">
+      <div class="brand-mark brand-mark--large" aria-hidden="true"><span>+</span></div>
+      <div>
+        <p class="eyebrow">Gestão hospitalar</p>
+        <h1>Leitos organizados.<br />Prescrições mais simples.</h1>
+        <p class="brand-copy">
+          Uma visão clara da ocupação hospitalar para apoiar a rotina da equipe médica.
+        </p>
+      </div>
+      <div class="brand-footnote">Protótipo com dados fictícios</div>
+    </section>
+
+    <section class="login-panel">
+      <form class="login-card" (ngSubmit)="login()">
+        <div class="mobile-brand">
+          <div class="brand-mark" aria-hidden="true"><span>+</span></div>
+          <strong>Inventory MED</strong>
+        </div>
+        <div class="login-heading">
+          <p class="eyebrow">Bem-vindo</p>
+          <h2>Acesse sua conta</h2>
+          <p>Entre para visualizar os hospitais vinculados ao seu perfil.</p>
+        </div>
+        <label class="field-label" for="email">E-mail profissional</label>
+        <div class="input-shell">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 7l8 6 8-6" /></svg>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            [(ngModel)]="loginEmail"
+            autocomplete="username"
+          />
+        </div>
+        <div class="password-row">
+          <label class="field-label" for="password">Senha</label>
+          <button type="button" class="text-button">Esqueci minha senha</button>
+        </div>
+        <div class="input-shell">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 10V8a5 5 0 0110 0v2M5 10h14v10H5z" />
+          </svg>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            [(ngModel)]="loginPassword"
+            autocomplete="current-password"
+          />
+        </div>
+        <button class="primary-button login-button" type="submit">
+          Entrar <span aria-hidden="true">→</span>
+        </button>
+        <p class="demo-hint">Acesso de demonstração preenchido automaticamente.</p>
+      </form>
+    </section>
+  </main>
+}
+
+@if (screen() === 'hospital-select') {
+  <main class="selection-page">
+    <header class="selection-header">
+      <div class="product-lockup">
+        <div class="brand-mark" aria-hidden="true"><span>+</span></div>
+        <span>Inventory MED</span>
+      </div>
+      <button type="button" class="ghost-button" (click)="logout()">Sair</button>
+    </header>
+    <section class="selection-content">
+      <div class="selection-title">
+        <div class="avatar">LG</div>
+        <div>
+          <p class="eyebrow">Dr. Lucas Galante</p>
+          <h1>Onde você atenderá hoje?</h1>
+          <p>Selecione um hospital para acessar seus quartos, leitos e pacientes.</p>
+        </div>
+      </div>
+      <div class="hospital-grid">
+        @for (hospital of hospitals(); track hospital.id) {
+          <button type="button" class="hospital-card" (click)="enterHospital(hospital.id)">
+            <span class="hospital-monogram">{{ hospital.shortName }}</span>
+            <span class="hospital-info"
+              ><strong>{{ hospital.name }}</strong
+              ><small>{{ hospital.city }}</small
+              ><small>{{ hospital.rooms.length }} quartos cadastrados</small></span
+            >
+            <span class="card-arrow" aria-hidden="true">→</span>
+          </button>
+        }
+      </div>
+    </section>
+  </main>
+}
+
+@if (screen() === 'rooms' && activeHospital(); as hospital) {
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="product-lockup product-lockup--inverse">
+        <div class="brand-mark brand-mark--inverse" aria-hidden="true"><span>+</span></div>
+        <span>Inventory MED</span>
+      </div>
+      <div class="hospital-context">
+        <span class="context-label">Hospital em atendimento</span>
+        <select
+          aria-label="Hospital em atendimento"
+          [ngModel]="hospital.id"
+          (ngModelChange)="switchHospital($event)"
+        >
+          @for (item of hospitals(); track item.id) {
+            <option [value]="item.id">{{ item.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="profile-menu">
+        <div class="avatar avatar--small">LG</div>
+        <div class="profile-copy"><strong>Dr. Lucas Galante</strong><span>Médico</span></div>
+        <button type="button" class="header-action" (click)="logout()">Sair</button>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <div class="page-heading-row">
+        <div>
+          <p class="eyebrow">Visão operacional</p>
+          <h1>Quartos e leitos</h1>
+          <p>{{ hospital.name }} • Atualizado agora</p>
+        </div>
+        <div class="heading-actions">
+          <button type="button" class="ghost-button" (click)="resetDemo()">
+            Restaurar demonstração
+          </button>
+          <div class="data-badge"><span></span> Dados fictícios</div>
+        </div>
+      </div>
+
+      <section class="stats-grid" aria-label="Resumo de leitos">
+        <article class="stat-card">
+          <span class="stat-label">Total de leitos</span><strong>{{ stats().total }}</strong
+          ><small>na unidade selecionada</small>
+        </article>
+        <article class="stat-card stat-card--accent">
+          <span class="stat-label">Leitos vazios</span><strong>{{ stats().available }}</strong
+          ><small>prontos para admissão</small>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Leitos ocupados</span><strong>{{ stats().occupied }}</strong
+          ><small>com pacientes internados</small>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Indisponíveis</span><strong>{{ stats().unavailable }}</strong
+          ><small>higienização ou manutenção</small>
+        </article>
+      </section>
+
+      <section class="rooms-section">
+        <div class="section-toolbar">
+          <div>
+            <h2>Quartos</h2>
+            <p>Clique em um quarto para visualizar seus leitos.</p>
+          </div>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m16 16 4 4" />
+            </svg>
+            <input
+              type="search"
+              placeholder="Buscar quarto ou paciente"
+              [ngModel]="searchTerm()"
+              (ngModelChange)="searchTerm.set($event)"
+            />
+          </div>
+        </div>
+        <div class="legend" aria-label="Legenda dos leitos">
+          <span><i class="status-dot status-dot--available"></i> Vazio</span
+          ><span><i class="status-dot status-dot--occupied"></i> Ocupado</span
+          ><span><i class="status-dot status-dot--unavailable"></i> Indisponível</span>
+        </div>
+        <div class="rooms-list">
+          @for (room of visibleRooms(); track room.id) {
+            <article class="room-card" [class.room-card--open]="isRoomExpanded(room.id)">
+              <button
+                type="button"
+                class="room-summary"
+                (click)="toggleRoom(room)"
+                [attr.aria-expanded]="isRoomExpanded(room.id)"
+              >
+                <span class="room-icon" aria-hidden="true"
+                  ><svg viewBox="0 0 24 24">
+                    <path
+                      d="M3 20h18M5 20V4h14v16M9 8h2M9 12h2M9 16h2M14 8h2M14 12h2M14 16h2"
+                    /></svg
+                ></span>
+                <span class="room-title"
+                  ><strong>{{ room.name }}</strong
+                  ><small>{{ room.unit }} • {{ room.floor }}</small></span
+                >
+                <span class="room-counts"
+                  ><span>{{ room.beds.length }} leitos</span
+                  ><span class="available-count">{{ availableBedsCount(room) }} vazios</span></span
+                >
+                <span
+                  class="chevron"
+                  [class.chevron--open]="isRoomExpanded(room.id)"
+                  aria-hidden="true"
+                  >⌄</span
+                >
+              </button>
+              @if (isRoomExpanded(room.id)) {
+                <div class="bed-grid">
+                  @for (bed of room.beds; track bed.id) {
+                    <button
+                      type="button"
+                      class="bed-card"
+                      [class.bed-card--available]="bed.status === 'AVAILABLE'"
+                      [class.bed-card--occupied]="bed.status === 'OCCUPIED'"
+                      [class.bed-card--disabled]="
+                        bed.status === 'CLEANING' || bed.status === 'MAINTENANCE'
+                      "
+                      (click)="openBed(bed)"
+                    >
+                      <span class="bed-card-top"
+                        ><span class="bed-symbol" aria-hidden="true"
+                          ><svg viewBox="0 0 24 24">
+                            <path
+                              d="M3 18v-7M21 18v-5a2 2 0 00-2-2H9v7M3 15h18M6 11V8h4a2 2 0 012 2v1"
+                            /></svg></span
+                        ><span class="status-pill status-pill--{{ bed.status.toLowerCase() }}">{{
+                          statusLabel(bed.status)
+                        }}</span></span
+                      >
+                      <strong>{{ bed.code }}</strong>
+                      @if (bed.patient) {
+                        <span class="patient-name">{{ bed.patient.name }}</span
+                        ><small
+                          >Internado em
+                          {{ bed.patient.admissionAt | date: 'dd/MM às HH:mm' }}</small
+                        ><span class="bed-action"
+                          >Abrir prescrição <b aria-hidden="true">→</b></span
+                        >
+                      } @else if (bed.status === 'AVAILABLE') {
+                        <span class="empty-label">Leito pronto para receber paciente</span
+                        ><span class="bed-action"
+                          >Cadastrar paciente <b aria-hidden="true">+</b></span
+                        >
+                      } @else {
+                        <span class="empty-label">Temporariamente indisponível</span>
+                      }
+                    </button>
+                  }
+                </div>
+              }
+            </article>
+          } @empty {
+            <div class="empty-state">Nenhum quarto ou paciente encontrado.</div>
+          }
+        </div>
+      </section>
+    </main>
+  </div>
+}
+
+@if (screen() === 'prescription' && activeHospital(); as hospital) {
+  @if (selectedBed(); as bed) {
+    @if (bed.patient; as patient) {
+      <div class="prescription-page">
+        <header class="prescription-appbar">
+          <div class="product-lockup product-lockup--inverse">
+            <div class="brand-mark brand-mark--inverse" aria-hidden="true"><span>+</span></div>
+            <span>Inventory MED</span>
+          </div>
+          <div class="prescription-hospital">
+            <span>Prescrição médica</span><strong>{{ hospital.name }}</strong>
+          </div>
+          <div class="profile-menu">
+            <div class="avatar avatar--small avatar--inverse">LG</div>
+            <div class="profile-copy profile-copy--inverse">
+              <strong>Dr. Lucas Galante</strong><span>CRM 123456/SP</span>
+            </div>
+          </div>
+        </header>
+        <main class="prescription-workspace">
+          <div class="prescription-toolbar">
+            <button type="button" class="back-button" (click)="backToRooms()">
+              <span aria-hidden="true">←</span> Voltar aos quartos
+            </button>
+            <div class="prescription-actions">
+              <span class="draft-indicator">Rascunho local</span
+              ><button type="button" class="primary-button" (click)="savePrescription()">
+                Salvar prescrição
+              </button>
+            </div>
+          </div>
+          <section class="prescription-sheet">
+            <header class="sheet-title">
+              <div>
+                <p class="eyebrow">{{ selectedRoom()?.unit }}</p>
+                <h1>Prescrição médica</h1>
+              </div>
+              <div class="sheet-date">
+                <span>Data da prescrição</span
+                ><strong>{{ '2026-09-23T12:00:00' | date: 'dd/MM/yyyy' }}</strong>
+              </div>
+            </header>
+            <div class="patient-header-grid">
+              <div class="patient-main">
+                <span class="meta-label">Paciente</span><strong>{{ patient.name }}</strong
+                ><small>{{ patient.document }}</small>
+              </div>
+              <div class="patient-meta">
+                <span class="meta-label">Nascimento</span
+                ><strong>{{ patient.birthDate | date: 'dd/MM/yyyy' }}</strong>
+              </div>
+              <div class="patient-meta">
+                <span class="meta-label">Sexo</span
+                ><strong>{{ patient.sex || 'Não informado' }}</strong>
+              </div>
+              <div class="patient-meta">
+                <span class="meta-label">Peso</span
+                ><strong>{{ formatWeight(patient.weightKg) }} kg</strong>
+              </div>
+              <div class="patient-meta">
+                <span class="meta-label">Unidade</span><strong>{{ selectedRoom()?.unit }}</strong>
+              </div>
+              <div class="patient-meta">
+                <span class="meta-label">Quarto / leito</span
+                ><strong>{{ selectedRoom()?.name }} • {{ bed.code }}</strong>
+              </div>
+              <div class="patient-meta">
+                <span class="meta-label">Internação</span
+                ><strong>{{ patient.admissionAt | date: 'dd/MM/yyyy HH:mm' }}</strong>
+              </div>
+            </div>
+            <div class="clinical-fields">
+              <label
+                ><span>Diagnóstico</span
+                ><input
+                  [(ngModel)]="prescriptionDiagnosis"
+                  placeholder="Informe o diagnóstico relacionado"
+              /></label>
+              <label
+                ><span>Comorbidades</span
+                ><input
+                  [(ngModel)]="prescriptionComorbidities"
+                  placeholder="Informe ou escreva 'Nega'"
+              /></label>
+              <label
+                ><span>Alergias</span
+                ><input [(ngModel)]="prescriptionAllergies" placeholder="Informe ou escreva 'Nega'"
+              /></label>
+            </div>
+            <div class="prescription-table-wrap">
+              <table class="prescription-table">
+                <thead>
+                  <tr>
+                    <th class="number-column">#</th>
+                    <th class="description-column">Prescrição</th>
+                    <th class="route-column">Via</th>
+                    <th class="frequency-column">Frequência</th>
+                    <th class="hours-heading" [attr.colspan]="hours.length">Horário</th>
+                    <th class="remove-column"><span class="sr-only">Remover</span></th>
+                  </tr>
+                  <tr class="hours-row">
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    @for (hour of hours; track hour) {
+                      <th>{{ hour.toString().padStart(2, '0') }}</th>
+                    }
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of prescriptionRows; track $index; let rowIndex = $index) {
+                    <tr>
+                      <td class="row-number">{{ rowIndex + 1 }}</td>
+                      <td>
+                        <input
+                          [(ngModel)]="row.description"
+                          placeholder="Medicamento, dose e diluição"
+                        />
+                      </td>
+                      <td>
+                        <select [(ngModel)]="row.route">
+                          <option>VO</option>
+                          <option>EV</option>
+                          <option>IM</option>
+                          <option>SC</option>
+                          <option>INAL</option>
+                          <option>OUTRA</option>
+                        </select>
+                      </td>
+                      <td><input [(ngModel)]="row.frequency" placeholder="Ex.: 8/8h" /></td>
+                      @for (hour of hours; track hour) {
+                        <td class="hour-cell">
+                          <button
+                            type="button"
+                            class="hour-toggle"
+                            [class.hour-toggle--selected]="isHourSelected(row, hour)"
+                            [attr.aria-pressed]="isHourSelected(row, hour)"
+                            [attr.aria-label]="'Administrar às ' + hour + ' horas'"
+                            (click)="toggleHour(rowIndex, hour)"
+                          ></button>
+                        </td>
+                      }
+                      <td>
+                        <button
+                          type="button"
+                          class="remove-row"
+                          (click)="removePrescriptionRow(rowIndex)"
+                          aria-label="Remover item"
+                        >
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <button type="button" class="add-row-button" (click)="addPrescriptionRow()">
+              + Adicionar item
+            </button>
+            <label class="notes-field"
+              ><span>Observações e comunicações</span
+              ><textarea
+                [(ngModel)]="prescriptionNotes"
+                rows="3"
+                placeholder="Registre orientações complementares para a equipe"
+              ></textarea>
+            </label>
+            <footer class="sheet-footer">
+              <p>Ambiente de demonstração • Nenhuma informação possui validade clínica.</p>
+              <div><span>Prescritor</span><strong>Dr. Lucas Galante • CRM 123456/SP</strong></div>
+            </footer>
+          </section>
+          @if (patient.prescriptions.length) {
+            <section class="saved-prescriptions">
+              <h2>Prescrições salvas nesta demonstração</h2>
+              @for (prescription of patient.prescriptions; track prescription.id) {
+                <div class="saved-row">
+                  <div>
+                    <strong>{{ prescription.createdAt | date: 'dd/MM/yyyy HH:mm' }}</strong
+                    ><span>{{ prescription.items.length }} itens</span>
+                  </div>
+                  <span class="status-pill status-pill--occupied">Salva</span>
+                </div>
+              }
+            </section>
+          }
+        </main>
+      </div>
+    }
+  }
+}
+
+@if (prescriptionPromptOpen() && selectedBed(); as bed) {
+  <div class="modal-backdrop" (click)="closePrescriptionPrompt()">
+    <section
+      class="modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="prescription-prompt-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Leito vazio</p>
+          <h2 id="prescription-prompt-title">Abrir nova prescrição?</h2>
+        </div>
+        <button
+          type="button"
+          class="close-button"
+          (click)="closePrescriptionPrompt()"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+      </header>
+      <p class="modal-description">
+        O {{ bed.code }} ainda não possui paciente. Ao continuar, uma nova aba será aberta para
+        cadastrar o paciente e preencher sua prescrição.
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="ghost-button" (click)="closePrescriptionPrompt()">
+          Não, cancelar</button
+        ><button type="button" class="primary-button" (click)="confirmNewPrescription()">
+          Sim, abrir prescrição
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (admissionOpen() && selectedBed(); as bed) {
+  <div class="modal-backdrop" (click)="closeAdmission()">
+    <section
+      class="modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="admission-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Novo paciente</p>
+          <h2 id="admission-title">Ocupar {{ bed.code }}</h2>
+        </div>
+        <button type="button" class="close-button" (click)="closeAdmission()" aria-label="Fechar">
+          ×
+        </button>
+      </header>
+      <p class="modal-description">
+        Cadastre os dados essenciais para vincular o paciente ao leito e iniciar a prescrição.
+      </p>
+      <form (ngSubmit)="admitPatient()" class="admission-form">
+        <label class="form-field form-field--full"
+          ><span>Nome completo</span
+          ><input
+            name="patientName"
+            [(ngModel)]="patientName"
+            placeholder="Nome do paciente"
+            autofocus
+        /></label>
+        <label class="form-field"
+          ><span>Data de nascimento</span
+          ><input name="patientBirthDate" type="date" [(ngModel)]="patientBirthDate"
+        /></label>
+        <label class="form-field"
+          ><span>Sexo</span
+          ><select name="patientSex" [(ngModel)]="patientSex">
+            <option>Feminino</option>
+            <option>Masculino</option>
+            <option>Outro</option>
+            <option>Não informado</option>
+          </select></label
+        >
+        <label class="form-field"
+          ><span>Peso (kg)</span
+          ><input
+            name="patientWeight"
+            type="number"
+            min="0.1"
+            step="0.1"
+            [(ngModel)]="patientWeight"
+            placeholder="Ex.: 72,5"
+        /></label>
+        <label class="form-field form-field--full"
+          ><span>CPF ou documento</span
+          ><input name="patientDocument" [(ngModel)]="patientDocument" placeholder="000.000.000-00"
+        /></label>
+        <div class="modal-actions form-field--full">
+          <button type="button" class="ghost-button" (click)="closeAdmission()">Cancelar</button
+          ><button type="submit" class="primary-button">Cadastrar no leito</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (toast(); as message) {
+  <div class="toast" role="status">{{ message }}</div>
+}
