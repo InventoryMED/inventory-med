@@ -55,6 +55,8 @@ describe('App', () => {
     const prophylaxis = app.medicationGroups.find((group: any) => group.id === 'PROPHYLAXIS');
     expect(prophylaxis.rows[0].description).toContain('OMEPRAZOL');
     expect(app.vitalSignRows[1].guidance).toContain('GH 50% 40ML EV');
+    expect(app.observationRows).toEqual(['']);
+    expect(app.abnormalityRows).toEqual(['']);
   });
 
   it('should fill a medication row from a preset and allow another row', () => {

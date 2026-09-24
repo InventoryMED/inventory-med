@@ -261,7 +261,7 @@
                         >
                       } @else if (bed.status === 'AVAILABLE') {
                         <span class="empty-label">Leito pronto para receber paciente</span
-                        ><span class="bed-action"
+                        ><span class="bed-action bed-action--register"
                           >Cadastrar paciente <b aria-hidden="true">+</b></span
                         >
                       } @else {
@@ -311,10 +311,7 @@
             </button>
             <div class="prescription-actions">
               @if (prescriptionReady()) {
-                <span class="draft-indicator">Rascunho local</span
-                ><button type="button" class="primary-button" (click)="savePrescription()">
-                  Salvar prescrição
-                </button>
+                <span class="draft-indicator">Rascunho local</span>
               } @else {
                 <span class="draft-indicator">Escolha como deseja iniciar a prescrição</span>
               }
@@ -684,76 +681,82 @@
                   </button>
                 </section>
               }
-              <div class="prescription-table-wrap">
-                <table class="prescription-table">
-                  <thead>
-                    <tr>
-                      <th class="number-column">#</th>
-                      <th class="description-column">Prescrição</th>
-                      <th class="route-column">Via</th>
-                      <th class="frequency-column">Frequência</th>
-                      <th class="scheduling-column">Aprazamento</th>
-                      <th class="remove-column"><span class="sr-only">Remover</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (row of prescriptionRows; track $index; let rowIndex = $index) {
-                      <tr>
-                        <td class="row-number">{{ rowIndex + 1 }}</td>
-                        <td>
-                          <input
-                            [(ngModel)]="row.description"
-                            placeholder="Medicamento, dose e diluição"
-                          />
-                        </td>
-                        <td>
-                          <select [(ngModel)]="row.route">
-                            <option>VO</option>
-                            <option>EV</option>
-                            <option>IM</option>
-                            <option>SC</option>
-                            <option>INAL</option>
-                            <option>OUTRA</option>
-                          </select>
-                        </td>
-                        <td><input [(ngModel)]="row.frequency" placeholder="Ex.: 8/8h" /></td>
-                        <td>
-                          <select [(ngModel)]="row.scheduling" aria-label="Aprazamento">
-                            <option>ACM</option>
-                            <option>SN</option>
-                            <option>FIXO</option>
-                          </select>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            class="remove-row"
-                            (click)="removePrescriptionRow(rowIndex)"
-                            aria-label="Remover item"
-                          >
-                            ×
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-              <button type="button" class="add-row-button" (click)="addPrescriptionRow()">
-                + Adicionar item
-              </button>
-              <label class="notes-field"
-                ><span>Observações e comunicações</span
-                ><textarea
-                  [(ngModel)]="prescriptionNotes"
-                  rows="3"
-                  placeholder="Registre orientações complementares para a equipe"
-                ></textarea>
-              </label>
+              <section class="text-entry-section" aria-labelledby="observations-title">
+                <header class="clinical-order-header">
+                  <div>
+                    <p class="eyebrow">Registros complementares</p>
+                    <h2 id="observations-title">Observações</h2>
+                  </div>
+                  <span>Adicione quantas linhas forem necessárias</span>
+                </header>
+                <div class="text-entry-list">
+                  @for (observation of observationRows; track $index; let rowIndex = $index) {
+                    <div class="text-entry-row">
+                      <span class="text-entry-number">{{ rowIndex + 1 }}</span>
+                      <textarea
+                        [(ngModel)]="observationRows[rowIndex]"
+                        rows="2"
+                        placeholder="Digite uma observação"
+                        aria-label="Observação"
+                      ></textarea>
+                      <button
+                        type="button"
+                        class="remove-text-entry"
+                        (click)="removeObservationRow(rowIndex)"
+                        aria-label="Remover observação"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  }
+                </div>
+                <button type="button" class="add-row-button" (click)="addObservationRow()">
+                  + Adicionar observação
+                </button>
+              </section>
+              <section class="text-entry-section" aria-labelledby="abnormalities-title">
+                <header class="clinical-order-header">
+                  <div>
+                    <p class="eyebrow">Atenção assistencial</p>
+                    <h2 id="abnormalities-title">Comunicar anormalidades</h2>
+                  </div>
+                  <span>Registre separadamente cada comunicação</span>
+                </header>
+                <div class="text-entry-list">
+                  @for (abnormality of abnormalityRows; track $index; let rowIndex = $index) {
+                    <div class="text-entry-row">
+                      <span class="text-entry-number">{{ rowIndex + 1 }}</span>
+                      <textarea
+                        [(ngModel)]="abnormalityRows[rowIndex]"
+                        rows="2"
+                        placeholder="Digite a anormalidade que deverá ser comunicada"
+                        aria-label="Anormalidade"
+                      ></textarea>
+                      <button
+                        type="button"
+                        class="remove-text-entry"
+                        (click)="removeAbnormalityRow(rowIndex)"
+                        aria-label="Remover anormalidade"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  }
+                </div>
+                <button type="button" class="add-row-button" (click)="addAbnormalityRow()">
+                  + Adicionar anormalidade
+                </button>
+              </section>
               <footer class="sheet-footer">
                 <p>Ambiente de demonstração • Nenhuma informação possui validade clínica.</p>
                 <div><span>Prescritor</span><strong>DR. LUCAS GALANTE • CRM 123456/SP</strong></div>
               </footer>
+              <div class="prescription-submit">
+                <span>Revise todos os dados antes de finalizar</span>
+                <button type="button" class="primary-button" (click)="savePrescription()">
+                  Criar prescrição
+                </button>
+              </div>
             </section>
           }
           @if (patient.prescriptions.length) {

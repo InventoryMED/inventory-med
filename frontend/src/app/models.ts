@@ -36,6 +36,8 @@ export interface Prescription {
   createdAt: string;
   diet: string;
   notes: string;
+  observations?: string[];
+  abnormalities?: string[];
   items: PrescriptionItem[];
   vitalSigns?: VitalSignOrder[];
   hydrationItems?: PrescriptionItem[];

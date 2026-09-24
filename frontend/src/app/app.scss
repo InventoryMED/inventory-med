@@ -824,6 +824,23 @@ svg {
   font-size: 12px;
   font-weight: 750;
 }
+.bed-action--register {
+  width: auto;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 15px;
+  border-radius: 999px;
+  background: var(--navy-700);
+  color: white;
+  box-shadow: 0 6px 14px rgba(18, 61, 104, 0.18);
+}
+.bed-action--register b {
+  font-size: 16px;
+  line-height: 1;
+}
+.bed-card--available:hover .bed-action--register {
+  background: var(--navy-800);
+}
 .empty-state {
   padding: 42px;
   border: 1px dashed #ccd3dc;
@@ -1474,6 +1491,57 @@ svg {
 .add-row-button {
   margin-top: 12px;
 }
+.text-entry-section {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #ccd4de;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.text-entry-list {
+  display: grid;
+  gap: 9px;
+}
+.text-entry-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  overflow: hidden;
+  border: 1px solid #bfc9d5;
+  border-radius: 8px;
+  background: white;
+}
+.text-entry-number {
+  display: grid;
+  place-items: center;
+  background: var(--navy-100);
+  color: var(--navy-900);
+  font-size: 12px;
+  font-weight: 800;
+}
+.text-entry-row textarea {
+  width: 100%;
+  min-height: 64px;
+  padding: 11px 12px;
+  resize: vertical;
+  border: 0;
+  border-right: 1px solid #d5dce5;
+  border-left: 1px solid #d5dce5;
+  outline: 0;
+  color: var(--ink);
+  font-size: 12px;
+}
+.text-entry-row textarea:focus {
+  box-shadow: inset 0 0 0 2px var(--navy-700);
+}
+.remove-text-entry {
+  background: white;
+  color: #667085;
+  font-size: 19px;
+}
+.remove-text-entry:hover {
+  background: #edf0f3;
+  color: var(--ink);
+}
 .notes-field {
   display: block;
   margin-top: 22px;
@@ -1509,6 +1577,20 @@ svg {
 .sheet-footer strong {
   margin-top: 5px;
   font-size: 12px;
+}
+.prescription-submit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 20px;
+}
+.prescription-submit > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.prescription-submit .primary-button {
+  min-width: 190px;
 }
 .saved-prescriptions {
   margin-top: 18px;
@@ -1707,9 +1789,13 @@ svg {
     align-items: flex-start;
   }
   .clinical-order-header,
-  .dxt-guidance > header {
+  .dxt-guidance > header,
+  .prescription-submit {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .prescription-submit .primary-button {
+    width: 100%;
   }
   .dxt-guidance-grid {
     grid-template-columns: 1fr;

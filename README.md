@@ -32,6 +32,7 @@ O formulário de demonstração já vem preenchido. Qualquer senha não vazia pe
 10. Hidratação com modelos demonstrativos, via, frequência e aprazamento ACM, SN ou FIXO.
 11. Seções editáveis de analgesia, sintomáticos, profilaxia, ATB, uso contínuo e demais medicamentos.
 12. Modelos demonstrativos por seção, com inclusão e remoção de linhas conforme necessário.
+13. Observações e comunicação de anormalidades em linhas independentes, com criação da prescrição ao final do formulário.
 
 Os dados alterados durante a demonstração ficam salvos no `localStorage` do navegador. Use o botão **Restaurar demonstração** para voltar ao estado inicial.
 

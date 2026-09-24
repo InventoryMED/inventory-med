@@ -197,8 +197,8 @@ export class App implements OnInit {
   protected prescriptionComorbidities = '';
   protected prescriptionAllergies = '';
   protected prescriptionDiet = '';
-  protected prescriptionNotes = '';
-  protected prescriptionRows: PrescriptionDraftRow[] = [];
+  protected observationRows: string[] = [];
+  protected abnormalityRows: string[] = [];
   protected vitalSignRows: VitalSignDraftRow[] = [];
   protected hydrationRow: PrescriptionDraftRow = this.emptyHydrationRow();
   protected selectedHydrationPreset = '';
@@ -356,13 +356,20 @@ export class App implements OnInit {
     window.scrollTo({ top: 0, left: 0 });
   }
 
-  protected addPrescriptionRow(): void {
-    this.prescriptionRows = [...this.prescriptionRows, this.emptyPrescriptionRow()];
+  protected addObservationRow(): void {
+    this.observationRows = [...this.observationRows, ''];
   }
 
-  protected removePrescriptionRow(index: number): void {
-    if (this.prescriptionRows.length === 1) return;
-    this.prescriptionRows = this.prescriptionRows.filter((_, rowIndex) => rowIndex !== index);
+  protected removeObservationRow(index: number): void {
+    this.observationRows = this.removeTextRow(this.observationRows, index);
+  }
+
+  protected addAbnormalityRow(): void {
+    this.abnormalityRows = [...this.abnormalityRows, ''];
+  }
+
+  protected removeAbnormalityRow(index: number): void {
+    this.abnormalityRows = this.removeTextRow(this.abnormalityRows, index);
   }
 
   protected selectHydrationPreset(description: string): void {
@@ -398,7 +405,8 @@ export class App implements OnInit {
   protected savePrescription(): void {
     const bedId = this.selectedBedId();
     if (!this.persistPatientChanges(false)) return;
-    const validRows = this.prescriptionRows.filter((row) => row.description.trim());
+    const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
+    const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
     const validVitalSigns = this.vitalSignRows.filter(
       (row) => row.description.trim() && row.frequency.trim(),
     );
@@ -411,35 +419,32 @@ export class App implements OnInit {
       .filter((section) => section.items.length);
     if (
       !bedId ||
-      (!validRows.length &&
-        !validVitalSigns.length &&
+      (!validVitalSigns.length &&
         !validHydrationRows.length &&
-        !validMedicationSections.length)
+        !validMedicationSections.length &&
+        !observations.length &&
+        !abnormalities.length &&
+        !this.prescriptionDiet.trim())
     ) {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
     }
     this.store.addPrescription(
       bedId,
-      validRows,
       this.prescriptionDiet.trim(),
-      this.prescriptionNotes.trim(),
+      observations,
+      abnormalities,
       validVitalSigns,
       validHydrationRows,
       validMedicationSections,
     );
-    this.showToast('Prescrição salva no protótipo.');
+    this.showToast('Prescrição criada no protótipo.');
     const patient = this.selectedBed()?.patient;
     if (patient) this.preparePrescription(patient);
   }
 
   protected startBlankPrescription(): void {
     this.selectedTemplateId = '';
-    this.prescriptionRows = [
-      this.emptyPrescriptionRow(),
-      this.emptyPrescriptionRow(),
-      this.emptyPrescriptionRow(),
-    ];
     this.resetStructuredOrders();
     this.prescriptionReady.set(true);
   }
@@ -451,16 +456,6 @@ export class App implements OnInit {
       return;
     }
 
-    this.prescriptionRows = [
-      {
-        description: `MODELO ${template.name} — REVISAR E COMPLETAR ITENS COM A EQUIPE CLÍNICA`,
-        route: 'OUTRA',
-        frequency: '',
-        scheduling: 'FIXO',
-      },
-      this.emptyPrescriptionRow(),
-      this.emptyPrescriptionRow(),
-    ];
     this.resetStructuredOrders();
     this.prescriptionReady.set(true);
     this.showToast(`MODELO ${template.name} CARREGADO.`);
@@ -519,18 +514,14 @@ export class App implements OnInit {
   private preparePrescription(patient: Patient): void {
     this.preparePatientForm(patient);
     this.prescriptionDiet = '';
-    this.prescriptionNotes = '';
-    this.prescriptionRows = [];
+    this.observationRows = [];
+    this.abnormalityRows = [];
     this.vitalSignRows = [];
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
     this.medicationGroups = [];
     this.selectedTemplateId = '';
     this.prescriptionReady.set(false);
-  }
-
-  private emptyPrescriptionRow(): PrescriptionDraftRow {
-    return { description: '', route: 'VO', frequency: '', scheduling: 'FIXO' };
   }
 
   private emptyHydrationRow(): PrescriptionDraftRow {
@@ -541,6 +532,11 @@ export class App implements OnInit {
     return { description: '', route, frequency: '', scheduling: 'FIXO' };
   }
 
+  private removeTextRow(rows: string[], index: number): string[] {
+    if (rows.length === 1) return [''];
+    return rows.filter((_, rowIndex) => rowIndex !== index);
+  }
+
   private resetStructuredOrders(): void {
     this.vitalSignRows = [
       { description: 'SINAIS VITAIS', frequency: '' },
@@ -549,6 +545,8 @@ export class App implements OnInit {
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
     this.medicationGroups = this.buildMedicationGroups();
+    this.observationRows = [''];
+    this.abnormalityRows = [''];
   }
 
   private buildMedicationGroups(): MedicationOrderGroup[] {

@@ -85,9 +85,9 @@ export class DemoStore {
 
   addPrescription(
     bedId: string,
-    rows: PrescriptionDraftRow[],
     diet: string,
-    notes: string,
+    observations: string[],
+    abnormalities: string[],
     vitalSigns: VitalSignDraftRow[],
     hydrationRows: PrescriptionDraftRow[],
     medicationSections: MedicationSectionDraft[],
@@ -103,7 +103,9 @@ export class DemoStore {
               id: crypto.randomUUID(),
               createdAt: new Date().toISOString(),
               diet,
-              notes,
+              notes: observations.join('\n'),
+              observations,
+              abnormalities,
               vitalSigns: vitalSigns.map((row) => ({
                 id: crypto.randomUUID(),
                 description: row.description,
@@ -129,14 +131,7 @@ export class DemoStore {
                   scheduling: row.scheduling,
                 })),
               })),
-              items: rows.map((row) => ({
-                id: crypto.randomUUID(),
-                medication: row.description,
-                dose: '',
-                route: row.route,
-                frequency: row.frequency,
-                scheduling: row.scheduling,
-              })),
+              items: [],
             },
             ...bed.patient.prescriptions,
           ],
