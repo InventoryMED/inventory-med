@@ -2,7 +2,17 @@ import { computed, Injectable, signal } from '@angular/core';
 import { INITIAL_HOSPITALS } from './mock-data';
 import { Bed, Hospital, PrescriptionDraftRow, Room } from './models';
 
-const STORAGE_KEY = 'inventory-med-demo-v3';
+const STORAGE_KEY = 'inventory-med-demo-v6';
+
+interface PatientFormData {
+  name: string;
+  birthDate: string;
+  sex?: string;
+  weightKg?: number;
+  diagnosis?: string;
+  comorbidities?: string;
+  allergies?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class DemoStore {
@@ -29,10 +39,7 @@ export class DemoStore {
       .find((bed) => bed.id === bedId);
   }
 
-  admitPatient(
-    bedId: string,
-    patient: { name: string; birthDate: string; document: string; sex?: string; weightKg: number },
-  ): void {
+  admitPatient(bedId: string, patient: PatientFormData): void {
     this.updateBed(bedId, (bed) => {
       if (bed.status !== 'AVAILABLE') return bed;
       return {
@@ -40,9 +47,30 @@ export class DemoStore {
         status: 'OCCUPIED',
         patient: {
           ...patient,
+          name: patient.name.toLocaleUpperCase('pt-BR'),
+          diagnosis: patient.diagnosis?.toLocaleUpperCase('pt-BR'),
+          comorbidities: patient.comorbidities?.toLocaleUpperCase('pt-BR'),
+          allergies: patient.allergies?.toLocaleUpperCase('pt-BR'),
           id: crypto.randomUUID(),
           admissionAt: new Date().toISOString(),
           prescriptions: [],
+        },
+      };
+    });
+  }
+
+  updatePatient(bedId: string, patient: PatientFormData): void {
+    this.updateBed(bedId, (bed) => {
+      if (!bed.patient) return bed;
+      return {
+        ...bed,
+        patient: {
+          ...bed.patient,
+          ...patient,
+          name: patient.name.toLocaleUpperCase('pt-BR'),
+          diagnosis: patient.diagnosis?.toLocaleUpperCase('pt-BR'),
+          comorbidities: patient.comorbidities?.toLocaleUpperCase('pt-BR'),
+          allergies: patient.allergies?.toLocaleUpperCase('pt-BR'),
         },
       };
     });

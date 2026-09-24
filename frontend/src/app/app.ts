@@ -2,7 +2,28 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DemoStore } from './demo-store';
-import { AppScreen, Bed, BedStatus, PrescriptionDraftRow, Room } from './models';
+import { AppScreen, Bed, BedStatus, Patient, PrescriptionDraftRow, Room } from './models';
+
+type PrescriptionTemplateId = 'ADMISSION' | 'PAC' | 'CAD' | 'TVP' | 'TEP' | 'EMERGENCY_BOX';
+
+interface PrescriptionTemplate {
+  id: PrescriptionTemplateId;
+  name: string;
+  description: string;
+}
+
+const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
+  { id: 'ADMISSION', name: 'ADMISSÃO', description: 'MODELO INICIAL PARA ADMISSÃO HOSPITALAR' },
+  { id: 'PAC', name: 'PAC', description: 'PNEUMONIA ADQUIRIDA NA COMUNIDADE' },
+  { id: 'CAD', name: 'CAD', description: 'CETOACIDOSE DIABÉTICA' },
+  { id: 'TVP', name: 'TVP', description: 'TROMBOSE VENOSA PROFUNDA' },
+  { id: 'TEP', name: 'TEP', description: 'TROMBOEMBOLISMO PULMONAR' },
+  {
+    id: 'EMERGENCY_BOX',
+    name: 'BOX DE EMERGÊNCIA',
+    description: 'ATENDIMENTO EM BOX DE EMERGÊNCIA',
+  },
+];
 
 @Component({
   imports: [CommonModule, FormsModule],
@@ -17,6 +38,7 @@ export class App implements OnInit {
   protected readonly selectedBedId = signal<string | null>(null);
   protected readonly prescriptionPromptOpen = signal(false);
   protected readonly admissionOpen = signal(false);
+  protected readonly prescriptionReady = signal(false);
   protected readonly searchTerm = signal('');
   protected readonly toast = signal<string | null>(null);
 
@@ -24,16 +46,17 @@ export class App implements OnInit {
   protected loginPassword = 'demo123';
   protected patientName = '';
   protected patientBirthDate = '';
-  protected patientDocument = '';
-  protected patientSex = 'Feminino';
+  protected patientSex = 'FEMININO';
   protected patientWeight: number | null = null;
-  protected admissionForPrescription = false;
   protected prescriptionDiagnosis = '';
   protected prescriptionComorbidities = '';
-  protected prescriptionAllergies = 'Nega';
+  protected prescriptionAllergies = '';
   protected prescriptionNotes = '';
   protected prescriptionRows: PrescriptionDraftRow[] = [];
+  protected selectedTemplateId: PrescriptionTemplateId | '' = '';
+  protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
   protected readonly hours = Array.from({ length: 24 }, (_, index) => index);
+  protected readonly currentDate = new Date();
 
   protected readonly activeHospital = this.store.activeHospital;
   protected readonly hospitals = this.store.hospitals;
@@ -120,7 +143,7 @@ export class App implements OnInit {
 
   protected openBed(bed: Bed): void {
     if (bed.status === 'OCCUPIED') {
-      this.openPrescriptionTab(bed.id, 'prescription');
+      this.openPrescriptionTab(bed.id);
       return;
     }
 
@@ -135,7 +158,8 @@ export class App implements OnInit {
     if (!bedId) return;
 
     this.prescriptionPromptOpen.set(false);
-    this.openPrescriptionTab(bedId, 'new-prescription');
+    this.resetPatientForm();
+    this.admissionOpen.set(true);
   }
 
   protected closePrescriptionPrompt(): void {
@@ -145,36 +169,28 @@ export class App implements OnInit {
 
   protected admitPatient(): void {
     const bedId = this.selectedBedId();
-    if (
-      !bedId ||
-      !this.patientName.trim() ||
-      !this.patientBirthDate ||
-      !this.patientWeight ||
-      this.patientWeight <= 0
-    ) {
-      this.showToast('Preencha nome, data de nascimento e peso.');
+    if (!bedId || !this.patientName.trim() || !this.patientBirthDate.trim()) {
+      this.showToast('Preencha nome e data de nascimento.');
+      return;
+    }
+    if (this.patientWeight !== null && this.patientWeight <= 0) {
+      this.showToast('Informe um peso válido ou deixe o campo vazio.');
       return;
     }
 
     this.store.admitPatient(bedId, {
       name: this.patientName.trim(),
-      birthDate: this.patientBirthDate,
-      document: this.patientDocument.trim() || 'Não informado',
+      birthDate: this.patientBirthDate.trim(),
       sex: this.patientSex,
-      weightKg: this.patientWeight,
+      weightKg: this.patientWeight ?? undefined,
+      diagnosis: this.prescriptionDiagnosis.trim() || undefined,
+      comorbidities: this.prescriptionComorbidities.trim() || undefined,
+      allergies: this.prescriptionAllergies.trim() || undefined,
     });
     this.admissionOpen.set(false);
-    if (this.admissionForPrescription) {
-      this.admissionForPrescription = false;
-      this.preparePrescription();
-      this.screen.set('prescription');
-      window.history.replaceState(null, '', window.location.pathname);
-      window.scrollTo({ top: 0, left: 0 });
-      this.showToast('Paciente cadastrado. Preencha a nova prescrição.');
-      return;
-    }
-
-    this.showToast('Paciente cadastrado no leito com sucesso.');
+    this.openPrescriptionTab(bedId);
+    this.selectedBedId.set(null);
+    this.showToast('Paciente cadastrado. A prescrição foi aberta em uma nova guia.');
   }
 
   protected closeAdmission(): void {
@@ -215,6 +231,7 @@ export class App implements OnInit {
 
   protected savePrescription(): void {
     const bedId = this.selectedBedId();
+    if (!this.persistPatientChanges(false)) return;
     const validRows = this.prescriptionRows.filter((row) => row.description.trim());
     if (!bedId || !validRows.length) {
       this.showToast('Inclua ao menos um item na prescrição.');
@@ -222,7 +239,43 @@ export class App implements OnInit {
     }
     this.store.addPrescription(bedId, validRows, this.prescriptionNotes.trim());
     this.showToast('Prescrição salva no protótipo.');
-    this.preparePrescription();
+    const patient = this.selectedBed()?.patient;
+    if (patient) this.preparePrescription(patient);
+  }
+
+  protected startBlankPrescription(): void {
+    this.selectedTemplateId = '';
+    this.prescriptionRows = [
+      this.emptyPrescriptionRow(),
+      this.emptyPrescriptionRow(),
+      this.emptyPrescriptionRow(),
+    ];
+    this.prescriptionReady.set(true);
+  }
+
+  protected applyPrescriptionTemplate(): void {
+    const template = PRESCRIPTION_TEMPLATES.find((item) => item.id === this.selectedTemplateId);
+    if (!template) {
+      this.showToast('Selecione uma prescrição pré-pronta.');
+      return;
+    }
+
+    this.prescriptionRows = [
+      {
+        description: `MODELO ${template.name} — REVISAR E COMPLETAR ITENS COM A EQUIPE CLÍNICA`,
+        route: 'OUTRA',
+        frequency: '',
+        hours: [],
+      },
+      this.emptyPrescriptionRow(),
+      this.emptyPrescriptionRow(),
+    ];
+    this.prescriptionReady.set(true);
+    this.showToast(`MODELO ${template.name} CARREGADO.`);
+  }
+
+  protected savePatientChanges(): void {
+    this.persistPatientChanges(true);
   }
 
   protected statusLabel(status: BedStatus): string {
@@ -232,10 +285,6 @@ export class App implements OnInit {
       CLEANING: 'Higienização',
       MAINTENANCE: 'Manutenção',
     }[status];
-  }
-
-  protected formatWeight(weightKg: number): string {
-    return weightKg.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   }
 
   protected resetDemo(): void {
@@ -250,23 +299,19 @@ export class App implements OnInit {
     }, 3200);
   }
 
-  private preparePrescription(): void {
-    this.prescriptionDiagnosis = '';
-    this.prescriptionComorbidities = '';
-    this.prescriptionAllergies = 'Nega';
+  private preparePrescription(patient: Patient): void {
+    this.preparePatientForm(patient);
     this.prescriptionNotes = '';
-    this.prescriptionRows = [
-      this.emptyPrescriptionRow(),
-      this.emptyPrescriptionRow(),
-      this.emptyPrescriptionRow(),
-    ];
+    this.prescriptionRows = [];
+    this.selectedTemplateId = '';
+    this.prescriptionReady.set(false);
   }
 
   private emptyPrescriptionRow(): PrescriptionDraftRow {
     return { description: '', route: 'VO', frequency: '', hours: [] };
   }
 
-  private openPrescriptionTab(bedId: string, flow: 'prescription' | 'new-prescription'): void {
+  private openPrescriptionTab(bedId: string): void {
     const hospitalId = this.store.activeHospitalId();
     if (!hospitalId) return;
 
@@ -275,7 +320,7 @@ export class App implements OnInit {
     url.hash = '';
     url.searchParams.set('hospital', hospitalId);
     url.searchParams.set('bed', bedId);
-    url.searchParams.set('flow', flow);
+    url.searchParams.set('flow', 'prescription');
 
     window.open(url.toString(), '_blank', 'noopener');
   }
@@ -298,20 +343,53 @@ export class App implements OnInit {
     this.expandedRooms.set(new Set([room.id]));
 
     if (flow === 'prescription' && bed.status === 'OCCUPIED' && bed.patient) {
-      this.preparePrescription();
+      this.preparePrescription(bed.patient);
       this.screen.set('prescription');
       return;
     }
+  }
 
-    if (flow === 'new-prescription' && bed.status === 'AVAILABLE') {
-      this.patientName = '';
-      this.patientBirthDate = '';
-      this.patientDocument = '';
-      this.patientSex = 'Feminino';
-      this.patientWeight = null;
-      this.admissionForPrescription = true;
-      this.screen.set('rooms');
-      this.admissionOpen.set(true);
+  private resetPatientForm(): void {
+    this.patientName = '';
+    this.patientBirthDate = '';
+    this.patientSex = 'FEMININO';
+    this.patientWeight = null;
+    this.prescriptionDiagnosis = '';
+    this.prescriptionComorbidities = '';
+    this.prescriptionAllergies = '';
+  }
+
+  private preparePatientForm(patient: Patient): void {
+    this.patientName = patient.name;
+    this.patientBirthDate = patient.birthDate;
+    this.patientSex = patient.sex || 'NÃO INFORMADO';
+    this.patientWeight = patient.weightKg ?? null;
+    this.prescriptionDiagnosis = patient.diagnosis || '';
+    this.prescriptionComorbidities = patient.comorbidities || '';
+    this.prescriptionAllergies = patient.allergies || '';
+  }
+
+  private persistPatientChanges(showFeedback: boolean): boolean {
+    const bedId = this.selectedBedId();
+    if (!bedId || !this.patientName.trim() || !this.patientBirthDate.trim()) {
+      this.showToast('Preencha nome e data de nascimento.');
+      return false;
     }
+    if (this.patientWeight !== null && this.patientWeight <= 0) {
+      this.showToast('Informe um peso válido ou deixe o campo vazio.');
+      return false;
+    }
+
+    this.store.updatePatient(bedId, {
+      name: this.patientName.trim(),
+      birthDate: this.patientBirthDate.trim(),
+      sex: this.patientSex,
+      weightKg: this.patientWeight ?? undefined,
+      diagnosis: this.prescriptionDiagnosis.trim() || undefined,
+      comorbidities: this.prescriptionComorbidities.trim() || undefined,
+      allergies: this.prescriptionAllergies.trim() || undefined,
+    });
+    if (showFeedback) this.showToast('Dados do paciente atualizados.');
+    return true;
   }
 }

@@ -22,8 +22,10 @@ export interface Patient {
   name: string;
   birthDate: string;
   sex?: string;
-  weightKg: number;
-  document: string;
+  weightKg?: number;
+  diagnosis?: string;
+  comorbidities?: string;
+  allergies?: string;
   admissionAt: string;
   prescriptions: Prescription[];
 }

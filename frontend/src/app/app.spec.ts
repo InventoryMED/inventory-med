@@ -19,14 +19,17 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.brand-logo img')?.getAttribute('src')).toBe(
+      'inventory-med-logo.png',
+    );
     expect(compiled.querySelector('h1')?.textContent).toContain('Leitos organizados');
     expect(compiled.querySelector('button[type="submit"]')?.textContent).toContain('Entrar');
   });
 
   it('should start with the requested hospitals and no registered patients', () => {
     expect(INITIAL_HOSPITALS.map((hospital) => hospital.name)).toEqual([
-      'Hospital Municipal e Pronto Socorro',
-      'Hospital Municipal e Pronto Atendimento',
+      'PRONTO SOCORRO DE VAZANTE',
+      'HOSPITAL MUNICIPAL DE VAZANTE',
     ]);
 
     const beds = INITIAL_HOSPITALS.flatMap((hospital) =>

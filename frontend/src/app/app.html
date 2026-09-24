@@ -1,7 +1,12 @@
 @if (screen() === 'login') {
   <main class="login-page">
     <section class="login-brand">
-      <div class="brand-mark brand-mark--large" aria-hidden="true"><span>+</span></div>
+      <div class="brand-logo brand-logo--hero">
+        <img
+          src="inventory-med-logo.png"
+          alt="INVENTORY MED — GESTÃO INTELIGENTE DE LEITOS HOSPITALARES"
+        />
+      </div>
       <div>
         <p class="eyebrow">Gestão hospitalar</p>
         <h1>Leitos organizados.<br />Prescrições mais simples.</h1>
@@ -15,8 +20,12 @@
     <section class="login-panel">
       <form class="login-card" (ngSubmit)="login()">
         <div class="mobile-brand">
-          <div class="brand-mark" aria-hidden="true"><span>+</span></div>
-          <strong>Inventory MED</strong>
+          <div class="brand-logo brand-logo--mobile">
+            <img
+              src="inventory-med-logo.png"
+              alt="INVENTORY MED — GESTÃO INTELIGENTE DE LEITOS HOSPITALARES"
+            />
+          </div>
         </div>
         <div class="login-heading">
           <p class="eyebrow">Bem-vindo</p>
@@ -63,8 +72,12 @@
   <main class="selection-page">
     <header class="selection-header">
       <div class="product-lockup">
-        <div class="brand-mark" aria-hidden="true"><span>+</span></div>
-        <span>Inventory MED</span>
+        <div class="brand-logo brand-logo--header">
+          <img
+            src="inventory-med-logo.png"
+            alt="INVENTORY MED — GESTÃO INTELIGENTE DE LEITOS HOSPITALARES"
+          />
+        </div>
       </div>
       <button type="button" class="ghost-button" (click)="logout()">Sair</button>
     </header>
@@ -72,7 +85,7 @@
       <div class="selection-title">
         <div class="avatar">LG</div>
         <div>
-          <p class="eyebrow">Dr. Lucas Galante</p>
+          <p class="eyebrow">DR. LUCAS GALANTE</p>
           <h1>Onde você atenderá hoje?</h1>
           <p>Selecione um hospital para acessar seus quartos, leitos e pacientes.</p>
         </div>
@@ -98,8 +111,12 @@
   <div class="app-shell">
     <header class="app-header">
       <div class="product-lockup product-lockup--inverse">
-        <div class="brand-mark brand-mark--inverse" aria-hidden="true"><span>+</span></div>
-        <span>Inventory MED</span>
+        <div class="brand-logo brand-logo--header brand-logo--inverse">
+          <img
+            src="inventory-med-logo.png"
+            alt="INVENTORY MED — GESTÃO INTELIGENTE DE LEITOS HOSPITALARES"
+          />
+        </div>
       </div>
       <div class="hospital-context">
         <span class="context-label">Hospital em atendimento</span>
@@ -115,7 +132,7 @@
       </div>
       <div class="profile-menu">
         <div class="avatar avatar--small">LG</div>
-        <div class="profile-copy"><strong>Dr. Lucas Galante</strong><span>Médico</span></div>
+        <div class="profile-copy"><strong>DR. LUCAS GALANTE</strong><span>MÉDICO</span></div>
         <button type="button" class="header-action" (click)="logout()">Sair</button>
       </div>
     </header>
@@ -268,8 +285,12 @@
       <div class="prescription-page">
         <header class="prescription-appbar">
           <div class="product-lockup product-lockup--inverse">
-            <div class="brand-mark brand-mark--inverse" aria-hidden="true"><span>+</span></div>
-            <span>Inventory MED</span>
+            <div class="brand-logo brand-logo--header brand-logo--inverse">
+              <img
+                src="inventory-med-logo.png"
+                alt="INVENTORY MED — GESTÃO INTELIGENTE DE LEITOS HOSPITALARES"
+              />
+            </div>
           </div>
           <div class="prescription-hospital">
             <span>Prescrição médica</span><strong>{{ hospital.name }}</strong>
@@ -277,7 +298,7 @@
           <div class="profile-menu">
             <div class="avatar avatar--small avatar--inverse">LG</div>
             <div class="profile-copy profile-copy--inverse">
-              <strong>Dr. Lucas Galante</strong><span>CRM 123456/SP</span>
+              <strong>DR. LUCAS GALANTE</strong><span>CRM 123456/SP</span>
             </div>
           </div>
         </header>
@@ -287,40 +308,52 @@
               <span aria-hidden="true">←</span> Voltar aos quartos
             </button>
             <div class="prescription-actions">
-              <span class="draft-indicator">Rascunho local</span
-              ><button type="button" class="primary-button" (click)="savePrescription()">
-                Salvar prescrição
-              </button>
+              @if (prescriptionReady()) {
+                <span class="draft-indicator">Rascunho local</span
+                ><button type="button" class="primary-button" (click)="savePrescription()">
+                  Salvar prescrição
+                </button>
+              } @else {
+                <span class="draft-indicator">Escolha como deseja iniciar a prescrição</span>
+              }
             </div>
           </div>
-          <section class="prescription-sheet">
-            <header class="sheet-title">
+          <section class="patient-editor-card">
+            <header class="patient-editor-heading">
               <div>
-                <p class="eyebrow">{{ selectedRoom()?.unit }}</p>
-                <h1>Prescrição médica</h1>
+                <p class="eyebrow">Dados do paciente</p>
+                <h2>Revise ou altere as informações</h2>
               </div>
-              <div class="sheet-date">
-                <span>Data da prescrição</span
-                ><strong>{{ '2026-09-23T12:00:00' | date: 'dd/MM/yyyy' }}</strong>
-              </div>
+              <span>{{ selectedRoom()?.name }} • {{ bed.code }}</span>
             </header>
-            <div class="patient-header-grid">
-              <div class="patient-main">
-                <span class="meta-label">Paciente</span><strong>{{ patient.name }}</strong
-                ><small>{{ patient.document }}</small>
-              </div>
-              <div class="patient-meta">
-                <span class="meta-label">Nascimento</span
-                ><strong>{{ patient.birthDate | date: 'dd/MM/yyyy' }}</strong>
-              </div>
-              <div class="patient-meta">
-                <span class="meta-label">Sexo</span
-                ><strong>{{ patient.sex || 'Não informado' }}</strong>
-              </div>
-              <div class="patient-meta">
-                <span class="meta-label">Peso</span
-                ><strong>{{ formatWeight(patient.weightKg) }} kg</strong>
-              </div>
+            <div class="patient-header-grid patient-editor-grid">
+              <label class="patient-edit-field patient-edit-field--name">
+                <span class="meta-label">Paciente *</span>
+                <input [(ngModel)]="patientName" placeholder="Nome completo" />
+              </label>
+              <label class="patient-edit-field">
+                <span class="meta-label">Nascimento *</span>
+                <input [(ngModel)]="patientBirthDate" placeholder="DD/MM/AAAA" />
+              </label>
+              <label class="patient-edit-field">
+                <span class="meta-label">Sexo</span>
+                <select [(ngModel)]="patientSex">
+                  <option>FEMININO</option>
+                  <option>MASCULINO</option>
+                  <option>OUTRO</option>
+                  <option>NÃO INFORMADO</option>
+                </select>
+              </label>
+              <label class="patient-edit-field">
+                <span class="meta-label">Peso (kg) • opcional</span>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  [(ngModel)]="patientWeight"
+                  placeholder="Ex.: 72,5"
+                />
+              </label>
               <div class="patient-meta">
                 <span class="meta-label">Unidade</span><strong>{{ selectedRoom()?.unit }}</strong>
               </div>
@@ -336,107 +369,157 @@
             <div class="clinical-fields">
               <label
                 ><span>Diagnóstico</span
-                ><input
-                  [(ngModel)]="prescriptionDiagnosis"
-                  placeholder="Informe o diagnóstico relacionado"
+                ><input [(ngModel)]="prescriptionDiagnosis" placeholder="Opcional"
               /></label>
               <label
                 ><span>Comorbidades</span
-                ><input
-                  [(ngModel)]="prescriptionComorbidities"
-                  placeholder="Informe ou escreva 'Nega'"
+                ><input [(ngModel)]="prescriptionComorbidities" placeholder="Opcional"
               /></label>
               <label
                 ><span>Alergias</span
-                ><input [(ngModel)]="prescriptionAllergies" placeholder="Informe ou escreva 'Nega'"
+                ><input [(ngModel)]="prescriptionAllergies" placeholder="Opcional"
               /></label>
             </div>
-            <div class="prescription-table-wrap">
-              <table class="prescription-table">
-                <thead>
-                  <tr>
-                    <th class="number-column">#</th>
-                    <th class="description-column">Prescrição</th>
-                    <th class="route-column">Via</th>
-                    <th class="frequency-column">Frequência</th>
-                    <th class="hours-heading" [attr.colspan]="hours.length">Horário</th>
-                    <th class="remove-column"><span class="sr-only">Remover</span></th>
-                  </tr>
-                  <tr class="hours-row">
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    @for (hour of hours; track hour) {
-                      <th>{{ hour.toString().padStart(2, '0') }}</th>
-                    }
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of prescriptionRows; track $index; let rowIndex = $index) {
+            <div class="patient-editor-actions">
+              <span>Os dados do paciente podem ser alterados nesta guia.</span>
+              <button type="button" class="ghost-button" (click)="savePatientChanges()">
+                Salvar dados do paciente
+              </button>
+            </div>
+          </section>
+          <section class="prescription-start-card">
+            <div class="prescription-start-copy">
+              <p class="eyebrow">Nova prescrição</p>
+              <h2>Como deseja começar?</h2>
+              <p>Crie uma prescrição vazia ou carregue um modelo para revisar e completar.</p>
+            </div>
+            <button
+              type="button"
+              class="prescription-choice prescription-choice--blank"
+              (click)="startBlankPrescription()"
+            >
+              <span class="choice-icon" aria-hidden="true">+</span>
+              <span><strong>Criar do zero</strong><small>Começar com itens em branco</small></span>
+            </button>
+            <div class="prescription-template-choice">
+              <label for="prescription-template">Prescrição pré-pronta</label>
+              <div>
+                <select id="prescription-template" [(ngModel)]="selectedTemplateId">
+                  <option value="">Selecione um modelo</option>
+                  @for (template of prescriptionTemplates; track template.id) {
+                    <option [value]="template.id">
+                      {{ template.name }} — {{ template.description }}
+                    </option>
+                  }
+                </select>
+                <button type="button" class="primary-button" (click)="applyPrescriptionTemplate()">
+                  Usar modelo
+                </button>
+              </div>
+              <small
+                >Os modelos são demonstrativos e devem ser revisados pela equipe clínica.</small
+              >
+            </div>
+          </section>
+          @if (prescriptionReady()) {
+            <section class="prescription-sheet">
+              <header class="sheet-title">
+                <div>
+                  <p class="eyebrow">{{ selectedRoom()?.unit }}</p>
+                  <h1>Prescrição médica</h1>
+                </div>
+                <div class="sheet-date">
+                  <span>Data da prescrição</span
+                  ><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
+                </div>
+              </header>
+              <div class="prescription-table-wrap">
+                <table class="prescription-table">
+                  <thead>
                     <tr>
-                      <td class="row-number">{{ rowIndex + 1 }}</td>
-                      <td>
-                        <input
-                          [(ngModel)]="row.description"
-                          placeholder="Medicamento, dose e diluição"
-                        />
-                      </td>
-                      <td>
-                        <select [(ngModel)]="row.route">
-                          <option>VO</option>
-                          <option>EV</option>
-                          <option>IM</option>
-                          <option>SC</option>
-                          <option>INAL</option>
-                          <option>OUTRA</option>
-                        </select>
-                      </td>
-                      <td><input [(ngModel)]="row.frequency" placeholder="Ex.: 8/8h" /></td>
+                      <th class="number-column">#</th>
+                      <th class="description-column">Prescrição</th>
+                      <th class="route-column">Via</th>
+                      <th class="frequency-column">Frequência</th>
+                      <th class="hours-heading" [attr.colspan]="hours.length">Horário</th>
+                      <th class="remove-column"><span class="sr-only">Remover</span></th>
+                    </tr>
+                    <tr class="hours-row">
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
                       @for (hour of hours; track hour) {
-                        <td class="hour-cell">
+                        <th>{{ hour.toString().padStart(2, '0') }}</th>
+                      }
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of prescriptionRows; track $index; let rowIndex = $index) {
+                      <tr>
+                        <td class="row-number">{{ rowIndex + 1 }}</td>
+                        <td>
+                          <input
+                            [(ngModel)]="row.description"
+                            placeholder="Medicamento, dose e diluição"
+                          />
+                        </td>
+                        <td>
+                          <select [(ngModel)]="row.route">
+                            <option>VO</option>
+                            <option>EV</option>
+                            <option>IM</option>
+                            <option>SC</option>
+                            <option>INAL</option>
+                            <option>OUTRA</option>
+                          </select>
+                        </td>
+                        <td><input [(ngModel)]="row.frequency" placeholder="Ex.: 8/8h" /></td>
+                        @for (hour of hours; track hour) {
+                          <td class="hour-cell">
+                            <button
+                              type="button"
+                              class="hour-toggle"
+                              [class.hour-toggle--selected]="isHourSelected(row, hour)"
+                              [attr.aria-pressed]="isHourSelected(row, hour)"
+                              [attr.aria-label]="'Administrar às ' + hour + ' horas'"
+                              (click)="toggleHour(rowIndex, hour)"
+                            ></button>
+                          </td>
+                        }
+                        <td>
                           <button
                             type="button"
-                            class="hour-toggle"
-                            [class.hour-toggle--selected]="isHourSelected(row, hour)"
-                            [attr.aria-pressed]="isHourSelected(row, hour)"
-                            [attr.aria-label]="'Administrar às ' + hour + ' horas'"
-                            (click)="toggleHour(rowIndex, hour)"
-                          ></button>
+                            class="remove-row"
+                            (click)="removePrescriptionRow(rowIndex)"
+                            aria-label="Remover item"
+                          >
+                            ×
+                          </button>
                         </td>
-                      }
-                      <td>
-                        <button
-                          type="button"
-                          class="remove-row"
-                          (click)="removePrescriptionRow(rowIndex)"
-                          aria-label="Remover item"
-                        >
-                          ×
-                        </button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-            <button type="button" class="add-row-button" (click)="addPrescriptionRow()">
-              + Adicionar item
-            </button>
-            <label class="notes-field"
-              ><span>Observações e comunicações</span
-              ><textarea
-                [(ngModel)]="prescriptionNotes"
-                rows="3"
-                placeholder="Registre orientações complementares para a equipe"
-              ></textarea>
-            </label>
-            <footer class="sheet-footer">
-              <p>Ambiente de demonstração • Nenhuma informação possui validade clínica.</p>
-              <div><span>Prescritor</span><strong>Dr. Lucas Galante • CRM 123456/SP</strong></div>
-            </footer>
-          </section>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <button type="button" class="add-row-button" (click)="addPrescriptionRow()">
+                + Adicionar item
+              </button>
+              <label class="notes-field"
+                ><span>Observações e comunicações</span
+                ><textarea
+                  [(ngModel)]="prescriptionNotes"
+                  rows="3"
+                  placeholder="Registre orientações complementares para a equipe"
+                ></textarea>
+              </label>
+              <footer class="sheet-footer">
+                <p>Ambiente de demonstração • Nenhuma informação possui validade clínica.</p>
+                <div><span>Prescritor</span><strong>DR. LUCAS GALANTE • CRM 123456/SP</strong></div>
+              </footer>
+            </section>
+          }
           @if (patient.prescriptions.length) {
             <section class="saved-prescriptions">
               <h2>Prescrições salvas nesta demonstração</h2>
@@ -481,8 +564,8 @@
         </button>
       </header>
       <p class="modal-description">
-        O {{ bed.code }} ainda não possui paciente. Ao continuar, uma nova aba será aberta para
-        cadastrar o paciente e preencher sua prescrição.
+        O {{ bed.code }} ainda não possui paciente. O cadastro será exibido nesta tela e, depois de
+        concluído, a prescrição será aberta em uma nova guia.
       </p>
       <div class="modal-actions">
         <button type="button" class="ghost-button" (click)="closePrescriptionPrompt()">
@@ -498,7 +581,7 @@
 @if (admissionOpen() && selectedBed(); as bed) {
   <div class="modal-backdrop" (click)="closeAdmission()">
     <section
-      class="modal-card"
+      class="modal-card modal-card--wide"
       role="dialog"
       aria-modal="true"
       aria-labelledby="admission-title"
@@ -514,7 +597,7 @@
         </button>
       </header>
       <p class="modal-description">
-        Cadastre os dados essenciais para vincular o paciente ao leito e iniciar a prescrição.
+        Cadastre o paciente nesta tela. Os campos marcados como opcionais podem ficar em branco.
       </p>
       <form (ngSubmit)="admitPatient()" class="admission-form">
         <label class="form-field form-field--full"
@@ -527,19 +610,23 @@
         /></label>
         <label class="form-field"
           ><span>Data de nascimento</span
-          ><input name="patientBirthDate" type="date" [(ngModel)]="patientBirthDate"
+          ><input
+            name="patientBirthDate"
+            type="text"
+            [(ngModel)]="patientBirthDate"
+            placeholder="DD/MM/AAAA"
         /></label>
         <label class="form-field"
           ><span>Sexo</span
           ><select name="patientSex" [(ngModel)]="patientSex">
-            <option>Feminino</option>
-            <option>Masculino</option>
-            <option>Outro</option>
-            <option>Não informado</option>
+            <option>FEMININO</option>
+            <option>MASCULINO</option>
+            <option>OUTRO</option>
+            <option>NÃO INFORMADO</option>
           </select></label
         >
         <label class="form-field"
-          ><span>Peso (kg)</span
+          ><span>Peso (kg) • opcional</span
           ><input
             name="patientWeight"
             type="number"
@@ -549,8 +636,25 @@
             placeholder="Ex.: 72,5"
         /></label>
         <label class="form-field form-field--full"
-          ><span>CPF ou documento</span
-          ><input name="patientDocument" [(ngModel)]="patientDocument" placeholder="000.000.000-00"
+          ><span>Diagnóstico • opcional</span
+          ><input
+            name="patientDiagnosis"
+            [(ngModel)]="prescriptionDiagnosis"
+            placeholder="Informe o diagnóstico, se houver"
+        /></label>
+        <label class="form-field form-field--full"
+          ><span>Comorbidades • opcional</span
+          ><input
+            name="patientComorbidities"
+            [(ngModel)]="prescriptionComorbidities"
+            placeholder="Informe as comorbidades, se houver"
+        /></label>
+        <label class="form-field form-field--full"
+          ><span>Alergias • opcional</span
+          ><input
+            name="patientAllergies"
+            [(ngModel)]="prescriptionAllergies"
+            placeholder="Informe as alergias, se houver"
         /></label>
         <div class="modal-actions form-field--full">
           <button type="button" class="ghost-button" (click)="closeAdmission()">Cancelar</button

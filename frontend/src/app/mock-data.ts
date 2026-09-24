@@ -3,9 +3,9 @@ import { Hospital } from './models';
 export const INITIAL_HOSPITALS: Hospital[] = [
   {
     id: 'hospital-municipal-pronto-socorro',
-    name: 'Hospital Municipal e Pronto Socorro',
-    shortName: 'HMPS',
-    city: 'São Paulo, SP',
+    name: 'PRONTO SOCORRO DE VAZANTE',
+    shortName: 'PSV',
+    city: 'VAZANTE, MG',
     rooms: [
       {
         id: 'hmps-room-101',
@@ -61,9 +61,9 @@ export const INITIAL_HOSPITALS: Hospital[] = [
   },
   {
     id: 'hospital-municipal-pronto-atendimento',
-    name: 'Hospital Municipal e Pronto Atendimento',
-    shortName: 'HMPA',
-    city: 'Campinas, SP',
+    name: 'HOSPITAL MUNICIPAL DE VAZANTE',
+    shortName: 'HMV',
+    city: 'VAZANTE, MG',
     rooms: [
       {
         id: 'hmpa-room-101',
