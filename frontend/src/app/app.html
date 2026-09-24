@@ -444,6 +444,30 @@
                   ><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
                 </div>
               </header>
+              <section class="diet-field" aria-labelledby="diet-title">
+                <label for="prescription-diet">
+                  <span id="diet-title">Dieta</span>
+                  <input
+                    id="prescription-diet"
+                    [(ngModel)]="prescriptionDiet"
+                    placeholder="Digite a dieta ou selecione um modelo abaixo"
+                  />
+                </label>
+                <div class="diet-presets">
+                  <span>Modelos de dieta</span>
+                  <div>
+                    @for (diet of dietPresets; track diet) {
+                      <button
+                        type="button"
+                        [class.diet-preset--selected]="prescriptionDiet === diet"
+                        (click)="selectDiet(diet)"
+                      >
+                        {{ diet }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              </section>
               <div class="prescription-table-wrap">
                 <table class="prescription-table">
                   <thead>

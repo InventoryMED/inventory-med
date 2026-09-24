@@ -25,6 +25,15 @@ const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
   },
 ];
 
+const DIET_PRESETS = [
+  'DIETA LIVRE',
+  'DIETA LÍQUIDA',
+  'DIETA PASTOSA',
+  'DIETA SNE',
+  'DIETA PARA HAS',
+  'DIETA PARA DM',
+];
+
 @Component({
   imports: [CommonModule, FormsModule],
   selector: 'app-root',
@@ -51,10 +60,12 @@ export class App implements OnInit {
   protected prescriptionDiagnosis = '';
   protected prescriptionComorbidities = '';
   protected prescriptionAllergies = '';
+  protected prescriptionDiet = '';
   protected prescriptionNotes = '';
   protected prescriptionRows: PrescriptionDraftRow[] = [];
   protected selectedTemplateId: PrescriptionTemplateId | '' = '';
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
+  protected readonly dietPresets = DIET_PRESETS;
   protected readonly currentDate = new Date();
 
   protected readonly activeHospital = this.store.activeHospital;
@@ -220,7 +231,12 @@ export class App implements OnInit {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
     }
-    this.store.addPrescription(bedId, validRows, this.prescriptionNotes.trim());
+    this.store.addPrescription(
+      bedId,
+      validRows,
+      this.prescriptionDiet.trim(),
+      this.prescriptionNotes.trim(),
+    );
     this.showToast('Prescrição salva no protótipo.');
     const patient = this.selectedBed()?.patient;
     if (patient) this.preparePrescription(patient);
@@ -261,6 +277,10 @@ export class App implements OnInit {
     this.persistPatientChanges(true);
   }
 
+  protected selectDiet(diet: string): void {
+    this.prescriptionDiet = diet;
+  }
+
   protected formatBirthDateInput(value: string): void {
     const digits = value.replace(/\D/g, '').slice(0, 8);
     const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean);
@@ -290,6 +310,7 @@ export class App implements OnInit {
 
   private preparePrescription(patient: Patient): void {
     this.preparePatientForm(patient);
+    this.prescriptionDiet = '';
     this.prescriptionNotes = '';
     this.prescriptionRows = [];
     this.selectedTemplateId = '';

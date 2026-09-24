@@ -1105,6 +1105,55 @@ svg {
   margin-top: 3px;
   font-size: 15px;
 }
+.diet-field {
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid #ccd4de;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.diet-field label > span,
+.diet-presets > span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--navy-900);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.diet-field input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #bfc9d5;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+}
+.diet-presets {
+  margin-top: 14px;
+}
+.diet-presets > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.diet-presets button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #bfc9d5;
+  border-radius: 999px;
+  background: white;
+  color: var(--navy-700);
+  font-size: 10px;
+  font-weight: 750;
+}
+.diet-presets button:hover,
+.diet-presets .diet-preset--selected {
+  border-color: var(--navy-700);
+  background: var(--navy-900);
+  color: white;
+}
 .patient-header-grid {
   display: grid;
   grid-template-columns: 2fr repeat(5, 1fr);

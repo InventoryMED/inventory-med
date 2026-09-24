@@ -76,7 +76,7 @@ export class DemoStore {
     });
   }
 
-  addPrescription(bedId: string, rows: PrescriptionDraftRow[], notes: string): void {
+  addPrescription(bedId: string, rows: PrescriptionDraftRow[], diet: string, notes: string): void {
     this.updateBed(bedId, (bed) => {
       if (!bed.patient) return bed;
       return {
@@ -87,6 +87,7 @@ export class DemoStore {
             {
               id: crypto.randomUUID(),
               createdAt: new Date().toISOString(),
+              diet,
               notes,
               items: rows.map((row) => ({
                 id: crypto.randomUUID(),

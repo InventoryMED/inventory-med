@@ -15,6 +15,7 @@ export interface PrescriptionItem {
 export interface Prescription {
   id: string;
   createdAt: string;
+  diet: string;
   notes: string;
   items: PrescriptionItem[];
 }
