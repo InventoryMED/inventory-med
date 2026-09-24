@@ -64,6 +64,19 @@ const DIET_PRESETS = [
   'DIETA PARA DM',
 ];
 
+const DXT_GUIDANCE = {
+  low: 'GH 50% 40ML EV SE DXT < 70 MG/DL',
+  highTitle: 'INSULINA REGULAR SC CONFORME DXT',
+  ranges: [
+    { glucose: '180–230', insulin: '2 UI' },
+    { glucose: '231–280', insulin: '4 UI' },
+    { glucose: '281–330', insulin: '6 UI' },
+    { glucose: '331–380', insulin: '8 UI' },
+  ],
+  fullText:
+    'GH 50% 40ML EV SE DXT < 70 MG/DL. INSULINA REGULAR SC CONFORME DXT: 180–230: 2 UI; 231–280: 4 UI; 281–330: 6 UI; 331–380: 8 UI.',
+};
+
 const HYDRATION_PRESETS: PrescriptionRowPreset[] = [
   {
     description: 'SORO FISIOLÓGICO 0,9% 500ML',
@@ -194,6 +207,7 @@ export class App implements OnInit {
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
   protected readonly dietPresets = DIET_PRESETS;
   protected readonly hydrationPresets = HYDRATION_PRESETS;
+  protected readonly dxtGuidance = DXT_GUIDANCE;
   protected readonly currentDate = new Date();
 
   protected readonly activeHospital = this.store.activeHospital;
@@ -530,7 +544,7 @@ export class App implements OnInit {
   private resetStructuredOrders(): void {
     this.vitalSignRows = [
       { description: 'SINAIS VITAIS', frequency: '' },
-      { description: 'DXT', frequency: '' },
+      { description: 'DXT', frequency: '', guidance: DXT_GUIDANCE.fullText },
     ];
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';

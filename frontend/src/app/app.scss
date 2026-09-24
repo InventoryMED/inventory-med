@@ -1212,6 +1212,79 @@ svg {
 .vital-description-column {
   width: auto;
 }
+.dxt-guidance {
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid #b7c4d2;
+  border-radius: 9px;
+  background: white;
+}
+.dxt-guidance > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 13px;
+  background: var(--navy-900);
+  color: white;
+}
+.dxt-guidance h3 {
+  margin: 0;
+  font-size: 13px;
+}
+.dxt-guidance > header span,
+.dxt-guidance article > span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+.dxt-guidance > header span {
+  color: #c8d5e3;
+}
+.dxt-guidance-grid {
+  display: grid;
+  grid-template-columns: 0.85fr 1.6fr;
+}
+.dxt-guidance article {
+  padding: 14px;
+}
+.dxt-guidance article + article {
+  border-left: 1px solid #d7dee7;
+}
+.dxt-guidance article > span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+}
+.dxt-guidance article > strong {
+  color: var(--navy-900);
+  font-size: 11px;
+}
+.dxt-ranges {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+.dxt-ranges > div {
+  display: flex;
+  min-height: 48px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 7px;
+  border-radius: 6px;
+  background: var(--navy-100);
+  text-align: center;
+}
+.dxt-ranges span {
+  color: var(--muted);
+  font-size: 8px;
+}
+.dxt-ranges strong {
+  margin-top: 3px;
+  color: var(--navy-900);
+  font-size: 12px;
+}
 .patient-header-grid {
   display: grid;
   grid-template-columns: 2fr repeat(5, 1fr);
@@ -1632,6 +1705,21 @@ svg {
   .sheet-date,
   .sheet-footer div {
     align-items: flex-start;
+  }
+  .clinical-order-header,
+  .dxt-guidance > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dxt-guidance-grid {
+    grid-template-columns: 1fr;
+  }
+  .dxt-guidance article + article {
+    border-top: 1px solid #d7dee7;
+    border-left: 0;
+  }
+  .dxt-ranges {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

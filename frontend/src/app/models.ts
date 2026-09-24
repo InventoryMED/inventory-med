@@ -23,6 +23,7 @@ export interface VitalSignOrder {
   id: string;
   description: string;
   frequency: string;
+  guidance?: string;
 }
 
 export interface PrescriptionMedicationSection {
@@ -65,6 +66,7 @@ export interface PrescriptionDraftRow {
 export interface VitalSignDraftRow {
   description: string;
   frequency: string;
+  guidance?: string;
 }
 
 export interface MedicationSectionDraft {

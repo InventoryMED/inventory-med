@@ -502,6 +502,30 @@
                     </tbody>
                   </table>
                 </div>
+                <aside class="dxt-guidance" aria-labelledby="dxt-guidance-title">
+                  <header>
+                    <span>Conduta conforme resultado</span>
+                    <h3 id="dxt-guidance-title">Orientações DXT</h3>
+                  </header>
+                  <div class="dxt-guidance-grid">
+                    <article class="dxt-guidance-low">
+                      <span>Glicemia baixa</span>
+                      <strong>{{ dxtGuidance.low }}</strong>
+                    </article>
+                    <article class="dxt-guidance-high">
+                      <span>Glicemia alta</span>
+                      <strong>{{ dxtGuidance.highTitle }}</strong>
+                      <div class="dxt-ranges">
+                        @for (range of dxtGuidance.ranges; track range.glucose) {
+                          <div>
+                            <span>{{ range.glucose }} MG/DL</span>
+                            <strong>{{ range.insulin }}</strong>
+                          </div>
+                        }
+                      </div>
+                    </article>
+                  </div>
+                </aside>
               </section>
               <section class="clinical-order-section" aria-labelledby="hydration-title">
                 <header class="clinical-order-header">

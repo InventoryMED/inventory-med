@@ -108,6 +108,7 @@ export class DemoStore {
                 id: crypto.randomUUID(),
                 description: row.description,
                 frequency: row.frequency,
+                guidance: row.guidance,
               })),
               hydrationItems: hydrationRows.map((row) => ({
                 id: crypto.randomUUID(),
