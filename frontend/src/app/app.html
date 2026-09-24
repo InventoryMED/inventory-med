@@ -193,7 +193,8 @@
         <div class="legend" aria-label="Legenda dos leitos">
           <span><i class="status-dot status-dot--available"></i> Vazio</span
           ><span><i class="status-dot status-dot--occupied"></i> Ocupado</span
-          ><span><i class="status-dot status-dot--unavailable"></i> Indisponível</span>
+          ><span><i class="status-dot status-dot--cleaning"></i> Higienização</span
+          ><span><i class="status-dot status-dot--maintenance"></i> Manutenção</span>
         </div>
         <div class="rooms-list">
           @for (room of visibleRooms(); track room.id) {
@@ -233,6 +234,7 @@
                       class="bed-card"
                       [class.bed-card--available]="bed.status === 'AVAILABLE'"
                       [class.bed-card--occupied]="bed.status === 'OCCUPIED'"
+                      [class.bed-card--maintenance]="bed.status === 'MAINTENANCE'"
                       [class.bed-card--disabled]="
                         bed.status === 'CLEANING' || bed.status === 'MAINTENANCE'
                       "

@@ -9,6 +9,15 @@
   --line: #d8dee7;
   --surface: #ffffff;
   --background: #f2f4f7;
+  --available-green: #168653;
+  --available-green-dark: #0f653e;
+  --available-green-soft: #e7f7ef;
+  --occupied-yellow: #e0a100;
+  --occupied-yellow-dark: #795500;
+  --occupied-yellow-soft: #fff4c7;
+  --maintenance-red: #d92d20;
+  --maintenance-red-dark: #991b1b;
+  --maintenance-red-soft: #feeceb;
   display: block;
   min-height: 100vh;
   color: var(--ink);
@@ -602,14 +611,16 @@ svg {
   border-radius: 50%;
 }
 .status-dot--available {
-  border: 2px solid var(--navy-700);
-  background: white;
+  background: var(--available-green);
 }
 .status-dot--occupied {
-  background: var(--navy-900);
+  background: var(--occupied-yellow);
 }
-.status-dot--unavailable {
+.status-dot--cleaning {
   background: #aeb7c2;
+}
+.status-dot--maintenance {
+  background: var(--maintenance-red);
 }
 .rooms-list {
   display: flex;
@@ -674,8 +685,8 @@ svg {
 .available-count {
   padding: 5px 8px;
   border-radius: 999px;
-  background: var(--navy-100);
-  color: var(--navy-800);
+  background: var(--available-green-soft);
+  color: var(--available-green-dark);
   font-weight: 700;
 }
 .chevron {
@@ -716,14 +727,31 @@ svg {
 .bed-card--available:hover,
 .bed-card--occupied:hover {
   transform: translateY(-2px);
-  border-color: var(--navy-700);
   box-shadow: 0 9px 22px rgba(16, 24, 40, 0.08);
 }
+.bed-card--available:hover {
+  border-color: var(--available-green);
+}
+.bed-card--occupied:hover {
+  border-color: var(--navy-700);
+}
 .bed-card--occupied {
-  border-left: 4px solid var(--navy-900);
+  border-left: 4px solid var(--occupied-yellow);
 }
 .bed-card--available {
-  border-left: 4px solid var(--navy-700);
+  border-left: 4px solid var(--available-green);
+}
+.bed-card--available .bed-symbol {
+  color: var(--available-green-dark);
+}
+.bed-card--occupied .bed-symbol {
+  color: var(--occupied-yellow-dark);
+}
+.bed-card--maintenance {
+  border-left: 4px solid var(--maintenance-red);
+}
+.bed-card--maintenance .bed-symbol {
+  color: var(--maintenance-red-dark);
 }
 .bed-card--disabled {
   opacity: 0.62;
@@ -754,18 +782,23 @@ svg {
   text-transform: uppercase;
 }
 .status-pill--available {
-  border: 1px solid #9cabb9;
-  background: white;
-  color: var(--navy-800);
+  border: 1px solid #99d3b5;
+  background: var(--available-green-soft);
+  color: var(--available-green-dark);
 }
 .status-pill--occupied {
-  background: var(--navy-900);
-  color: white;
+  border: 1px solid #e8c65c;
+  background: var(--occupied-yellow-soft);
+  color: var(--occupied-yellow-dark);
 }
-.status-pill--cleaning,
-.status-pill--maintenance {
+.status-pill--cleaning {
   background: #e7eaee;
   color: #475467;
+}
+.status-pill--maintenance {
+  border: 1px solid #f0aaa5;
+  background: var(--maintenance-red-soft);
+  color: var(--maintenance-red-dark);
 }
 .bed-card > strong {
   margin-bottom: 7px;
