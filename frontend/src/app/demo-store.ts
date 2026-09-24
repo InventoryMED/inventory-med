@@ -83,6 +83,7 @@ export class DemoStore {
     notes: string,
     vitalSigns: VitalSignDraftRow[],
     hydrationRows: PrescriptionDraftRow[],
+    analgesiaRows: PrescriptionDraftRow[],
   ): void {
     this.updateBed(bedId, (bed) => {
       if (!bed.patient) return bed;
@@ -102,6 +103,14 @@ export class DemoStore {
                 frequency: row.frequency,
               })),
               hydrationItems: hydrationRows.map((row) => ({
+                id: crypto.randomUUID(),
+                medication: row.description,
+                dose: '',
+                route: row.route,
+                frequency: row.frequency,
+                scheduling: row.scheduling,
+              })),
+              analgesiaItems: analgesiaRows.map((row) => ({
                 id: crypto.randomUUID(),
                 medication: row.description,
                 dose: '',

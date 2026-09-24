@@ -8,6 +8,7 @@ import {
   BedStatus,
   Patient,
   PrescriptionDraftRow,
+  PrescriptionScheduling,
   Room,
   VitalSignDraftRow,
 } from './models';
@@ -20,11 +21,11 @@ interface PrescriptionTemplate {
   description: string;
 }
 
-interface HydrationPreset {
+interface PrescriptionRowPreset {
   description: string;
   route: string;
   frequency: string;
-  scheduling: 'FIXO';
+  scheduling: PrescriptionScheduling;
 }
 
 const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
@@ -49,7 +50,7 @@ const DIET_PRESETS = [
   'DIETA PARA DM',
 ];
 
-const HYDRATION_PRESETS: HydrationPreset[] = [
+const HYDRATION_PRESETS: PrescriptionRowPreset[] = [
   {
     description: 'SORO FISIOLÓGICO 0,9% 500ML',
     route: 'EV',
@@ -67,6 +68,27 @@ const HYDRATION_PRESETS: HydrationPreset[] = [
     route: 'EV',
     frequency: '12/12HR',
     scheduling: 'FIXO',
+  },
+];
+
+const ANALGESIA_PRESETS: PrescriptionRowPreset[] = [
+  {
+    description: 'DIPIRONA 1 AMPOLA + 18ML DE SF 0,9%',
+    route: 'EV',
+    frequency: '6/6HR',
+    scheduling: 'FIXO',
+  },
+  {
+    description: 'PARACETAMOL 500MG 1 COMPRIMIDO',
+    route: 'VO',
+    frequency: '6/6HR',
+    scheduling: 'FIXO',
+  },
+  {
+    description: 'TRAMAL 1 AMPOLA + 100ML DE SF 0,9%',
+    route: 'EV',
+    frequency: '8/8HR',
+    scheduling: 'SN',
   },
 ];
 
@@ -102,10 +124,13 @@ export class App implements OnInit {
   protected vitalSignRows: VitalSignDraftRow[] = [];
   protected hydrationRow: PrescriptionDraftRow = this.emptyHydrationRow();
   protected selectedHydrationPreset = '';
+  protected analgesiaRows: PrescriptionDraftRow[] = [];
+  protected selectedAnalgesiaPreset = '';
   protected selectedTemplateId: PrescriptionTemplateId | '' = '';
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
   protected readonly dietPresets = DIET_PRESETS;
   protected readonly hydrationPresets = HYDRATION_PRESETS;
+  protected readonly analgesiaPresets = ANALGESIA_PRESETS;
   protected readonly currentDate = new Date();
 
   protected readonly activeHospital = this.store.activeHospital;
@@ -268,6 +293,30 @@ export class App implements OnInit {
     this.hydrationRow = preset ? { ...preset } : this.emptyHydrationRow();
   }
 
+  protected selectAnalgesiaPreset(description: string): void {
+    const preset = ANALGESIA_PRESETS.find((item) => item.description === description);
+    if (!preset) return;
+
+    const emptyRowIndex = this.analgesiaRows.findIndex((row) => !row.description.trim());
+    this.analgesiaRows =
+      emptyRowIndex >= 0
+        ? this.analgesiaRows.map((row, index) => (index === emptyRowIndex ? { ...preset } : row))
+        : [...this.analgesiaRows, { ...preset }];
+    this.selectedAnalgesiaPreset = '';
+  }
+
+  protected addAnalgesiaRow(): void {
+    this.analgesiaRows = [...this.analgesiaRows, this.emptyAnalgesiaRow()];
+  }
+
+  protected removeAnalgesiaRow(index: number): void {
+    if (this.analgesiaRows.length === 1) {
+      this.analgesiaRows = [this.emptyAnalgesiaRow()];
+      return;
+    }
+    this.analgesiaRows = this.analgesiaRows.filter((_, rowIndex) => rowIndex !== index);
+  }
+
   protected savePrescription(): void {
     const bedId = this.selectedBedId();
     if (!this.persistPatientChanges(false)) return;
@@ -276,7 +325,14 @@ export class App implements OnInit {
       (row) => row.description.trim() && row.frequency.trim(),
     );
     const validHydrationRows = this.hydrationRow.description.trim() ? [this.hydrationRow] : [];
-    if (!bedId || (!validRows.length && !validVitalSigns.length && !validHydrationRows.length)) {
+    const validAnalgesiaRows = this.analgesiaRows.filter((row) => row.description.trim());
+    if (
+      !bedId ||
+      (!validRows.length &&
+        !validVitalSigns.length &&
+        !validHydrationRows.length &&
+        !validAnalgesiaRows.length)
+    ) {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
     }
@@ -287,6 +343,7 @@ export class App implements OnInit {
       this.prescriptionNotes.trim(),
       validVitalSigns,
       validHydrationRows,
+      validAnalgesiaRows,
     );
     this.showToast('Prescrição salva no protótipo.');
     const patient = this.selectedBed()?.patient;
@@ -369,6 +426,8 @@ export class App implements OnInit {
     this.vitalSignRows = [];
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
+    this.analgesiaRows = [];
+    this.selectedAnalgesiaPreset = '';
     this.selectedTemplateId = '';
     this.prescriptionReady.set(false);
   }
@@ -381,6 +440,10 @@ export class App implements OnInit {
     return { description: '', route: 'EV', frequency: '', scheduling: 'FIXO' };
   }
 
+  private emptyAnalgesiaRow(): PrescriptionDraftRow {
+    return { description: '', route: 'EV', frequency: '', scheduling: 'FIXO' };
+  }
+
   private resetStructuredOrders(): void {
     this.vitalSignRows = [
       { description: 'SINAIS VITAIS', frequency: '' },
@@ -388,6 +451,8 @@ export class App implements OnInit {
     ];
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
+    this.analgesiaRows = [this.emptyAnalgesiaRow()];
+    this.selectedAnalgesiaPreset = '';
   }
 
   private openPrescriptionTab(bedId: string): void {

@@ -26,6 +26,7 @@ export interface Prescription {
   items: PrescriptionItem[];
   vitalSigns?: VitalSignOrder[];
   hydrationItems?: PrescriptionItem[];
+  analgesiaItems?: PrescriptionItem[];
 }
 
 export interface Patient {

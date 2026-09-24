@@ -1181,11 +1181,11 @@ svg {
   color: var(--muted);
   font-size: 9px;
 }
-.hydration-preset-field {
+.order-preset-field {
   display: block;
   margin-bottom: 14px;
 }
-.hydration-preset-field > span {
+.order-preset-field > span {
   display: block;
   margin-bottom: 7px;
   color: var(--navy-900);
@@ -1193,7 +1193,7 @@ svg {
   font-weight: 800;
   letter-spacing: 0.06em;
 }
-.hydration-preset-field select {
+.order-preset-field select {
   width: 100%;
   min-height: 42px;
   padding: 0 11px;
