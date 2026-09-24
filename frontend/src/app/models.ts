@@ -1,6 +1,7 @@
 export type AppScreen = 'login' | 'hospital-select' | 'rooms' | 'prescription';
 
 export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE';
+export type PrescriptionScheduling = 'ACM' | 'SN' | 'FIXO';
 
 export interface PrescriptionItem {
   id: string;
@@ -8,6 +9,7 @@ export interface PrescriptionItem {
   dose: string;
   route: string;
   frequency: string;
+  scheduling: PrescriptionScheduling;
 }
 
 export interface Prescription {
@@ -34,7 +36,7 @@ export interface PrescriptionDraftRow {
   description: string;
   route: string;
   frequency: string;
-  hours: number[];
+  scheduling: PrescriptionScheduling;
 }
 
 export interface Bed {

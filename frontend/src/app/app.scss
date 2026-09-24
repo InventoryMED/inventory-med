@@ -1212,7 +1212,7 @@ svg {
 }
 .prescription-table {
   width: 100%;
-  min-width: 1390px;
+  min-width: 760px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -1252,18 +1252,11 @@ svg {
 .frequency-column {
   width: 112px;
 }
+.scheduling-column {
+  width: 120px;
+}
 .remove-column {
   width: 42px;
-}
-.hours-heading {
-  text-align: center;
-}
-.hours-row th {
-  width: 31px;
-  height: 27px;
-  padding: 2px;
-  background: #eff2f5;
-  color: var(--navy-900);
 }
 .prescription-table input,
 .prescription-table select {
@@ -1286,28 +1279,6 @@ svg {
   font-size: 12px;
   font-weight: 800;
   text-align: center;
-}
-.hour-cell {
-  width: 31px;
-  text-align: center;
-}
-.hour-toggle {
-  width: 100%;
-  height: 47px;
-  background: transparent;
-}
-.hour-toggle:hover {
-  background: var(--navy-100);
-}
-.hour-toggle--selected {
-  position: relative;
-  background: var(--navy-900);
-}
-.hour-toggle--selected::after {
-  content: '•';
-  color: white;
-  font-size: 24px;
-  line-height: 1;
 }
 .remove-row {
   width: 100%;

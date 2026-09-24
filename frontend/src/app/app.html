@@ -452,18 +452,8 @@
                       <th class="description-column">Prescrição</th>
                       <th class="route-column">Via</th>
                       <th class="frequency-column">Frequência</th>
-                      <th class="hours-heading" [attr.colspan]="hours.length">Horário</th>
+                      <th class="scheduling-column">Aprazamento</th>
                       <th class="remove-column"><span class="sr-only">Remover</span></th>
-                    </tr>
-                    <tr class="hours-row">
-                      <th></th>
-                      <th></th>
-                      <th></th>
-                      <th></th>
-                      @for (hour of hours; track hour) {
-                        <th>{{ hour.toString().padStart(2, '0') }}</th>
-                      }
-                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -487,18 +477,13 @@
                           </select>
                         </td>
                         <td><input [(ngModel)]="row.frequency" placeholder="Ex.: 8/8h" /></td>
-                        @for (hour of hours; track hour) {
-                          <td class="hour-cell">
-                            <button
-                              type="button"
-                              class="hour-toggle"
-                              [class.hour-toggle--selected]="isHourSelected(row, hour)"
-                              [attr.aria-pressed]="isHourSelected(row, hour)"
-                              [attr.aria-label]="'Administrar às ' + hour + ' horas'"
-                              (click)="toggleHour(rowIndex, hour)"
-                            ></button>
-                          </td>
-                        }
+                        <td>
+                          <select [(ngModel)]="row.scheduling" aria-label="Aprazamento">
+                            <option>ACM</option>
+                            <option>SN</option>
+                            <option>FIXO</option>
+                          </select>
+                        </td>
                         <td>
                           <button
                             type="button"

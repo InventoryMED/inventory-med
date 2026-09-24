@@ -93,9 +93,8 @@ export class DemoStore {
                 medication: row.description,
                 dose: '',
                 route: row.route,
-                frequency: row.hours.length
-                  ? `${row.frequency} • ${row.hours.map((hour) => `${String(hour).padStart(2, '0')}h`).join(', ')}`
-                  : row.frequency,
+                frequency: row.frequency,
+                scheduling: row.scheduling,
               })),
             },
             ...bed.patient.prescriptions,

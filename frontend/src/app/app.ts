@@ -55,7 +55,6 @@ export class App implements OnInit {
   protected prescriptionRows: PrescriptionDraftRow[] = [];
   protected selectedTemplateId: PrescriptionTemplateId | '' = '';
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
-  protected readonly hours = Array.from({ length: 24 }, (_, index) => index);
   protected readonly currentDate = new Date();
 
   protected readonly activeHospital = this.store.activeHospital;
@@ -213,22 +212,6 @@ export class App implements OnInit {
     this.prescriptionRows = this.prescriptionRows.filter((_, rowIndex) => rowIndex !== index);
   }
 
-  protected toggleHour(rowIndex: number, hour: number): void {
-    this.prescriptionRows = this.prescriptionRows.map((row, index) => {
-      if (index !== rowIndex) return row;
-      return {
-        ...row,
-        hours: row.hours.includes(hour)
-          ? row.hours.filter((value) => value !== hour)
-          : [...row.hours, hour].sort((a, b) => a - b),
-      };
-    });
-  }
-
-  protected isHourSelected(row: PrescriptionDraftRow, hour: number): boolean {
-    return row.hours.includes(hour);
-  }
-
   protected savePrescription(): void {
     const bedId = this.selectedBedId();
     if (!this.persistPatientChanges(false)) return;
@@ -265,7 +248,7 @@ export class App implements OnInit {
         description: `MODELO ${template.name} — REVISAR E COMPLETAR ITENS COM A EQUIPE CLÍNICA`,
         route: 'OUTRA',
         frequency: '',
-        hours: [],
+        scheduling: 'FIXO',
       },
       this.emptyPrescriptionRow(),
       this.emptyPrescriptionRow(),
@@ -314,7 +297,7 @@ export class App implements OnInit {
   }
 
   private emptyPrescriptionRow(): PrescriptionDraftRow {
-    return { description: '', route: 'VO', frequency: '', hours: [] };
+    return { description: '', route: 'VO', frequency: '', scheduling: 'FIXO' };
   }
 
   private openPrescriptionTab(bedId: string): void {
