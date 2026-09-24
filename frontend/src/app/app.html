@@ -568,90 +568,98 @@
                   </table>
                 </div>
               </section>
-              <section class="clinical-order-section" aria-labelledby="analgesia-title">
-                <header class="clinical-order-header">
-                  <div>
-                    <p class="eyebrow">Controle da dor</p>
-                    <h2 id="analgesia-title">Analgesia</h2>
-                  </div>
-                  <span>Preencha via, frequência e aprazamento</span>
-                </header>
-                <label class="order-preset-field" for="analgesia-preset">
-                  <span>Modelo de analgesia</span>
-                  <select
-                    id="analgesia-preset"
-                    [(ngModel)]="selectedAnalgesiaPreset"
-                    (ngModelChange)="selectAnalgesiaPreset($event)"
-                  >
-                    <option value="">Selecione uma opção</option>
-                    @for (preset of analgesiaPresets; track preset.description) {
-                      <option [value]="preset.description">
-                        {{ preset.description }} • {{ preset.route }} • {{ preset.frequency }} •
-                        {{ preset.scheduling }}
-                      </option>
-                    }
-                  </select>
-                </label>
-                <div class="prescription-table-wrap">
-                  <table class="prescription-table">
-                    <thead>
-                      <tr>
-                        <th class="number-column">#</th>
-                        <th class="description-column">Analgesia</th>
-                        <th class="route-column">Via</th>
-                        <th class="frequency-column">Frequência</th>
-                        <th class="scheduling-column">Aprazamento</th>
-                        <th class="remove-column"><span class="sr-only">Remover</span></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (row of analgesiaRows; track $index; let rowIndex = $index) {
+              @for (group of medicationGroups; track group.id) {
+                <section
+                  class="clinical-order-section"
+                  [attr.aria-labelledby]="group.id + '-title'"
+                >
+                  <header class="clinical-order-header">
+                    <div>
+                      <p class="eyebrow">{{ group.eyebrow }}</p>
+                      <h2 [id]="group.id + '-title'">{{ group.title }}</h2>
+                    </div>
+                    <span>{{ group.helper }}</span>
+                  </header>
+                  @if (group.presets.length) {
+                    <label class="order-preset-field" [for]="group.id + '-preset'">
+                      <span>Modelo de {{ group.title }}</span>
+                      <select
+                        [id]="group.id + '-preset'"
+                        [(ngModel)]="group.selectedPreset"
+                        (ngModelChange)="selectMedicationPreset(group, $event)"
+                      >
+                        <option value="">Selecione uma opção</option>
+                        @for (preset of group.presets; track preset.description) {
+                          <option [value]="preset.description">
+                            {{ preset.description }} • {{ preset.route }} • {{ preset.frequency }} •
+                            {{ preset.scheduling }}
+                          </option>
+                        }
+                      </select>
+                    </label>
+                  }
+                  <div class="prescription-table-wrap">
+                    <table class="prescription-table">
+                      <thead>
                         <tr>
-                          <td class="row-number">{{ rowIndex + 1 }}</td>
-                          <td>
-                            <input
-                              [(ngModel)]="row.description"
-                              placeholder="Medicamento, dose e diluição"
-                            />
-                          </td>
-                          <td>
-                            <select [(ngModel)]="row.route">
-                              <option>EV</option>
-                              <option>VO</option>
-                              <option>IM</option>
-                              <option>SC</option>
-                              <option>OUTRA</option>
-                            </select>
-                          </td>
-                          <td>
-                            <input [(ngModel)]="row.frequency" placeholder="Ex.: 6/6h" />
-                          </td>
-                          <td>
-                            <select [(ngModel)]="row.scheduling" aria-label="Aprazamento">
-                              <option>ACM</option>
-                              <option>SN</option>
-                              <option>FIXO</option>
-                            </select>
-                          </td>
-                          <td>
-                            <button
-                              type="button"
-                              class="remove-row"
-                              (click)="removeAnalgesiaRow(rowIndex)"
-                              aria-label="Remover analgesia"
-                            >
-                              ×
-                            </button>
-                          </td>
+                          <th class="number-column">#</th>
+                          <th class="description-column">{{ group.title }}</th>
+                          <th class="route-column">Via</th>
+                          <th class="frequency-column">Frequência</th>
+                          <th class="scheduling-column">Aprazamento</th>
+                          <th class="remove-column"><span class="sr-only">Remover</span></th>
                         </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-                <button type="button" class="add-row-button" (click)="addAnalgesiaRow()">
-                  + Adicionar analgesia
-                </button>
-              </section>
+                      </thead>
+                      <tbody>
+                        @for (row of group.rows; track $index; let rowIndex = $index) {
+                          <tr>
+                            <td class="row-number">{{ rowIndex + 1 }}</td>
+                            <td>
+                              <input
+                                [(ngModel)]="row.description"
+                                placeholder="Medicamento, dose e diluição"
+                              />
+                            </td>
+                            <td>
+                              <select [(ngModel)]="row.route">
+                                <option>EV</option>
+                                <option>VO</option>
+                                <option>IM</option>
+                                <option>SC</option>
+                                <option>INAL</option>
+                                <option>OUTRA</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input [(ngModel)]="row.frequency" placeholder="Ex.: 6/6h" />
+                            </td>
+                            <td>
+                              <select [(ngModel)]="row.scheduling" aria-label="Aprazamento">
+                                <option>ACM</option>
+                                <option>SN</option>
+                                <option>FIXO</option>
+                              </select>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                class="remove-row"
+                                (click)="removeMedicationRow(group, rowIndex)"
+                                [attr.aria-label]="'Remover item de ' + group.title"
+                              >
+                                ×
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                  <button type="button" class="add-row-button" (click)="addMedicationRow(group)">
+                    + Adicionar em {{ group.title }}
+                  </button>
+                </section>
+              }
               <div class="prescription-table-wrap">
                 <table class="prescription-table">
                   <thead>
@@ -731,15 +739,7 @@
                 <div class="saved-row">
                   <div>
                     <strong>{{ prescription.createdAt | date: 'dd/MM/yyyy HH:mm' }}</strong
-                    ><span
-                      >{{
-                        prescription.items.length +
-                          (prescription.hydrationItems?.length ?? 0) +
-                          (prescription.vitalSigns?.length ?? 0) +
-                          (prescription.analgesiaItems?.length ?? 0)
-                      }}
-                      itens</span
-                    >
+                    ><span>{{ prescriptionItemCount(prescription) }} itens</span>
                   </div>
                   <span class="status-pill status-pill--occupied">Salva</span>
                 </div>

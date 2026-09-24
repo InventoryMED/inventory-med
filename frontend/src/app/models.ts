@@ -2,6 +2,13 @@ export type AppScreen = 'login' | 'hospital-select' | 'rooms' | 'prescription';
 
 export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE';
 export type PrescriptionScheduling = 'ACM' | 'SN' | 'FIXO';
+export type MedicationSectionId =
+  | 'ANALGESIA'
+  | 'SYMPTOMATICS'
+  | 'PROPHYLAXIS'
+  | 'ANTIBIOTICS'
+  | 'CONTINUOUS_USE'
+  | 'OTHER_MEDICATIONS';
 
 export interface PrescriptionItem {
   id: string;
@@ -18,6 +25,11 @@ export interface VitalSignOrder {
   frequency: string;
 }
 
+export interface PrescriptionMedicationSection {
+  id: MedicationSectionId;
+  items: PrescriptionItem[];
+}
+
 export interface Prescription {
   id: string;
   createdAt: string;
@@ -27,6 +39,7 @@ export interface Prescription {
   vitalSigns?: VitalSignOrder[];
   hydrationItems?: PrescriptionItem[];
   analgesiaItems?: PrescriptionItem[];
+  medicationSections?: PrescriptionMedicationSection[];
 }
 
 export interface Patient {
@@ -52,6 +65,11 @@ export interface PrescriptionDraftRow {
 export interface VitalSignDraftRow {
   description: string;
   frequency: string;
+}
+
+export interface MedicationSectionDraft {
+  id: MedicationSectionId;
+  items: PrescriptionDraftRow[];
 }
 
 export interface Bed {

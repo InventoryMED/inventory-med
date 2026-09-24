@@ -6,7 +6,10 @@ import {
   AppScreen,
   Bed,
   BedStatus,
+  MedicationSectionDraft,
+  MedicationSectionId,
   Patient,
+  Prescription,
   PrescriptionDraftRow,
   PrescriptionScheduling,
   Room,
@@ -26,6 +29,17 @@ interface PrescriptionRowPreset {
   route: string;
   frequency: string;
   scheduling: PrescriptionScheduling;
+}
+
+interface MedicationOrderGroup {
+  id: MedicationSectionId;
+  eyebrow: string;
+  title: string;
+  helper: string;
+  defaultRoute: string;
+  presets: PrescriptionRowPreset[];
+  selectedPreset: string;
+  rows: PrescriptionDraftRow[];
 }
 
 const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
@@ -92,6 +106,57 @@ const ANALGESIA_PRESETS: PrescriptionRowPreset[] = [
   },
 ];
 
+const SYMPTOMATIC_PRESETS: PrescriptionRowPreset[] = [
+  {
+    description: 'PLASIL 1 AMPOLA + 18ML DE ABD',
+    route: 'EV',
+    frequency: '8/8HR',
+    scheduling: 'SN',
+  },
+  {
+    description: 'ONDANSETRONA 1 AMPOLA + 100ML DE SF 0,9%',
+    route: 'EV',
+    frequency: '8/8HR',
+    scheduling: 'SN',
+  },
+];
+
+const PROPHYLAXIS_PRESETS: PrescriptionRowPreset[] = [
+  {
+    description: 'OMEPRAZOL 1 AMPOLA — FAZER DE MANHÃ',
+    route: 'EV',
+    frequency: '24/24HR',
+    scheduling: 'FIXO',
+  },
+  {
+    description: 'ENOXAPARINA 40MG',
+    route: 'SC',
+    frequency: '24/24HR',
+    scheduling: 'FIXO',
+  },
+  {
+    description: 'HNF 5000UI',
+    route: 'EV',
+    frequency: '12/12HR',
+    scheduling: 'FIXO',
+  },
+];
+
+const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
+  {
+    description: 'CEFTRIAXONA 1G + 100ML DE SF 0,9%',
+    route: 'EV',
+    frequency: '12/12HR',
+    scheduling: 'FIXO',
+  },
+  {
+    description: 'AZITROMICINA 500MG',
+    route: 'VO',
+    frequency: '24/24HR',
+    scheduling: 'FIXO',
+  },
+];
+
 @Component({
   imports: [CommonModule, FormsModule],
   selector: 'app-root',
@@ -124,13 +189,11 @@ export class App implements OnInit {
   protected vitalSignRows: VitalSignDraftRow[] = [];
   protected hydrationRow: PrescriptionDraftRow = this.emptyHydrationRow();
   protected selectedHydrationPreset = '';
-  protected analgesiaRows: PrescriptionDraftRow[] = [];
-  protected selectedAnalgesiaPreset = '';
+  protected medicationGroups: MedicationOrderGroup[] = [];
   protected selectedTemplateId: PrescriptionTemplateId | '' = '';
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
   protected readonly dietPresets = DIET_PRESETS;
   protected readonly hydrationPresets = HYDRATION_PRESETS;
-  protected readonly analgesiaPresets = ANALGESIA_PRESETS;
   protected readonly currentDate = new Date();
 
   protected readonly activeHospital = this.store.activeHospital;
@@ -293,28 +356,29 @@ export class App implements OnInit {
     this.hydrationRow = preset ? { ...preset } : this.emptyHydrationRow();
   }
 
-  protected selectAnalgesiaPreset(description: string): void {
-    const preset = ANALGESIA_PRESETS.find((item) => item.description === description);
+  protected selectMedicationPreset(group: MedicationOrderGroup, description: string): void {
+    const preset = group.presets.find((item) => item.description === description);
     if (!preset) return;
 
-    const emptyRowIndex = this.analgesiaRows.findIndex((row) => !row.description.trim());
-    this.analgesiaRows =
+    const emptyRowIndex = group.rows.findIndex((row) => !row.description.trim());
+    group.rows =
       emptyRowIndex >= 0
-        ? this.analgesiaRows.map((row, index) => (index === emptyRowIndex ? { ...preset } : row))
-        : [...this.analgesiaRows, { ...preset }];
-    this.selectedAnalgesiaPreset = '';
+        ? group.rows.map((row, index) => (index === emptyRowIndex ? { ...preset } : row))
+        : [...group.rows, { ...preset }];
+    group.selectedPreset = '';
   }
 
-  protected addAnalgesiaRow(): void {
-    this.analgesiaRows = [...this.analgesiaRows, this.emptyAnalgesiaRow()];
+  protected addMedicationRow(group: MedicationOrderGroup): void {
+    group.rows = [...group.rows, this.emptyMedicationRow(group.defaultRoute)];
   }
 
-  protected removeAnalgesiaRow(index: number): void {
-    if (this.analgesiaRows.length === 1) {
-      this.analgesiaRows = [this.emptyAnalgesiaRow()];
+  protected removeMedicationRow(group: MedicationOrderGroup, index: number): void {
+    if (group.rows.length === 1) {
+      group.rows = [this.emptyMedicationRow(group.defaultRoute)];
+      group.selectedPreset = '';
       return;
     }
-    this.analgesiaRows = this.analgesiaRows.filter((_, rowIndex) => rowIndex !== index);
+    group.rows = group.rows.filter((_, rowIndex) => rowIndex !== index);
   }
 
   protected savePrescription(): void {
@@ -325,13 +389,18 @@ export class App implements OnInit {
       (row) => row.description.trim() && row.frequency.trim(),
     );
     const validHydrationRows = this.hydrationRow.description.trim() ? [this.hydrationRow] : [];
-    const validAnalgesiaRows = this.analgesiaRows.filter((row) => row.description.trim());
+    const validMedicationSections: MedicationSectionDraft[] = this.medicationGroups
+      .map((group) => ({
+        id: group.id,
+        items: group.rows.filter((row) => row.description.trim()),
+      }))
+      .filter((section) => section.items.length);
     if (
       !bedId ||
       (!validRows.length &&
         !validVitalSigns.length &&
         !validHydrationRows.length &&
-        !validAnalgesiaRows.length)
+        !validMedicationSections.length)
     ) {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
@@ -343,7 +412,7 @@ export class App implements OnInit {
       this.prescriptionNotes.trim(),
       validVitalSigns,
       validHydrationRows,
-      validAnalgesiaRows,
+      validMedicationSections,
     );
     this.showToast('Prescrição salva no protótipo.');
     const patient = this.selectedBed()?.patient;
@@ -391,6 +460,21 @@ export class App implements OnInit {
     this.prescriptionDiet = diet;
   }
 
+  protected prescriptionItemCount(prescription: Prescription): number {
+    const medicationSectionItems =
+      prescription.medicationSections?.reduce(
+        (total, section) => total + section.items.length,
+        0,
+      ) ?? 0;
+    return (
+      prescription.items.length +
+      (prescription.hydrationItems?.length ?? 0) +
+      (prescription.vitalSigns?.length ?? 0) +
+      (prescription.analgesiaItems?.length ?? 0) +
+      medicationSectionItems
+    );
+  }
+
   protected formatBirthDateInput(value: string): void {
     const digits = value.replace(/\D/g, '').slice(0, 8);
     const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean);
@@ -426,8 +510,7 @@ export class App implements OnInit {
     this.vitalSignRows = [];
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
-    this.analgesiaRows = [];
-    this.selectedAnalgesiaPreset = '';
+    this.medicationGroups = [];
     this.selectedTemplateId = '';
     this.prescriptionReady.set(false);
   }
@@ -440,8 +523,8 @@ export class App implements OnInit {
     return { description: '', route: 'EV', frequency: '', scheduling: 'FIXO' };
   }
 
-  private emptyAnalgesiaRow(): PrescriptionDraftRow {
-    return { description: '', route: 'EV', frequency: '', scheduling: 'FIXO' };
+  private emptyMedicationRow(route: string): PrescriptionDraftRow {
+    return { description: '', route, frequency: '', scheduling: 'FIXO' };
   }
 
   private resetStructuredOrders(): void {
@@ -451,8 +534,72 @@ export class App implements OnInit {
     ];
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
-    this.analgesiaRows = [this.emptyAnalgesiaRow()];
-    this.selectedAnalgesiaPreset = '';
+    this.medicationGroups = this.buildMedicationGroups();
+  }
+
+  private buildMedicationGroups(): MedicationOrderGroup[] {
+    return [
+      {
+        id: 'ANALGESIA',
+        eyebrow: 'CONTROLE DA DOR',
+        title: 'ANALGESIA',
+        helper: 'PREENCHA VIA, FREQUÊNCIA E APRAZAMENTO',
+        defaultRoute: 'EV',
+        presets: ANALGESIA_PRESETS,
+        selectedPreset: '',
+        rows: [this.emptyMedicationRow('EV')],
+      },
+      {
+        id: 'SYMPTOMATICS',
+        eyebrow: 'CONTROLE DE SINTOMAS',
+        title: 'SINTOMÁTICOS',
+        helper: 'SELECIONE UM MODELO OU PREENCHA LIVREMENTE',
+        defaultRoute: 'EV',
+        presets: SYMPTOMATIC_PRESETS,
+        selectedPreset: '',
+        rows: [this.emptyMedicationRow('EV')],
+      },
+      {
+        id: 'PROPHYLAXIS',
+        eyebrow: 'PREVENÇÃO',
+        title: 'PROFILAXIA',
+        helper: 'OMEPRAZOL INICIAL PODE SER EDITADO OU REMOVIDO',
+        defaultRoute: 'EV',
+        presets: PROPHYLAXIS_PRESETS,
+        selectedPreset: '',
+        rows: [{ ...PROPHYLAXIS_PRESETS[0] }],
+      },
+      {
+        id: 'ANTIBIOTICS',
+        eyebrow: 'ANTIMICROBIANOS',
+        title: 'ATB',
+        helper: 'TÓPICO OPCIONAL — ADICIONE SOMENTE QUANDO NECESSÁRIO',
+        defaultRoute: 'EV',
+        presets: ANTIBIOTIC_PRESETS,
+        selectedPreset: '',
+        rows: [this.emptyMedicationRow('EV')],
+      },
+      {
+        id: 'CONTINUOUS_USE',
+        eyebrow: 'TRATAMENTO HABITUAL',
+        title: 'MEDICAÇÕES DE USO CONTÍNUO',
+        helper: 'PREENCHIMENTO LIVRE',
+        defaultRoute: 'VO',
+        presets: [],
+        selectedPreset: '',
+        rows: [this.emptyMedicationRow('VO')],
+      },
+      {
+        id: 'OTHER_MEDICATIONS',
+        eyebrow: 'ITENS ADICIONAIS',
+        title: 'DEMAIS MEDICAMENTOS',
+        helper: 'PREENCHIMENTO LIVRE',
+        defaultRoute: 'VO',
+        presets: [],
+        selectedPreset: '',
+        rows: [this.emptyMedicationRow('VO')],
+      },
+    ];
   }
 
   private openPrescriptionTab(bedId: string): void {

@@ -30,7 +30,8 @@ O formulário de demonstração já vem preenchido. Qualquer senha não vazia pe
 8. Escolha entre prescrição do zero ou modelos demonstrativos de Admissão, PAC, CAD, TVP, TEP e Box de Emergência.
 9. Prescrição digital com dieta, dados vitais, DXT, hidratação e itens medicamentosos.
 10. Hidratação com modelos demonstrativos, via, frequência e aprazamento ACM, SN ou FIXO.
-11. Analgesia com modelos demonstrativos, linha inicial editável e inclusão de novas linhas.
+11. Seções editáveis de analgesia, sintomáticos, profilaxia, ATB, uso contínuo e demais medicamentos.
+12. Modelos demonstrativos por seção, com inclusão e remoção de linhas conforme necessário.
 
 Os dados alterados durante a demonstração ficam salvos no `localStorage` do navegador. Use o botão **Restaurar demonstração** para voltar ao estado inicial.
 

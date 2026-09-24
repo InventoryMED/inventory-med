@@ -37,4 +37,39 @@ describe('App', () => {
     );
     expect(beds.some((bed) => bed.status === 'OCCUPIED' || bed.patient)).toBe(false);
   });
+
+  it('should initialize the structured medication sections', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+
+    app.startBlankPrescription();
+
+    expect(app.medicationGroups.map((group: any) => group.title)).toEqual([
+      'ANALGESIA',
+      'SINTOMÁTICOS',
+      'PROFILAXIA',
+      'ATB',
+      'MEDICAÇÕES DE USO CONTÍNUO',
+      'DEMAIS MEDICAMENTOS',
+    ]);
+    const prophylaxis = app.medicationGroups.find((group: any) => group.id === 'PROPHYLAXIS');
+    expect(prophylaxis.rows[0].description).toContain('OMEPRAZOL');
+  });
+
+  it('should fill a medication row from a preset and allow another row', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    app.startBlankPrescription();
+    const symptomatics = app.medicationGroups.find((group: any) => group.id === 'SYMPTOMATICS');
+
+    app.selectMedicationPreset(symptomatics, 'ONDANSETRONA 1 AMPOLA + 100ML DE SF 0,9%');
+    app.addMedicationRow(symptomatics);
+
+    expect(symptomatics.rows[0]).toMatchObject({
+      route: 'EV',
+      frequency: '8/8HR',
+      scheduling: 'SN',
+    });
+    expect(symptomatics.rows).toHaveLength(2);
+  });
 });
