@@ -468,6 +468,106 @@
                   </div>
                 </div>
               </section>
+              <section class="clinical-order-section" aria-labelledby="vital-signs-title">
+                <header class="clinical-order-header">
+                  <div>
+                    <p class="eyebrow">Monitoramento</p>
+                    <h2 id="vital-signs-title">Dados vitais</h2>
+                  </div>
+                  <span>Informe a frequência para cada cuidado</span>
+                </header>
+                <div class="prescription-table-wrap">
+                  <table class="prescription-table vital-signs-table">
+                    <thead>
+                      <tr>
+                        <th class="vital-description-column">Dados vitais</th>
+                        <th class="frequency-column">Frequência</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of vitalSignRows; track $index) {
+                        <tr>
+                          <td>
+                            <input [(ngModel)]="row.description" aria-label="Dado vital" />
+                          </td>
+                          <td>
+                            <input
+                              [(ngModel)]="row.frequency"
+                              placeholder="Ex.: 6/6h"
+                              aria-label="Frequência do dado vital"
+                            />
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+              <section class="clinical-order-section" aria-labelledby="hydration-title">
+                <header class="clinical-order-header">
+                  <div>
+                    <p class="eyebrow">Soluções</p>
+                    <h2 id="hydration-title">Hidratação</h2>
+                  </div>
+                  <span>Preencha via, frequência e aprazamento</span>
+                </header>
+                <label class="hydration-preset-field" for="hydration-preset">
+                  <span>Modelo de hidratação</span>
+                  <select
+                    id="hydration-preset"
+                    [(ngModel)]="selectedHydrationPreset"
+                    (ngModelChange)="selectHydrationPreset($event)"
+                  >
+                    <option value="">Selecione uma opção</option>
+                    @for (preset of hydrationPresets; track preset.description) {
+                      <option [value]="preset.description">
+                        {{ preset.description }} • {{ preset.route }} • {{ preset.frequency }} •
+                        {{ preset.scheduling }}
+                      </option>
+                    }
+                  </select>
+                </label>
+                <div class="prescription-table-wrap">
+                  <table class="prescription-table hydration-table">
+                    <thead>
+                      <tr>
+                        <th class="description-column">Hidratação</th>
+                        <th class="route-column">Via</th>
+                        <th class="frequency-column">Frequência</th>
+                        <th class="scheduling-column">Aprazamento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <input
+                            [(ngModel)]="hydrationRow.description"
+                            placeholder="Selecione um modelo ou digite a solução"
+                          />
+                        </td>
+                        <td>
+                          <select [(ngModel)]="hydrationRow.route">
+                            <option>EV</option>
+                            <option>VO</option>
+                            <option>SC</option>
+                            <option>OUTRA</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input [(ngModel)]="hydrationRow.frequency" placeholder="Ex.: 12/12h" />
+                        </td>
+                        <td>
+                          <select [(ngModel)]="hydrationRow.scheduling" aria-label="Aprazamento">
+                            <option>ACM</option>
+                            <option>SN</option>
+                            <option>FIXO</option>
+                          </select>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
               <div class="prescription-table-wrap">
                 <table class="prescription-table">
                   <thead>
@@ -547,7 +647,14 @@
                 <div class="saved-row">
                   <div>
                     <strong>{{ prescription.createdAt | date: 'dd/MM/yyyy HH:mm' }}</strong
-                    ><span>{{ prescription.items.length }} itens</span>
+                    ><span
+                      >{{
+                        prescription.items.length +
+                          (prescription.hydrationItems?.length ?? 0) +
+                          (prescription.vitalSigns?.length ?? 0)
+                      }}
+                      itens</span
+                    >
                   </div>
                   <span class="status-pill status-pill--occupied">Salva</span>
                 </div>

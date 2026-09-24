@@ -12,12 +12,20 @@ export interface PrescriptionItem {
   scheduling: PrescriptionScheduling;
 }
 
+export interface VitalSignOrder {
+  id: string;
+  description: string;
+  frequency: string;
+}
+
 export interface Prescription {
   id: string;
   createdAt: string;
   diet: string;
   notes: string;
   items: PrescriptionItem[];
+  vitalSigns?: VitalSignOrder[];
+  hydrationItems?: PrescriptionItem[];
 }
 
 export interface Patient {
@@ -38,6 +46,11 @@ export interface PrescriptionDraftRow {
   route: string;
   frequency: string;
   scheduling: PrescriptionScheduling;
+}
+
+export interface VitalSignDraftRow {
+  description: string;
+  frequency: string;
 }
 
 export interface Bed {

@@ -1,6 +1,6 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { INITIAL_HOSPITALS } from './mock-data';
-import { Bed, Hospital, PrescriptionDraftRow, Room } from './models';
+import { Bed, Hospital, PrescriptionDraftRow, Room, VitalSignDraftRow } from './models';
 
 const STORAGE_KEY = 'inventory-med-demo-v6';
 
@@ -76,7 +76,14 @@ export class DemoStore {
     });
   }
 
-  addPrescription(bedId: string, rows: PrescriptionDraftRow[], diet: string, notes: string): void {
+  addPrescription(
+    bedId: string,
+    rows: PrescriptionDraftRow[],
+    diet: string,
+    notes: string,
+    vitalSigns: VitalSignDraftRow[],
+    hydrationRows: PrescriptionDraftRow[],
+  ): void {
     this.updateBed(bedId, (bed) => {
       if (!bed.patient) return bed;
       return {
@@ -89,6 +96,19 @@ export class DemoStore {
               createdAt: new Date().toISOString(),
               diet,
               notes,
+              vitalSigns: vitalSigns.map((row) => ({
+                id: crypto.randomUUID(),
+                description: row.description,
+                frequency: row.frequency,
+              })),
+              hydrationItems: hydrationRows.map((row) => ({
+                id: crypto.randomUUID(),
+                medication: row.description,
+                dose: '',
+                route: row.route,
+                frequency: row.frequency,
+                scheduling: row.scheduling,
+              })),
               items: rows.map((row) => ({
                 id: crypto.randomUUID(),
                 medication: row.description,

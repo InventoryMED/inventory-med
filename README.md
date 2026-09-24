@@ -28,7 +28,8 @@ O formulário de demonstração já vem preenchido. Qualquer senha não vazia pe
 6. Cadastro do paciente na tela atual, com peso e informações clínicas opcionais.
 7. Abertura da prescrição em uma nova guia, mantendo os dados do paciente editáveis.
 8. Escolha entre prescrição do zero ou modelos demonstrativos de Admissão, PAC, CAD, TVP, TEP e Box de Emergência.
-9. Prescrição digital com itens, vias, frequências e aprazamento ACM, SN ou FIXO.
+9. Prescrição digital com dieta, dados vitais, DXT, hidratação e itens medicamentosos.
+10. Hidratação com modelos demonstrativos, via, frequência e aprazamento ACM, SN ou FIXO.
 
 Os dados alterados durante a demonstração ficam salvos no `localStorage` do navegador. Use o botão **Restaurar demonstração** para voltar ao estado inicial.
 

@@ -2,7 +2,15 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DemoStore } from './demo-store';
-import { AppScreen, Bed, BedStatus, Patient, PrescriptionDraftRow, Room } from './models';
+import {
+  AppScreen,
+  Bed,
+  BedStatus,
+  Patient,
+  PrescriptionDraftRow,
+  Room,
+  VitalSignDraftRow,
+} from './models';
 
 type PrescriptionTemplateId = 'ADMISSION' | 'PAC' | 'CAD' | 'TVP' | 'TEP' | 'EMERGENCY_BOX';
 
@@ -10,6 +18,13 @@ interface PrescriptionTemplate {
   id: PrescriptionTemplateId;
   name: string;
   description: string;
+}
+
+interface HydrationPreset {
+  description: string;
+  route: string;
+  frequency: string;
+  scheduling: 'FIXO';
 }
 
 const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
@@ -32,6 +47,27 @@ const DIET_PRESETS = [
   'DIETA SNE',
   'DIETA PARA HAS',
   'DIETA PARA DM',
+];
+
+const HYDRATION_PRESETS: HydrationPreset[] = [
+  {
+    description: 'SORO FISIOLÓGICO 0,9% 500ML',
+    route: 'EV',
+    frequency: '12/12HR',
+    scheduling: 'FIXO',
+  },
+  {
+    description: 'SORO FISIOLÓGICO 0,9% 250ML',
+    route: 'EV',
+    frequency: '6/6HR',
+    scheduling: 'FIXO',
+  },
+  {
+    description: 'RINGER LACTATO 500ML',
+    route: 'EV',
+    frequency: '12/12HR',
+    scheduling: 'FIXO',
+  },
 ];
 
 @Component({
@@ -63,9 +99,13 @@ export class App implements OnInit {
   protected prescriptionDiet = '';
   protected prescriptionNotes = '';
   protected prescriptionRows: PrescriptionDraftRow[] = [];
+  protected vitalSignRows: VitalSignDraftRow[] = [];
+  protected hydrationRow: PrescriptionDraftRow = this.emptyHydrationRow();
+  protected selectedHydrationPreset = '';
   protected selectedTemplateId: PrescriptionTemplateId | '' = '';
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
   protected readonly dietPresets = DIET_PRESETS;
+  protected readonly hydrationPresets = HYDRATION_PRESETS;
   protected readonly currentDate = new Date();
 
   protected readonly activeHospital = this.store.activeHospital;
@@ -223,11 +263,20 @@ export class App implements OnInit {
     this.prescriptionRows = this.prescriptionRows.filter((_, rowIndex) => rowIndex !== index);
   }
 
+  protected selectHydrationPreset(description: string): void {
+    const preset = HYDRATION_PRESETS.find((item) => item.description === description);
+    this.hydrationRow = preset ? { ...preset } : this.emptyHydrationRow();
+  }
+
   protected savePrescription(): void {
     const bedId = this.selectedBedId();
     if (!this.persistPatientChanges(false)) return;
     const validRows = this.prescriptionRows.filter((row) => row.description.trim());
-    if (!bedId || !validRows.length) {
+    const validVitalSigns = this.vitalSignRows.filter(
+      (row) => row.description.trim() && row.frequency.trim(),
+    );
+    const validHydrationRows = this.hydrationRow.description.trim() ? [this.hydrationRow] : [];
+    if (!bedId || (!validRows.length && !validVitalSigns.length && !validHydrationRows.length)) {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
     }
@@ -236,6 +285,8 @@ export class App implements OnInit {
       validRows,
       this.prescriptionDiet.trim(),
       this.prescriptionNotes.trim(),
+      validVitalSigns,
+      validHydrationRows,
     );
     this.showToast('Prescrição salva no protótipo.');
     const patient = this.selectedBed()?.patient;
@@ -249,6 +300,7 @@ export class App implements OnInit {
       this.emptyPrescriptionRow(),
       this.emptyPrescriptionRow(),
     ];
+    this.resetStructuredOrders();
     this.prescriptionReady.set(true);
   }
 
@@ -269,6 +321,7 @@ export class App implements OnInit {
       this.emptyPrescriptionRow(),
       this.emptyPrescriptionRow(),
     ];
+    this.resetStructuredOrders();
     this.prescriptionReady.set(true);
     this.showToast(`MODELO ${template.name} CARREGADO.`);
   }
@@ -313,12 +366,28 @@ export class App implements OnInit {
     this.prescriptionDiet = '';
     this.prescriptionNotes = '';
     this.prescriptionRows = [];
+    this.vitalSignRows = [];
+    this.hydrationRow = this.emptyHydrationRow();
+    this.selectedHydrationPreset = '';
     this.selectedTemplateId = '';
     this.prescriptionReady.set(false);
   }
 
   private emptyPrescriptionRow(): PrescriptionDraftRow {
     return { description: '', route: 'VO', frequency: '', scheduling: 'FIXO' };
+  }
+
+  private emptyHydrationRow(): PrescriptionDraftRow {
+    return { description: '', route: 'EV', frequency: '', scheduling: 'FIXO' };
+  }
+
+  private resetStructuredOrders(): void {
+    this.vitalSignRows = [
+      { description: 'SINAIS VITAIS', frequency: '' },
+      { description: 'DXT', frequency: '' },
+    ];
+    this.hydrationRow = this.emptyHydrationRow();
+    this.selectedHydrationPreset = '';
   }
 
   private openPrescriptionTab(bedId: string): void {
