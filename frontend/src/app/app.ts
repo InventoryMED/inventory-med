@@ -169,8 +169,8 @@ export class App implements OnInit {
 
   protected admitPatient(): void {
     const bedId = this.selectedBedId();
-    if (!bedId || !this.patientName.trim() || !this.patientBirthDate.trim()) {
-      this.showToast('Preencha nome e data de nascimento.');
+    if (!bedId || !this.patientName.trim()) {
+      this.showToast('Preencha o nome do paciente.');
       return;
     }
     if (this.patientWeight !== null && this.patientWeight <= 0) {
@@ -180,7 +180,7 @@ export class App implements OnInit {
 
     this.store.admitPatient(bedId, {
       name: this.patientName.trim(),
-      birthDate: this.patientBirthDate.trim(),
+      birthDate: this.patientBirthDate.trim() || undefined,
       sex: this.patientSex,
       weightKg: this.patientWeight ?? undefined,
       diagnosis: this.prescriptionDiagnosis.trim() || undefined,
@@ -278,6 +278,12 @@ export class App implements OnInit {
     this.persistPatientChanges(true);
   }
 
+  protected formatBirthDateInput(value: string): void {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean);
+    this.patientBirthDate = parts.join('/');
+  }
+
   protected statusLabel(status: BedStatus): string {
     return {
       AVAILABLE: 'Vazio',
@@ -361,7 +367,7 @@ export class App implements OnInit {
 
   private preparePatientForm(patient: Patient): void {
     this.patientName = patient.name;
-    this.patientBirthDate = patient.birthDate;
+    this.patientBirthDate = patient.birthDate || '';
     this.patientSex = patient.sex || 'NÃO INFORMADO';
     this.patientWeight = patient.weightKg ?? null;
     this.prescriptionDiagnosis = patient.diagnosis || '';
@@ -371,8 +377,8 @@ export class App implements OnInit {
 
   private persistPatientChanges(showFeedback: boolean): boolean {
     const bedId = this.selectedBedId();
-    if (!bedId || !this.patientName.trim() || !this.patientBirthDate.trim()) {
-      this.showToast('Preencha nome e data de nascimento.');
+    if (!bedId || !this.patientName.trim()) {
+      this.showToast('Preencha o nome do paciente.');
       return false;
     }
     if (this.patientWeight !== null && this.patientWeight <= 0) {
@@ -382,7 +388,7 @@ export class App implements OnInit {
 
     this.store.updatePatient(bedId, {
       name: this.patientName.trim(),
-      birthDate: this.patientBirthDate.trim(),
+      birthDate: this.patientBirthDate.trim() || undefined,
       sex: this.patientSex,
       weightKg: this.patientWeight ?? undefined,
       diagnosis: this.prescriptionDiagnosis.trim() || undefined,

@@ -6,7 +6,7 @@ const STORAGE_KEY = 'inventory-med-demo-v6';
 
 interface PatientFormData {
   name: string;
-  birthDate: string;
+  birthDate?: string;
   sex?: string;
   weightKg?: number;
   diagnosis?: string;

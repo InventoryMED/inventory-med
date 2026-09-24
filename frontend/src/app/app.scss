@@ -185,7 +185,7 @@ svg {
   line-height: 1.55;
 }
 .field-label,
-.form-field span,
+.form-field > span,
 .clinical-fields span,
 .notes-field > span {
   display: block;
@@ -1114,7 +1114,6 @@ svg {
 .patient-editor-grid {
   grid-template-columns: 2fr repeat(3, 1fr) 1fr 1.2fr 1.2fr;
 }
-.patient-main,
 .patient-meta {
   display: flex;
   min-height: 76px;
@@ -1145,13 +1144,43 @@ svg {
   color: var(--ink);
   font-size: 11px;
 }
-.patient-main strong {
-  margin: 4px 0;
-  font-size: 17px;
+.input-with-suffix {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid #cfd6df;
+  border-radius: 8px;
+  background: white;
 }
-.patient-main small {
-  color: var(--muted);
+.patient-edit-field .input-with-suffix {
+  min-height: 36px;
+  margin-top: 6px;
+  border-radius: 6px;
+}
+.form-field .input-with-suffix input,
+.patient-edit-field .input-with-suffix input {
+  min-width: 0;
+  height: 34px;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+}
+.input-with-suffix > span {
+  display: block;
+  margin: 0;
+  padding: 0 12px;
+  color: var(--navy-700);
   font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.input-with-suffix:focus-within {
+  border-color: var(--navy-700);
+  box-shadow: 0 0 0 3px rgba(18, 61, 104, 0.08);
 }
 .patient-meta strong {
   margin-top: 6px;
@@ -1401,9 +1430,6 @@ svg {
   .patient-header-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-  .patient-main {
-    grid-column: span 2;
-  }
   .prescription-start-card {
     grid-template-columns: 1fr 1fr;
   }
@@ -1510,9 +1536,6 @@ svg {
   }
   .patient-header-grid {
     grid-template-columns: 1fr 1fr;
-  }
-  .patient-main {
-    grid-column: span 2;
   }
   .clinical-fields {
     grid-template-columns: 1fr;

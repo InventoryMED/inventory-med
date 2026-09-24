@@ -20,7 +20,7 @@ export interface Prescription {
 export interface Patient {
   id: string;
   name: string;
-  birthDate: string;
+  birthDate?: string;
   sex?: string;
   weightKg?: number;
   diagnosis?: string;
