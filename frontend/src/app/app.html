@@ -795,10 +795,11 @@
                     >{{ selectedRoom()?.unit }} • {{ selectedRoom()?.name }} • {{ bed.code }}</small
                   >
                 </div>
-                <div class="print-upa-logo" aria-label="UPA 24H — Unidade de Pronto Atendimento">
-                  <strong>UPA <em>24H</em></strong>
-                  <span>Unidade de Pronto Atendimento</span>
-                </div>
+                <img
+                  class="print-upa-logo"
+                  src="upa-24h-logo.png"
+                  alt="UPA 24H — UNIDADE DE PRONTO ATENDIMENTO"
+                />
               </header>
 
               <section class="print-patient-data" aria-label="Dados do paciente">
@@ -920,8 +921,15 @@
               </section>
 
               <footer class="print-sheet-footer">
-                <span>Inventory MED • Documento gerado em ambiente de demonstração</span>
-                <div><span>Assinatura e carimbo do prescritor</span></div>
+                <div class="print-doctor-signature">
+                  <div class="print-stamp-space" aria-label="Espaço para carimbo"></div>
+                  <span class="print-signature-line"></span>
+                  <strong>DR. LUCAS GALANTE</strong>
+                  <small>CRM 123456/SP</small>
+                </div>
+                <span class="print-document-note"
+                  >Inventory MED • Documento gerado em ambiente de demonstração</span
+                >
               </footer>
             </section>
           }
