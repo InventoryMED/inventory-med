@@ -28,8 +28,8 @@ describe('App', () => {
 
   it('should start with the requested hospitals and no registered patients', () => {
     expect(INITIAL_HOSPITALS.map((hospital) => hospital.name)).toEqual([
-      'PRONTO SOCORRO DE VAZANTE',
-      'HOSPITAL MUNICIPAL DE VAZANTE',
+      'UPA DE JOÃO PINHEIRO',
+      'HOSPITAL DE JOÃO PINHEIRO',
     ]);
 
     const beds = INITIAL_HOSPITALS.flatMap((hospital) =>

@@ -3,9 +3,9 @@ import { Hospital } from './models';
 export const INITIAL_HOSPITALS: Hospital[] = [
   {
     id: 'hospital-municipal-pronto-socorro',
-    name: 'PRONTO SOCORRO DE VAZANTE',
-    shortName: 'PSV',
-    city: 'VAZANTE, MG',
+    name: 'UPA DE JOÃO PINHEIRO',
+    shortName: 'UPA JP',
+    city: 'JOÃO PINHEIRO, MG',
     rooms: [
       {
         id: 'hmps-room-101',
@@ -61,9 +61,9 @@ export const INITIAL_HOSPITALS: Hospital[] = [
   },
   {
     id: 'hospital-municipal-pronto-atendimento',
-    name: 'HOSPITAL MUNICIPAL DE VAZANTE',
-    shortName: 'HMV',
-    city: 'VAZANTE, MG',
+    name: 'HOSPITAL DE JOÃO PINHEIRO',
+    shortName: 'HJP',
+    city: 'JOÃO PINHEIRO, MG',
     rooms: [
       {
         id: 'hmpa-room-101',
