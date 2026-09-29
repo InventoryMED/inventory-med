@@ -855,7 +855,6 @@
                 <thead>
                   <tr>
                     <th rowspan="2" class="print-number-column">#</th>
-                    <th rowspan="2" class="print-section-column">Seção</th>
                     <th rowspan="2" class="print-description-column">Prescrição</th>
                     <th rowspan="2" class="print-route-column">Via</th>
                     <th rowspan="2" class="print-frequency-column">Frequência</th>
@@ -872,7 +871,6 @@
                   @for (row of printOrderRows(); track $index; let rowIndex = $index) {
                     <tr>
                       <td class="print-row-number">{{ rowIndex + 1 }}</td>
-                      <td>{{ row.section }}</td>
                       <td class="print-order-description">{{ row.description }}</td>
                       <td>{{ row.route }}</td>
                       <td>{{ row.frequency }}</td>
