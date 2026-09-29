@@ -2023,7 +2023,7 @@ svg {
   }
   .print-support-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: minmax(0, 1fr) 32mm minmax(0, 1fr);
     gap: 2mm;
     margin-top: 3mm;
   }
@@ -2039,7 +2039,17 @@ svg {
     font-size: 7pt;
   }
   .print-observations {
-    grid-column: span 2;
+    min-width: 0;
+  }
+  .print-check-in {
+    display: flex;
+    flex-direction: column;
+  }
+  .print-check-in-line {
+    display: block;
+    width: 100%;
+    margin: auto 0 4mm;
+    border-top: 0.6pt solid #475467;
   }
   .print-abnormalities-inside {
     margin-top: 2mm;
