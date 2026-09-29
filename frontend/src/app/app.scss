@@ -1926,7 +1926,7 @@ svg {
   }
   .print-patient-data {
     display: grid;
-    grid-template-columns: 2fr repeat(3, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     margin: 3mm 0;
     border-top: 0.6pt solid #98a2b3;
     border-left: 0.6pt solid #98a2b3;
@@ -1944,10 +1944,12 @@ svg {
     margin-top: 0.7mm;
     font-size: 7pt;
   }
-  .print-patient-name {
-    grid-column: span 2;
-  }
-  .print-patient-wide {
+  .print-patient-name,
+  .print-diagnosis,
+  .print-comorbidities,
+  .print-allergies,
+  .print-unit,
+  .print-diet {
     grid-column: span 2;
   }
   .print-order-table {

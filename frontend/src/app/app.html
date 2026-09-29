@@ -796,7 +796,6 @@
                   >
                 </div>
                 <div class="print-sheet-date">
-                  <span>Data</span><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
                   <span>Prescritor</span><strong>DR. LUCAS GALANTE • CRM 123456/SP</strong>
                 </div>
               </header>
@@ -805,11 +804,24 @@
                 <div class="print-patient-name">
                   <span>Paciente</span><strong>{{ patientName }}</strong>
                 </div>
-                <div>
-                  <span>Nascimento</span><strong>{{ patientBirthDate || 'NÃO INFORMADO' }}</strong>
+                <div class="print-diagnosis">
+                  <span>Diagnóstico</span
+                  ><strong>{{ prescriptionDiagnosis || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div class="print-comorbidities">
+                  <span>Comorbidades</span
+                  ><strong>{{ prescriptionComorbidities || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div class="print-allergies">
+                  <span>Alergia</span
+                  ><strong>{{ prescriptionAllergies || 'NÃO INFORMADO' }}</strong>
                 </div>
                 <div>
                   <span>Sexo</span><strong>{{ patientSex || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div>
+                  <span>Data de nascimento (DN)</span
+                  ><strong>{{ patientBirthDate || 'NÃO INFORMADO' }}</strong>
                 </div>
                 <div>
                   <span>Peso</span
@@ -817,17 +829,23 @@
                     patientWeight !== null ? patientWeight + ' KG' : 'NÃO INFORMADO'
                   }}</strong>
                 </div>
-                <div class="print-patient-wide">
-                  <span>Diagnóstico</span
-                  ><strong>{{ prescriptionDiagnosis || 'NÃO INFORMADO' }}</strong>
+                <div>
+                  <span>Leito</span><strong>{{ bed.code }}</strong>
                 </div>
                 <div>
-                  <span>Comorbidades</span
-                  ><strong>{{ prescriptionComorbidities || 'NÃO INFORMADO' }}</strong>
+                  <span>Data da internação</span
+                  ><strong>{{ patient.admissionAt | date: 'dd/MM/yyyy HH:mm' }}</strong>
                 </div>
                 <div>
-                  <span>Alergias</span
-                  ><strong>{{ prescriptionAllergies || 'NÃO INFORMADO' }}</strong>
+                  <span>Data da prescrição</span
+                  ><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
+                </div>
+                <div class="print-unit">
+                  <span>Unidade de internação</span
+                  ><strong>{{ selectedRoom()?.unit || hospital.name }}</strong>
+                </div>
+                <div class="print-diet">
+                  <span>Dieta</span><strong>{{ prescriptionDiet || 'NÃO INFORMADO' }}</strong>
                 </div>
               </section>
 

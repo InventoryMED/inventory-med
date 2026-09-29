@@ -385,17 +385,6 @@ export class App implements OnInit {
 
   protected printOrderRows(): PrintablePrescriptionRow[] {
     const rows: PrintablePrescriptionRow[] = [];
-    const diet = this.prescriptionDiet.trim();
-    if (diet) {
-      rows.push({
-        section: 'DIETA',
-        description: diet,
-        route: '—',
-        frequency: '—',
-        scheduling: '—',
-      });
-    }
-
     this.vitalSignRows
       .filter((row) => row.description.trim())
       .forEach((row) =>
