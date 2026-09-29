@@ -1909,20 +1909,38 @@ svg {
   .print-sheet-heading small {
     font-size: 7pt;
   }
-  .print-sheet-date {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 1mm 2mm;
-    font-size: 6.5pt;
+  .print-upa-logo {
+    display: flex;
+    min-height: 18mm;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2mm 3mm;
+    border: 1.2pt solid #0a1f38;
+    border-radius: 2mm;
+    color: #0a1f38;
+    text-align: center;
   }
-  .print-sheet-date span,
+  .print-upa-logo strong {
+    font-size: 18pt;
+    font-style: italic;
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+  .print-upa-logo em {
+    color: #168653;
+    font-size: 10pt;
+  }
+  .print-upa-logo span {
+    margin-top: 1mm;
+    font-size: 5pt;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
   .print-patient-data span {
     color: #667085;
     font-size: 5.5pt;
     font-weight: 700;
-  }
-  .print-sheet-date strong {
-    font-size: 6.5pt;
   }
   .print-patient-data {
     display: grid;
