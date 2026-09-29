@@ -885,20 +885,24 @@
 
               <section class="print-support-grid">
                 <article class="print-dxt-guidance">
-                  <h2>Orientações DXT</h2>
-                  <p><strong>Glicemia baixa:</strong> {{ dxtGuidance.low }}</p>
-                  <p><strong>Glicemia alta:</strong> {{ dxtGuidance.highTitle }}</p>
-                  <div>
+                  <div class="print-dxt-header">
+                    <div class="print-dxt-copy">
+                      <h2>Orientações DXT</h2>
+                      <p><strong>Glicemia baixa:</strong> {{ dxtGuidance.low }}</p>
+                      <p><strong>Glicemia alta:</strong> {{ dxtGuidance.highTitle }}</p>
+                    </div>
+                    <div class="print-check-in">
+                      <strong>Check-in</strong>
+                      <span class="print-check-in-line" aria-label="Linha para check-in"></span>
+                    </div>
+                  </div>
+                  <div class="print-dxt-ranges">
                     @for (range of dxtGuidance.ranges; track range.glucose) {
                       <span
                         ><strong>{{ range.glucose }} MG/DL</strong>{{ range.insulin }}</span
                       >
                     }
                   </div>
-                </article>
-                <article class="print-check-in">
-                  <h2>Check-in</h2>
-                  <span class="print-check-in-line" aria-label="Linha para check-in"></span>
                 </article>
                 @if (hasTextRows(observationRows) || hasTextRows(abnormalityRows)) {
                   <article class="print-observations">

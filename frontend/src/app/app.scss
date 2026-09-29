@@ -2023,7 +2023,7 @@ svg {
   }
   .print-support-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 32mm minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 2mm;
     margin-top: 3mm;
   }
@@ -2041,14 +2041,32 @@ svg {
   .print-observations {
     min-width: 0;
   }
+  .print-dxt-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34mm;
+    gap: 2mm;
+    align-items: stretch;
+    margin-bottom: 1mm;
+  }
+  .print-dxt-copy {
+    min-width: 0;
+  }
   .print-check-in {
     display: flex;
+    min-height: 10mm;
     flex-direction: column;
+    padding: 1mm;
+    border: 0.6pt solid #475467;
+    text-align: center;
+  }
+  .print-check-in > strong {
+    color: #0a1f38;
+    font-size: 5.5pt;
   }
   .print-check-in-line {
     display: block;
     width: 100%;
-    margin: auto 0 4mm;
+    margin: auto 0 2mm;
     border-top: 0.6pt solid #475467;
   }
   .print-abnormalities-inside {
@@ -2071,12 +2089,12 @@ svg {
     margin: 0;
     padding-left: 4mm;
   }
-  .print-dxt-guidance > div {
+  .print-dxt-ranges {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1mm;
   }
-  .print-dxt-guidance > div span {
+  .print-dxt-ranges > span {
     display: flex;
     flex-direction: column;
     padding: 1mm;
