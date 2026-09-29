@@ -441,7 +441,11 @@
                   ><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
                 </div>
               </header>
-              <section class="diet-field" aria-labelledby="diet-title">
+              <section
+                class="diet-field"
+                [class.print-empty-section]="!prescriptionDiet.trim()"
+                aria-labelledby="diet-title"
+              >
                 <label for="prescription-diet">
                   <span id="diet-title">Dieta</span>
                   <input
@@ -524,7 +528,11 @@
                   </div>
                 </aside>
               </section>
-              <section class="clinical-order-section" aria-labelledby="hydration-title">
+              <section
+                class="clinical-order-section"
+                [class.print-empty-section]="!hydrationRow.description.trim()"
+                aria-labelledby="hydration-title"
+              >
                 <header class="clinical-order-header">
                   <div>
                     <p class="eyebrow">Soluções</p>
@@ -592,6 +600,7 @@
               @for (group of medicationGroups; track group.id) {
                 <section
                   class="clinical-order-section"
+                  [class.print-empty-section]="!hasMedicationItems(group)"
                   [attr.aria-labelledby]="group.id + '-title'"
                 >
                   <header class="clinical-order-header">
@@ -633,7 +642,7 @@
                       </thead>
                       <tbody>
                         @for (row of group.rows; track $index; let rowIndex = $index) {
-                          <tr>
+                          <tr [class.print-empty-row]="!row.description.trim()">
                             <td class="row-number">{{ rowIndex + 1 }}</td>
                             <td>
                               <input
@@ -661,7 +670,7 @@
                                 <option>FIXO</option>
                               </select>
                             </td>
-                            <td>
+                            <td class="remove-cell">
                               <button
                                 type="button"
                                 class="remove-row"
@@ -681,7 +690,11 @@
                   </button>
                 </section>
               }
-              <section class="text-entry-section" aria-labelledby="observations-title">
+              <section
+                class="text-entry-section"
+                [class.print-empty-section]="!hasTextRows(observationRows)"
+                aria-labelledby="observations-title"
+              >
                 <header class="clinical-order-header">
                   <div>
                     <p class="eyebrow">Registros complementares</p>
@@ -691,7 +704,7 @@
                 </header>
                 <div class="text-entry-list">
                   @for (observation of observationRows; track $index; let rowIndex = $index) {
-                    <div class="text-entry-row">
+                    <div class="text-entry-row" [class.print-empty-row]="!observation.trim()">
                       <span class="text-entry-number">{{ rowIndex + 1 }}</span>
                       <textarea
                         [(ngModel)]="observationRows[rowIndex]"
@@ -714,7 +727,11 @@
                   + Adicionar observação
                 </button>
               </section>
-              <section class="text-entry-section" aria-labelledby="abnormalities-title">
+              <section
+                class="text-entry-section"
+                [class.print-empty-section]="!hasTextRows(abnormalityRows)"
+                aria-labelledby="abnormalities-title"
+              >
                 <header class="clinical-order-header">
                   <div>
                     <p class="eyebrow">Atenção assistencial</p>
@@ -724,7 +741,7 @@
                 </header>
                 <div class="text-entry-list">
                   @for (abnormality of abnormalityRows; track $index; let rowIndex = $index) {
-                    <div class="text-entry-row">
+                    <div class="text-entry-row" [class.print-empty-row]="!abnormality.trim()">
                       <span class="text-entry-number">{{ rowIndex + 1 }}</span>
                       <textarea
                         [(ngModel)]="abnormalityRows[rowIndex]"
@@ -753,10 +770,140 @@
               </footer>
               <div class="prescription-submit">
                 <span>Revise todos os dados antes de finalizar</span>
+                <button
+                  type="button"
+                  class="ghost-button print-prescription-button"
+                  (click)="printPrescription()"
+                >
+                  Imprimir prescrição
+                </button>
                 <button type="button" class="primary-button" (click)="savePrescription()">
                   Criar prescrição
                 </button>
               </div>
+            </section>
+            <section class="print-sheet" aria-label="Prescrição médica para impressão">
+              <header class="print-sheet-header">
+                <img
+                  src="inventory-med-logo.png"
+                  alt="INVENTORY MED — GESTÃO INTELIGENTE DE LEITOS HOSPITALARES"
+                />
+                <div class="print-sheet-heading">
+                  <span>{{ hospital.name }}</span>
+                  <h1>Prescrição médica</h1>
+                  <small
+                    >{{ selectedRoom()?.unit }} • {{ selectedRoom()?.name }} • {{ bed.code }}</small
+                  >
+                </div>
+                <div class="print-sheet-date">
+                  <span>Data</span><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
+                  <span>Prescritor</span><strong>DR. LUCAS GALANTE • CRM 123456/SP</strong>
+                </div>
+              </header>
+
+              <section class="print-patient-data" aria-label="Dados do paciente">
+                <div class="print-patient-name">
+                  <span>Paciente</span><strong>{{ patientName }}</strong>
+                </div>
+                <div>
+                  <span>Nascimento</span><strong>{{ patientBirthDate || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div>
+                  <span>Sexo</span><strong>{{ patientSex || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div>
+                  <span>Peso</span
+                  ><strong>{{
+                    patientWeight !== null ? patientWeight + ' KG' : 'NÃO INFORMADO'
+                  }}</strong>
+                </div>
+                <div class="print-patient-wide">
+                  <span>Diagnóstico</span
+                  ><strong>{{ prescriptionDiagnosis || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div>
+                  <span>Comorbidades</span
+                  ><strong>{{ prescriptionComorbidities || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div>
+                  <span>Alergias</span
+                  ><strong>{{ prescriptionAllergies || 'NÃO INFORMADO' }}</strong>
+                </div>
+              </section>
+
+              <table class="print-order-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" class="print-number-column">#</th>
+                    <th rowspan="2" class="print-section-column">Seção</th>
+                    <th rowspan="2" class="print-description-column">Prescrição</th>
+                    <th rowspan="2" class="print-route-column">Via</th>
+                    <th rowspan="2" class="print-frequency-column">Frequência</th>
+                    <th rowspan="2" class="print-scheduling-column">Aprazamento</th>
+                    <th colspan="24" class="print-hours-title">Horário</th>
+                  </tr>
+                  <tr>
+                    @for (hour of printHours; track hour) {
+                      <th class="print-hour-heading">{{ hour }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of printOrderRows(); track $index; let rowIndex = $index) {
+                    <tr>
+                      <td class="print-row-number">{{ rowIndex + 1 }}</td>
+                      <td>{{ row.section }}</td>
+                      <td class="print-order-description">{{ row.description }}</td>
+                      <td>{{ row.route }}</td>
+                      <td>{{ row.frequency }}</td>
+                      <td>{{ row.scheduling }}</td>
+                      @for (hour of printHours; track hour) {
+                        <td class="print-hour-cell"></td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+
+              <section class="print-support-grid">
+                <article class="print-dxt-guidance">
+                  <h2>Orientações DXT</h2>
+                  <p><strong>Glicemia baixa:</strong> {{ dxtGuidance.low }}</p>
+                  <p><strong>Glicemia alta:</strong> {{ dxtGuidance.highTitle }}</p>
+                  <div>
+                    @for (range of dxtGuidance.ranges; track range.glucose) {
+                      <span
+                        ><strong>{{ range.glucose }} MG/DL</strong>{{ range.insulin }}</span
+                      >
+                    }
+                  </div>
+                </article>
+                @if (hasTextRows(observationRows)) {
+                  <article>
+                    <h2>Observações</h2>
+                    <ol>
+                      @for (observation of filledTextRows(observationRows); track $index) {
+                        <li>{{ observation }}</li>
+                      }
+                    </ol>
+                  </article>
+                }
+                @if (hasTextRows(abnormalityRows)) {
+                  <article>
+                    <h2>Comunicar anormalidades</h2>
+                    <ol>
+                      @for (abnormality of filledTextRows(abnormalityRows); track $index) {
+                        <li>{{ abnormality }}</li>
+                      }
+                    </ol>
+                  </article>
+                }
+              </section>
+
+              <footer class="print-sheet-footer">
+                <span>Inventory MED • Documento gerado em ambiente de demonstração</span>
+                <div><span>Assinatura e carimbo do prescritor</span></div>
+              </footer>
             </section>
           }
           @if (patient.prescriptions.length) {

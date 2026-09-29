@@ -42,6 +42,14 @@ interface MedicationOrderGroup {
   rows: PrescriptionDraftRow[];
 }
 
+interface PrintablePrescriptionRow {
+  section: string;
+  description: string;
+  route: string;
+  frequency: string;
+  scheduling: string;
+}
+
 const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
   { id: 'ADMISSION', name: 'ADMISSÃO', description: 'MODELO INICIAL PARA ADMISSÃO HOSPITALAR' },
   { id: 'PAC', name: 'PAC', description: 'PNEUMONIA ADQUIRIDA NA COMUNIDADE' },
@@ -208,6 +216,9 @@ export class App implements OnInit {
   protected readonly dietPresets = DIET_PRESETS;
   protected readonly hydrationPresets = HYDRATION_PRESETS;
   protected readonly dxtGuidance = DXT_GUIDANCE;
+  protected readonly printHours = Array.from({ length: 24 }, (_, hour) =>
+    hour.toString().padStart(2, '0'),
+  );
   protected readonly currentDate = new Date();
 
   protected readonly activeHospital = this.store.activeHospital;
@@ -354,6 +365,74 @@ export class App implements OnInit {
     this.screen.set('rooms');
     this.selectedBedId.set(null);
     window.scrollTo({ top: 0, left: 0 });
+  }
+
+  protected printPrescription(): void {
+    window.print();
+  }
+
+  protected hasMedicationItems(group: MedicationOrderGroup): boolean {
+    return group.rows.some((row) => row.description.trim());
+  }
+
+  protected hasTextRows(rows: string[]): boolean {
+    return rows.some((row) => row.trim());
+  }
+
+  protected filledTextRows(rows: string[]): string[] {
+    return rows.map((row) => row.trim()).filter(Boolean);
+  }
+
+  protected printOrderRows(): PrintablePrescriptionRow[] {
+    const rows: PrintablePrescriptionRow[] = [];
+    const diet = this.prescriptionDiet.trim();
+    if (diet) {
+      rows.push({
+        section: 'DIETA',
+        description: diet,
+        route: '—',
+        frequency: '—',
+        scheduling: '—',
+      });
+    }
+
+    this.vitalSignRows
+      .filter((row) => row.description.trim())
+      .forEach((row) =>
+        rows.push({
+          section: 'DADOS VITAIS',
+          description: row.description.trim(),
+          route: '—',
+          frequency: row.frequency.trim() || '—',
+          scheduling: '—',
+        }),
+      );
+
+    if (this.hydrationRow.description.trim()) {
+      rows.push({
+        section: 'HIDRATAÇÃO',
+        description: this.hydrationRow.description.trim(),
+        route: this.hydrationRow.route,
+        frequency: this.hydrationRow.frequency.trim() || '—',
+        scheduling: this.hydrationRow.scheduling,
+      });
+    }
+
+    this.medicationGroups.forEach((group) =>
+      group.rows
+        .filter((row) => row.description.trim())
+        .forEach((row) =>
+          rows.push({
+            section: group.title,
+            description: row.description.trim(),
+            route: row.route,
+            frequency: row.frequency.trim() || '—',
+            scheduling: row.scheduling,
+          }),
+        ),
+    );
+
+    return rows;
   }
 
   protected addObservationRow(): void {

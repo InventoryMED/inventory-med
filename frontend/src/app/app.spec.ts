@@ -74,5 +74,14 @@ describe('App', () => {
       scheduling: 'SN',
     });
     expect(symptomatics.rows).toHaveLength(2);
+    expect(app.printOrderRows()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          section: 'SINTOMÁTICOS',
+          description: 'ONDANSETRONA 1 AMPOLA + 100ML DE SF 0,9%',
+        }),
+      ]),
+    );
+    expect(app.printHours).toHaveLength(24);
   });
 });
