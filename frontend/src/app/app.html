@@ -898,24 +898,26 @@
                     }
                   </div>
                 </article>
-                @if (hasTextRows(observationRows)) {
-                  <article>
+                @if (hasTextRows(observationRows) || hasTextRows(abnormalityRows)) {
+                  <article class="print-observations">
                     <h2>Observações</h2>
-                    <ol>
-                      @for (observation of filledTextRows(observationRows); track $index) {
-                        <li>{{ observation }}</li>
-                      }
-                    </ol>
-                  </article>
-                }
-                @if (hasTextRows(abnormalityRows)) {
-                  <article>
-                    <h2>Comunicar anormalidades</h2>
-                    <ol>
-                      @for (abnormality of filledTextRows(abnormalityRows); track $index) {
-                        <li>{{ abnormality }}</li>
-                      }
-                    </ol>
+                    @if (hasTextRows(observationRows)) {
+                      <ol>
+                        @for (observation of filledTextRows(observationRows); track $index) {
+                          <li>{{ observation }}</li>
+                        }
+                      </ol>
+                    }
+                    @if (hasTextRows(abnormalityRows)) {
+                      <div class="print-abnormalities-inside">
+                        <h3>Comunicar anormalidades</h3>
+                        <ol>
+                          @for (abnormality of filledTextRows(abnormalityRows); track $index) {
+                            <li>{{ abnormality }}</li>
+                          }
+                        </ol>
+                      </div>
+                    }
                   </article>
                 }
               </section>

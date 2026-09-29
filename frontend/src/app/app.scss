@@ -2037,6 +2037,19 @@ svg {
     color: #0a1f38;
     font-size: 7pt;
   }
+  .print-observations {
+    grid-column: span 2;
+  }
+  .print-abnormalities-inside {
+    margin-top: 2mm;
+    padding-top: 2mm;
+    border-top: 0.6pt solid #98a2b3;
+  }
+  .print-abnormalities-inside h3 {
+    margin: 0 0 1.5mm;
+    color: #0a1f38;
+    font-size: 6.5pt;
+  }
   .print-support-grid p,
   .print-support-grid li {
     margin: 0 0 1mm;
