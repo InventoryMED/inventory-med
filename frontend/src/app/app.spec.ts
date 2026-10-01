@@ -152,12 +152,19 @@ describe('App', () => {
     app.prepareEvolution(occupiedBed.patient);
     expect(app.evolutionAdmission).toBe('');
     expect(app.evolutionText).toBe('');
-    expect(app.evolutionPhysicalExam).toBe('');
+    expect(app.evolutionVitalSaturation).toBe('');
+    expect(app.evolutionGeneralState).toBe('');
+    expect(app.evolutionNeurological).toBe('');
+    expect(app.evolutionUpperLimbPerfusion).toBe('');
+    expect(app.evolutionComplementaryNotes).toBe('');
     expect(app.evolutionConduct).toBe('');
     expect(app.evolutionAntibioticCurrent).toBe('');
     expect(app.evolutionAntibioticPrevious).toBe('');
     expect(app.evolutionExamRows).toHaveLength(8);
     expect(app.evolutionExamDates).toEqual(['', '', '', '']);
+    expect(app.formatEvolutionConduct('MANTER HIDRATAÇÃO\n- SOLICITAR EXAMES')).toBe(
+      '- MANTER HIDRATAÇÃO\n- SOLICITAR EXAMES',
+    );
 
     app.selectedBedId.set(occupiedBed.id);
     app.screen.set('evolution');

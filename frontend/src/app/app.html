@@ -1138,14 +1138,196 @@
                   placeholder="Registre a evolução clínica"
                 ></textarea>
               </label>
-              <label class="evolution-field">
-                <span>Exame físico</span>
-                <textarea
-                  [(ngModel)]="evolutionPhysicalExam"
-                  rows="7"
-                  placeholder="Descreva o exame físico"
-                ></textarea>
-              </label>
+              <section class="evolution-physical-exam" aria-labelledby="physical-exam-title">
+                <header>
+                  <p class="eyebrow">Avaliação clínica</p>
+                  <h2 id="physical-exam-title">Exame físico</h2>
+                </header>
+
+                <div class="evolution-vitals">
+                  <strong>SSVV</strong>
+                  <label>
+                    <span>SatO₂</span>
+                    <input
+                      [(ngModel)]="evolutionVitalSaturation"
+                      inputmode="decimal"
+                      placeholder="00"
+                      aria-label="Saturação de oxigênio"
+                    />
+                    <small>% em ar ambiente</small>
+                  </label>
+                  <label>
+                    <span>FC</span>
+                    <input
+                      [(ngModel)]="evolutionHeartRate"
+                      inputmode="numeric"
+                      placeholder="00"
+                      aria-label="Frequência cardíaca"
+                    />
+                    <small>BPM</small>
+                  </label>
+                  <label>
+                    <span>FR</span>
+                    <input
+                      [(ngModel)]="evolutionRespiratoryRate"
+                      inputmode="numeric"
+                      placeholder="00"
+                      aria-label="Frequência respiratória"
+                    />
+                    <small>IRPM</small>
+                  </label>
+                  <label class="evolution-blood-pressure">
+                    <span>PA</span>
+                    <input
+                      [(ngModel)]="evolutionBloodPressureSystolic"
+                      inputmode="numeric"
+                      placeholder="000"
+                      aria-label="Pressão arterial sistólica"
+                    />
+                    <small>×</small>
+                    <input
+                      [(ngModel)]="evolutionBloodPressureDiastolic"
+                      inputmode="numeric"
+                      placeholder="00"
+                      aria-label="Pressão arterial diastólica"
+                    />
+                    <small>MMHG</small>
+                  </label>
+                  <label>
+                    <span>TAX</span>
+                    <input
+                      [(ngModel)]="evolutionTemperature"
+                      inputmode="decimal"
+                      placeholder="00,0"
+                      aria-label="Temperatura axilar"
+                    />
+                    <small>°C</small>
+                  </label>
+                </div>
+
+                <div class="evolution-ectoscopy">
+                  <h3>Ectoscopia</h3>
+                  <div class="evolution-select-grid">
+                    <label>
+                      <span>Estado geral</span>
+                      <select [(ngModel)]="evolutionGeneralState">
+                        <option value="">Selecione</option>
+                        <option value="BOM ESTADO GERAL">Bom estado geral</option>
+                        <option value="REGULAR ESTADO GERAL">Regular estado geral</option>
+                        <option value="MAL ESTADO GERAL">Mal estado geral</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Cianose</span>
+                      <select [(ngModel)]="evolutionCyanosis">
+                        <option value="">Selecione</option>
+                        <option value="CIANÓTICO">Cianótico</option>
+                        <option value="ACIANÓTICO">Acianótico</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Icterícia</span>
+                      <select [(ngModel)]="evolutionJaundice">
+                        <option value="">Selecione</option>
+                        <option value="ICTÉRICO">Ictérico</option>
+                        <option value="ANICTÉRICO">Anictérico</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Temperatura</span>
+                      <select [(ngModel)]="evolutionFever">
+                        <option value="">Selecione</option>
+                        <option value="AFEBRIL">Afebril</option>
+                        <option value="SUBFEBRIL">Subfebril</option>
+                        <option value="FEBRIL">Febril</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Coloração</span>
+                      <select [(ngModel)]="evolutionColoring">
+                        <option value="">Selecione</option>
+                        <option value="NORMOCORADO">Normocorado</option>
+                        <option value="HIPOCORADO">Hipocorado</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Hidratação</span>
+                      <select [(ngModel)]="evolutionHydration">
+                        <option value="">Selecione</option>
+                        <option value="HIDRATADO">Hidratado</option>
+                        <option value="DESIDRATADO">Desidratado</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="evolution-system-grid">
+                  <label>
+                    <span>Neurológico</span>
+                    <textarea
+                      [(ngModel)]="evolutionNeurological"
+                      rows="3"
+                      placeholder="Preencha o exame neurológico"
+                    ></textarea>
+                  </label>
+                  <label>
+                    <span>AR</span>
+                    <textarea
+                      [(ngModel)]="evolutionRespiratoryExam"
+                      rows="3"
+                      placeholder="Preencha o aparelho respiratório"
+                    ></textarea>
+                  </label>
+                  <label>
+                    <span>ACV</span>
+                    <textarea
+                      [(ngModel)]="evolutionCardiovascularExam"
+                      rows="3"
+                      placeholder="Preencha o aparelho cardiovascular"
+                    ></textarea>
+                  </label>
+                  <label>
+                    <span>Abdome</span>
+                    <textarea
+                      [(ngModel)]="evolutionAbdomen"
+                      rows="3"
+                      placeholder="Preencha o exame do abdome"
+                    ></textarea>
+                  </label>
+                  <label class="evolution-system-wide">
+                    <span>MMII</span>
+                    <textarea
+                      [(ngModel)]="evolutionLowerLimbs"
+                      rows="3"
+                      placeholder="Preencha o exame dos membros inferiores"
+                    ></textarea>
+                  </label>
+                </div>
+
+                <div class="evolution-perfusion">
+                  <h3>Perfusão capilar</h3>
+                  <div class="evolution-select-grid evolution-select-grid--two">
+                    <label>
+                      <span>MMSS</span>
+                      <select [(ngModel)]="evolutionUpperLimbPerfusion">
+                        <option value="">Selecione</option>
+                        <option value="BEM PERFUNDIDOS">Bem perfundidos</option>
+                        <option value="LIMÍTROFE">Limítrofe</option>
+                        <option value="LENTIFICADOS">Lentificados</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>MMII</span>
+                      <select [(ngModel)]="evolutionLowerLimbPerfusion">
+                        <option value="">Selecione</option>
+                        <option value="BEM PERFUNDIDOS">Bem perfundidos</option>
+                        <option value="LIMÍTROFE">Limítrofe</option>
+                        <option value="LENTIFICADOS">Lentificados</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              </section>
 
               <section class="evolution-exams" aria-labelledby="evolution-exams-title">
                 <header>
@@ -1208,6 +1390,14 @@
                     </tbody>
                   </table>
                 </div>
+                <label class="evolution-complementary-notes">
+                  <span>Outros exames complementares</span>
+                  <textarea
+                    [(ngModel)]="evolutionComplementaryNotes"
+                    rows="4"
+                    placeholder="Registre aqui exames e resultados que não se encaixam na tabela"
+                  ></textarea>
+                </label>
                 <button type="button" class="add-row-button" (click)="addEvolutionExamRow()">
                   + Adicionar exame
                 </button>
@@ -1218,8 +1408,11 @@
                 <textarea
                   [(ngModel)]="evolutionConduct"
                   rows="6"
-                  placeholder="Registre a conduta médica"
+                  placeholder="Digite uma conduta por linha"
                 ></textarea>
+                <small class="evolution-field-hint"
+                  >Cada linha será impressa iniciando com um traço.</small
+                >
               </label>
 
               <div class="evolution-actions">
@@ -1317,8 +1510,33 @@
             </section>
             <section class="evolution-print-section">
               <h2>Exame físico</h2>
-              <div class="evolution-print-text evolution-print-text--physical">
-                {{ evolutionPhysicalExam || ' ' }}
+              <div class="evolution-print-physical">
+                <p>
+                  <strong>SSVV:</strong> SATO₂ {{ evolutionVitalSaturation || '____' }}% EM AR
+                  AMBIENTE; FC {{ evolutionHeartRate || '____' }} BPM; FR
+                  {{ evolutionRespiratoryRate || '____' }} IRPM; PA
+                  {{ evolutionBloodPressureSystolic || '____' }} ×
+                  {{ evolutionBloodPressureDiastolic || '____' }} MMHG; TAX
+                  {{ evolutionTemperature || '____' }} °C.
+                </p>
+                <p>
+                  <strong>ECTOSCOPIA:</strong> {{ evolutionGeneralState || '________________' }};
+                  {{ evolutionCyanosis || '________________' }};
+                  {{ evolutionJaundice || '________________' }};
+                  {{ evolutionFever || '________________' }};
+                  {{ evolutionColoring || '________________' }};
+                  {{ evolutionHydration || '________________' }}.
+                </p>
+                <p><strong>NEUROLÓGICO:</strong> {{ evolutionNeurological || ' ' }}</p>
+                <p><strong>AR:</strong> {{ evolutionRespiratoryExam || ' ' }}</p>
+                <p><strong>ACV:</strong> {{ evolutionCardiovascularExam || ' ' }}</p>
+                <p><strong>ABDOME:</strong> {{ evolutionAbdomen || ' ' }}</p>
+                <p><strong>MMII:</strong> {{ evolutionLowerLimbs || ' ' }}</p>
+                <p>
+                  <strong>PERFUSÃO CAPILAR:</strong> MMSS:
+                  {{ evolutionUpperLimbPerfusion || '________________' }}; MMII:
+                  {{ evolutionLowerLimbPerfusion || '________________' }}.
+                </p>
               </div>
             </section>
             <section class="evolution-print-section evolution-print-exams">
@@ -1343,11 +1561,15 @@
                   }
                 </tbody>
               </table>
+              <div class="evolution-print-complementary-notes">
+                <strong>Outros exames complementares:</strong>
+                <span>{{ evolutionComplementaryNotes || ' ' }}</span>
+              </div>
             </section>
             <section class="evolution-print-section">
               <h2>Conduta</h2>
               <div class="evolution-print-text evolution-print-text--conduct">
-                {{ evolutionConduct || ' ' }}
+                {{ formatEvolutionConduct(evolutionConduct) || ' ' }}
               </div>
             </section>
 

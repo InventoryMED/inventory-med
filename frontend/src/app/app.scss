@@ -1799,6 +1799,143 @@ svg {
   font-weight: 800;
   letter-spacing: 0.06em;
 }
+.evolution-physical-exam {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #ccd4de;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.evolution-physical-exam > header {
+  margin-bottom: 14px;
+}
+.evolution-physical-exam h2,
+.evolution-physical-exam h3 {
+  margin: 0;
+  color: var(--navy-900);
+}
+.evolution-physical-exam h2 {
+  font-size: 17px;
+}
+.evolution-physical-exam h3 {
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.evolution-vitals {
+  display: grid;
+  grid-template-columns: auto repeat(5, minmax(120px, 1fr));
+  align-items: center;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid #c5cdd6;
+  border-radius: 8px;
+  background: white;
+}
+.evolution-vitals > strong {
+  color: var(--navy-900);
+  font-size: 12px;
+}
+.evolution-vitals label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+}
+.evolution-vitals label > span,
+.evolution-vitals label > small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+}
+.evolution-vitals input {
+  width: 58px;
+  min-width: 0;
+  padding: 9px 7px;
+  border: 1px solid #c3ccd7;
+  border-radius: 7px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  text-align: center;
+}
+.evolution-blood-pressure input {
+  width: 45px;
+}
+.evolution-ectoscopy,
+.evolution-perfusion {
+  margin-top: 16px;
+}
+.evolution-select-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.evolution-select-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.evolution-select-grid label,
+.evolution-system-grid label,
+.evolution-complementary-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.evolution-select-grid label > span,
+.evolution-system-grid label > span,
+.evolution-complementary-notes > span {
+  color: var(--navy-900);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.evolution-select-grid select,
+.evolution-system-grid textarea,
+.evolution-complementary-notes textarea {
+  width: 100%;
+  border: 1px solid #c3ccd7;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+}
+.evolution-select-grid select {
+  min-height: 41px;
+  padding: 0 10px;
+}
+.evolution-system-grid textarea,
+.evolution-complementary-notes textarea {
+  padding: 10px 11px;
+  resize: vertical;
+  line-height: 1.45;
+}
+.evolution-vitals input:focus,
+.evolution-select-grid select:focus,
+.evolution-system-grid textarea:focus,
+.evolution-complementary-notes textarea:focus {
+  border-color: var(--navy-700);
+  box-shadow: 0 0 0 3px rgba(18, 61, 104, 0.08);
+  outline: 0;
+}
+.evolution-system-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.evolution-system-wide {
+  grid-column: 1 / -1;
+}
+.evolution-complementary-notes {
+  margin-top: 14px;
+}
+.evolution-field-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 9px;
+}
 .evolution-exams {
   margin-top: 20px;
   padding: 18px;
@@ -2078,11 +2215,23 @@ svg {
     padding: 18px;
   }
   .evolution-summary-grid,
-  .evolution-antibiotic-grid {
+  .evolution-antibiotic-grid,
+  .evolution-select-grid,
+  .evolution-select-grid--two,
+  .evolution-system-grid {
     grid-template-columns: 1fr;
   }
   .evolution-summary-wide {
     grid-column: auto;
+  }
+  .evolution-system-wide {
+    grid-column: auto;
+  }
+  .evolution-vitals {
+    grid-template-columns: 1fr 1fr;
+  }
+  .evolution-vitals > strong {
+    grid-column: 1 / -1;
   }
   .prescription-sheet {
     padding: 18px;
@@ -2545,8 +2694,20 @@ svg {
   .evolution-print-text--admission {
     min-height: 20mm;
   }
-  .evolution-print-text--physical {
-    min-height: 22mm;
+  .evolution-print-physical {
+    min-height: 26mm;
+    padding: 1mm 1.2mm;
+    font-size: 5.7pt;
+    line-height: 1.25;
+    text-transform: none;
+  }
+  .evolution-print-physical p {
+    min-height: 2.6mm;
+    margin: 0 0 0.5mm;
+    white-space: pre-wrap;
+  }
+  .evolution-print-physical p:last-child {
+    margin-bottom: 0;
   }
   .evolution-print-text--conduct {
     min-height: 17mm;
@@ -2577,6 +2738,20 @@ svg {
   }
   .evolution-print-exams tbody tr:last-child td {
     border-bottom: 0;
+  }
+  .evolution-print-complementary-notes {
+    display: flex;
+    min-height: 7mm;
+    gap: 1mm;
+    padding: 0.8mm 1mm;
+    font-size: 5.5pt;
+    line-height: 1.25;
+    text-transform: none;
+    white-space: pre-wrap;
+  }
+  .evolution-print-complementary-notes strong {
+    flex: 0 0 auto;
+    text-transform: uppercase;
   }
   .evolution-print-footer {
     display: flex;

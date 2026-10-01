@@ -217,7 +217,26 @@ export class App implements OnInit {
   protected evolutionDiet = '';
   protected evolutionAdmission = '';
   protected evolutionText = '';
-  protected evolutionPhysicalExam = '';
+  protected evolutionVitalSaturation = '';
+  protected evolutionHeartRate = '';
+  protected evolutionRespiratoryRate = '';
+  protected evolutionBloodPressureSystolic = '';
+  protected evolutionBloodPressureDiastolic = '';
+  protected evolutionTemperature = '';
+  protected evolutionGeneralState = '';
+  protected evolutionCyanosis = '';
+  protected evolutionJaundice = '';
+  protected evolutionFever = '';
+  protected evolutionColoring = '';
+  protected evolutionHydration = '';
+  protected evolutionNeurological = '';
+  protected evolutionRespiratoryExam = '';
+  protected evolutionCardiovascularExam = '';
+  protected evolutionAbdomen = '';
+  protected evolutionLowerLimbs = '';
+  protected evolutionUpperLimbPerfusion = '';
+  protected evolutionLowerLimbPerfusion = '';
+  protected evolutionComplementaryNotes = '';
   protected evolutionConduct = '';
   protected evolutionAntibioticCurrent = '';
   protected evolutionAntibioticPrevious = '';
@@ -472,6 +491,15 @@ export class App implements OnInit {
     window.print();
   }
 
+  protected formatEvolutionConduct(value: string): string {
+    return value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => `- ${line.replace(/^-\s*/, '')}`)
+      .join('\n');
+  }
+
   protected addEvolutionExamRow(): void {
     this.evolutionExamRows = [
       ...this.evolutionExamRows,
@@ -713,7 +741,26 @@ export class App implements OnInit {
     this.evolutionDiet = patient.prescriptions[0]?.diet ?? '';
     this.evolutionAdmission = '';
     this.evolutionText = '';
-    this.evolutionPhysicalExam = '';
+    this.evolutionVitalSaturation = '';
+    this.evolutionHeartRate = '';
+    this.evolutionRespiratoryRate = '';
+    this.evolutionBloodPressureSystolic = '';
+    this.evolutionBloodPressureDiastolic = '';
+    this.evolutionTemperature = '';
+    this.evolutionGeneralState = '';
+    this.evolutionCyanosis = '';
+    this.evolutionJaundice = '';
+    this.evolutionFever = '';
+    this.evolutionColoring = '';
+    this.evolutionHydration = '';
+    this.evolutionNeurological = '';
+    this.evolutionRespiratoryExam = '';
+    this.evolutionCardiovascularExam = '';
+    this.evolutionAbdomen = '';
+    this.evolutionLowerLimbs = '';
+    this.evolutionUpperLimbPerfusion = '';
+    this.evolutionLowerLimbPerfusion = '';
+    this.evolutionComplementaryNotes = '';
     this.evolutionConduct = '';
     this.evolutionAntibioticCurrent = '';
     this.evolutionAntibioticPrevious = '';
