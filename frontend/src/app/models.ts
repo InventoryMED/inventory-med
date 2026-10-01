@@ -1,6 +1,7 @@
 export type AppScreen = 'login' | 'hospital-select' | 'rooms' | 'prescription';
 
 export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE';
+export type DischargeReason = 'ÓBITO' | 'TRANSFERÊNCIA' | 'ALTA MELHORA';
 export type PrescriptionScheduling = 'ACM' | 'SN' | 'FIXO';
 export type MedicationSectionId =
   | 'ANALGESIA'
@@ -81,6 +82,11 @@ export interface Bed {
   code: string;
   status: BedStatus;
   patient?: Patient;
+  lastDischarge?: {
+    patientName: string;
+    reason: DischargeReason;
+    dischargedAt: string;
+  };
 }
 
 export interface Room {

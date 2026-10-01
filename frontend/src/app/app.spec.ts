@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { App } from './app';
 import { INITIAL_HOSPITALS } from './mock-data';
 
@@ -83,5 +84,49 @@ describe('App', () => {
       ]),
     );
     expect(app.printHours).toHaveLength(24);
+  });
+
+  it('should admit a patient without opening the prescription automatically', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    const store = app.store;
+    store.resetDemo();
+    store.selectHospital(INITIAL_HOSPITALS[0].id);
+    const bed = store.activeHospital().rooms[0].beds[0];
+    const openSpy = vi.spyOn(window, 'open');
+
+    app.selectedBedId.set(bed.id);
+    app.patientName = 'Paciente demonstração';
+    app.admitPatient();
+
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(store.findBed(bed.id)).toMatchObject({
+      status: 'OCCUPIED',
+      patient: { name: 'PACIENTE DEMONSTRAÇÃO' },
+    });
+    openSpy.mockRestore();
+  });
+
+  it('should transfer and discharge an admitted patient', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    const store = app.store;
+    store.resetDemo();
+    store.selectHospital(INITIAL_HOSPITALS[0].id);
+    const [sourceBed, targetBed] = store.activeHospital().rooms[0].beds;
+
+    store.admitPatient(sourceBed.id, { name: 'Paciente demonstração' });
+    expect(store.transferPatient(sourceBed.id, targetBed.id)).toBe(true);
+    expect(store.findBed(sourceBed.id).status).toBe('AVAILABLE');
+    expect(store.findBed(targetBed.id).patient.name).toBe('PACIENTE DEMONSTRAÇÃO');
+
+    expect(store.dischargePatient(targetBed.id, 'ALTA MELHORA')).toBe('PACIENTE DEMONSTRAÇÃO');
+    expect(store.findBed(targetBed.id)).toMatchObject({
+      status: 'AVAILABLE',
+      lastDischarge: {
+        patientName: 'PACIENTE DEMONSTRAÇÃO',
+        reason: 'ALTA MELHORA',
+      },
+    });
   });
 });

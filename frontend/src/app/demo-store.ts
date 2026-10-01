@@ -2,6 +2,7 @@ import { computed, Injectable, signal } from '@angular/core';
 import { INITIAL_HOSPITALS } from './mock-data';
 import {
   Bed,
+  DischargeReason,
   Hospital,
   MedicationSectionDraft,
   PrescriptionDraftRow,
@@ -52,6 +53,7 @@ export class DemoStore {
       return {
         ...bed,
         status: 'OCCUPIED',
+        lastDischarge: undefined,
         patient: {
           ...patient,
           name: patient.name.toLocaleUpperCase('pt-BR'),
@@ -64,6 +66,75 @@ export class DemoStore {
         },
       };
     });
+  }
+
+  dischargePatient(bedId: string, reason: DischargeReason): string | null {
+    let dischargedPatientName: string | null = null;
+    this.updateBed(bedId, (bed) => {
+      if (bed.status !== 'OCCUPIED' || !bed.patient) return bed;
+      dischargedPatientName = bed.patient.name;
+      return {
+        ...bed,
+        status: 'AVAILABLE',
+        patient: undefined,
+        lastDischarge: {
+          patientName: bed.patient.name,
+          reason,
+          dischargedAt: new Date().toISOString(),
+        },
+      };
+    });
+    return dischargedPatientName;
+  }
+
+  transferPatient(sourceBedId: string, targetBedId: string): boolean {
+    const activeHospitalId = this.activeHospitalId();
+    if (!activeHospitalId || sourceBedId === targetBedId) return false;
+
+    let transferred = false;
+    this.hospitalsState.update((hospitals) => {
+      const activeHospital = hospitals.find((hospital) => hospital.id === activeHospitalId);
+      const beds = activeHospital?.rooms.flatMap((room) => room.beds) ?? [];
+      const sourceBed = beds.find((bed) => bed.id === sourceBedId);
+      const targetBed = beds.find((bed) => bed.id === targetBedId);
+      if (
+        !sourceBed?.patient ||
+        sourceBed.status !== 'OCCUPIED' ||
+        targetBed?.status !== 'AVAILABLE'
+      ) {
+        return hospitals;
+      }
+
+      const patient = sourceBed.patient;
+      const next = hospitals.map((hospital) =>
+        hospital.id !== activeHospitalId
+          ? hospital
+          : {
+              ...hospital,
+              rooms: hospital.rooms.map((room) => ({
+                ...room,
+                beds: room.beds.map((bed) => {
+                  if (bed.id === sourceBedId) {
+                    return { ...bed, status: 'AVAILABLE' as const, patient: undefined };
+                  }
+                  if (bed.id === targetBedId) {
+                    return {
+                      ...bed,
+                      status: 'OCCUPIED' as const,
+                      patient,
+                      lastDischarge: undefined,
+                    };
+                  }
+                  return bed;
+                }),
+              })),
+            },
+      );
+      transferred = true;
+      this.persist(next);
+      return next;
+    });
+    return transferred;
   }
 
   updatePatient(bedId: string, patient: PatientFormData): void {

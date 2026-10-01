@@ -229,8 +229,7 @@
               @if (isRoomExpanded(room.id)) {
                 <div class="bed-grid">
                   @for (bed of room.beds; track bed.id) {
-                    <button
-                      type="button"
+                    <article
                       class="bed-card"
                       [class.bed-card--available]="bed.status === 'AVAILABLE'"
                       [class.bed-card--occupied]="bed.status === 'OCCUPIED'"
@@ -238,7 +237,6 @@
                       [class.bed-card--disabled]="
                         bed.status === 'CLEANING' || bed.status === 'MAINTENANCE'
                       "
-                      (click)="openBed(bed)"
                     >
                       <span class="bed-card-top"
                         ><span class="bed-symbol" aria-hidden="true"
@@ -256,18 +254,50 @@
                         ><small
                           >Internado em
                           {{ bed.patient.admissionAt | date: 'dd/MM às HH:mm' }}</small
-                        ><span class="bed-action"
-                          >Abrir prescrição <b aria-hidden="true">→</b></span
                         >
+                        <div class="bed-card-actions">
+                          <button
+                            type="button"
+                            class="bed-action-button bed-action-button--primary"
+                            (click)="openPrescription(bed)"
+                          >
+                            Abrir prescrição
+                          </button>
+                          <button
+                            type="button"
+                            class="bed-action-button bed-action-button--danger"
+                            (click)="openDischarge(bed)"
+                          >
+                            Dar alta
+                          </button>
+                          <button
+                            type="button"
+                            class="bed-action-button"
+                            (click)="startEvolution(bed)"
+                          >
+                            Iniciar evolução
+                          </button>
+                          <button
+                            type="button"
+                            class="bed-action-button"
+                            (click)="openTransfer(bed)"
+                          >
+                            Transferir paciente
+                          </button>
+                        </div>
                       } @else if (bed.status === 'AVAILABLE') {
-                        <span class="empty-label">Leito pronto para receber paciente</span
-                        ><span class="bed-action bed-action--register"
-                          >Cadastrar paciente <b aria-hidden="true">+</b></span
+                        <span class="empty-label">Leito pronto para receber paciente</span>
+                        <button
+                          type="button"
+                          class="bed-action bed-action--register"
+                          (click)="openAdmission(bed)"
                         >
+                          Admitir paciente <b aria-hidden="true">+</b>
+                        </button>
                       } @else {
                         <span class="empty-label">Temporariamente indisponível</span>
                       }
-                    </button>
+                    </article>
                   }
                 </div>
               }
@@ -973,44 +1003,6 @@
   }
 }
 
-@if (prescriptionPromptOpen() && selectedBed(); as bed) {
-  <div class="modal-backdrop" (click)="closePrescriptionPrompt()">
-    <section
-      class="modal-card"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="prescription-prompt-title"
-      (click)="$event.stopPropagation()"
-    >
-      <header class="modal-header">
-        <div>
-          <p class="eyebrow">Leito vazio</p>
-          <h2 id="prescription-prompt-title">Abrir nova prescrição?</h2>
-        </div>
-        <button
-          type="button"
-          class="close-button"
-          (click)="closePrescriptionPrompt()"
-          aria-label="Fechar"
-        >
-          ×
-        </button>
-      </header>
-      <p class="modal-description">
-        O {{ bed.code }} ainda não possui paciente. O cadastro será exibido nesta tela e, depois de
-        concluído, a prescrição será aberta em uma nova guia.
-      </p>
-      <div class="modal-actions">
-        <button type="button" class="ghost-button" (click)="closePrescriptionPrompt()">
-          Não, cancelar</button
-        ><button type="button" class="primary-button" (click)="confirmNewPrescription()">
-          Sim, abrir prescrição
-        </button>
-      </div>
-    </section>
-  </div>
-}
-
 @if (admissionOpen() && selectedBed(); as bed) {
   <div class="modal-backdrop" (click)="closeAdmission()">
     <section
@@ -1022,15 +1014,15 @@
     >
       <header class="modal-header">
         <div>
-          <p class="eyebrow">Novo paciente</p>
-          <h2 id="admission-title">Ocupar {{ bed.code }}</h2>
+          <p class="eyebrow">Admissão</p>
+          <h2 id="admission-title">Admitir paciente no {{ bed.code }}</h2>
         </div>
         <button type="button" class="close-button" (click)="closeAdmission()" aria-label="Fechar">
           ×
         </button>
       </header>
       <p class="modal-description">
-        Cadastre o paciente nesta tela. Os campos marcados como opcionais podem ficar em branco.
+        Preencha os dados do paciente. A prescrição poderá ser aberta depois pelo botão do leito.
       </p>
       <form (ngSubmit)="admitPatient()" class="admission-form">
         <label class="form-field form-field--full"
@@ -1098,11 +1090,114 @@
         /></label>
         <div class="modal-actions form-field--full">
           <button type="button" class="ghost-button" (click)="closeAdmission()">Cancelar</button
-          ><button type="submit" class="primary-button">Cadastrar no leito</button>
+          ><button type="submit" class="primary-button">Admitir paciente</button>
         </div>
       </form>
     </section>
   </div>
+}
+
+@if (dischargeOpen() && selectedBed(); as bed) {
+  @if (bed.patient; as patient) {
+    <div class="modal-backdrop" (click)="closeDischarge()">
+      <section
+        class="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="discharge-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Encerrar internação</p>
+            <h2 id="discharge-title">Dar alta</h2>
+          </div>
+          <button type="button" class="close-button" (click)="closeDischarge()" aria-label="Fechar">
+            ×
+          </button>
+        </header>
+        <p class="modal-description">
+          Selecione o motivo da alta de <strong>{{ patient.name }}</strong> no {{ bed.code }}.
+        </p>
+        <div class="discharge-reasons" role="radiogroup" aria-label="Motivo da alta">
+          @for (reason of dischargeReasons; track reason.value) {
+            <label
+              class="discharge-reason"
+              [class.discharge-reason--selected]="dischargeReason === reason.value"
+            >
+              <input
+                type="radio"
+                name="dischargeReason"
+                [value]="reason.value"
+                [(ngModel)]="dischargeReason"
+              />
+              <span
+                ><strong>{{ reason.label }}</strong
+                ><small>{{ reason.description }}</small></span
+              >
+            </label>
+          }
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="ghost-button" (click)="closeDischarge()">Cancelar</button>
+          <button type="button" class="danger-button" (click)="confirmDischarge()">
+            Confirmar alta
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+}
+
+@if (transferOpen() && selectedBed(); as bed) {
+  @if (bed.patient; as patient) {
+    <div class="modal-backdrop" (click)="closeTransfer()">
+      <section
+        class="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="transfer-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Movimentação interna</p>
+            <h2 id="transfer-title">Transferir paciente</h2>
+          </div>
+          <button type="button" class="close-button" (click)="closeTransfer()" aria-label="Fechar">
+            ×
+          </button>
+        </header>
+        <p class="modal-description">
+          Selecione o novo leito de <strong>{{ patient.name }}</strong
+          >. As prescrições acompanharão o paciente.
+        </p>
+        <label class="form-field transfer-destination">
+          <span>Leito de destino</span>
+          <select [(ngModel)]="transferTargetBedId">
+            <option value="">Selecione um leito vazio</option>
+            @for (destination of availableTransferBeds(); track destination.id) {
+              <option [value]="destination.id">{{ destination.label }}</option>
+            }
+          </select>
+        </label>
+        @if (!availableTransferBeds().length) {
+          <p class="modal-empty-message">Não há leitos vazios disponíveis nesta unidade.</p>
+        }
+        <div class="modal-actions">
+          <button type="button" class="ghost-button" (click)="closeTransfer()">Cancelar</button>
+          <button
+            type="button"
+            class="primary-button"
+            [disabled]="!availableTransferBeds().length"
+            (click)="confirmTransfer()"
+          >
+            Confirmar transferência
+          </button>
+        </div>
+      </section>
+    </div>
+  }
 }
 
 @if (toast(); as message) {

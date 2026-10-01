@@ -6,6 +6,7 @@ import {
   AppScreen,
   Bed,
   BedStatus,
+  DischargeReason,
   MedicationSectionDraft,
   MedicationSectionId,
   Patient,
@@ -189,8 +190,9 @@ export class App implements OnInit {
   protected readonly screen = signal<AppScreen>('login');
   protected readonly expandedRooms = signal<Set<string>>(new Set());
   protected readonly selectedBedId = signal<string | null>(null);
-  protected readonly prescriptionPromptOpen = signal(false);
   protected readonly admissionOpen = signal(false);
+  protected readonly dischargeOpen = signal(false);
+  protected readonly transferOpen = signal(false);
   protected readonly prescriptionReady = signal(false);
   protected readonly searchTerm = signal('');
   protected readonly toast = signal<string | null>(null);
@@ -201,6 +203,8 @@ export class App implements OnInit {
   protected patientBirthDate = '';
   protected patientSex = 'FEMININO';
   protected patientWeight: number | null = null;
+  protected dischargeReason: DischargeReason | '' = '';
+  protected transferTargetBedId = '';
   protected prescriptionDiagnosis = '';
   protected prescriptionComorbidities = '';
   protected prescriptionAllergies = '';
@@ -214,6 +218,23 @@ export class App implements OnInit {
   protected selectedTemplateId: PrescriptionTemplateId | '' = '';
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
   protected readonly dietPresets = DIET_PRESETS;
+  protected readonly dischargeReasons: Array<{
+    value: DischargeReason;
+    label: string;
+    description: string;
+  }> = [
+    { value: 'ÓBITO', label: 'Óbito', description: 'Encerramento da internação por óbito.' },
+    {
+      value: 'TRANSFERÊNCIA',
+      label: 'Transferência',
+      description: 'Saída para atendimento em outra unidade.',
+    },
+    {
+      value: 'ALTA MELHORA',
+      label: 'Alta melhora',
+      description: 'Paciente liberado após melhora clínica.',
+    },
+  ];
   protected readonly hydrationPresets = HYDRATION_PRESETS;
   protected readonly dxtGuidance = DXT_GUIDANCE;
   protected readonly printHours = Array.from({ length: 24 }, (_, hour) =>
@@ -231,6 +252,16 @@ export class App implements OnInit {
     const bedId = this.selectedBedId();
     return this.activeHospital()?.rooms.find((room) => room.beds.some((bed) => bed.id === bedId));
   });
+  protected readonly availableTransferBeds = computed(() =>
+    (this.activeHospital()?.rooms ?? []).flatMap((room) =>
+      room.beds
+        .filter((bed) => bed.status === 'AVAILABLE')
+        .map((bed) => ({
+          id: bed.id,
+          label: `${room.name} • ${bed.code} • ${room.unit}`,
+        })),
+    ),
+  );
   protected readonly visibleRooms = computed(() => {
     const hospital = this.activeHospital();
     const term = this.searchTerm().trim().toLocaleLowerCase('pt-BR');
@@ -277,15 +308,18 @@ export class App implements OnInit {
     this.store.selectHospital(hospitalId);
     this.expandedRooms.set(new Set());
     this.selectedBedId.set(null);
-    this.prescriptionPromptOpen.set(false);
     this.admissionOpen.set(false);
+    this.dischargeOpen.set(false);
+    this.transferOpen.set(false);
   }
 
   protected logout(): void {
     this.screen.set('login');
     this.store.activeHospitalId.set(null);
     this.expandedRooms.set(new Set());
-    this.prescriptionPromptOpen.set(false);
+    this.admissionOpen.set(false);
+    this.dischargeOpen.set(false);
+    this.transferOpen.set(false);
   }
 
   protected toggleRoom(room: Room): void {
@@ -304,30 +338,80 @@ export class App implements OnInit {
     return room.beds.filter((bed) => bed.status === 'AVAILABLE').length;
   }
 
-  protected openBed(bed: Bed): void {
-    if (bed.status === 'OCCUPIED') {
-      this.openPrescriptionTab(bed.id);
-      return;
-    }
-
-    if (bed.status === 'AVAILABLE') {
-      this.selectedBedId.set(bed.id);
-      this.prescriptionPromptOpen.set(true);
-    }
-  }
-
-  protected confirmNewPrescription(): void {
-    const bedId = this.selectedBedId();
-    if (!bedId) return;
-
-    this.prescriptionPromptOpen.set(false);
+  protected openAdmission(bed: Bed): void {
+    if (bed.status !== 'AVAILABLE') return;
+    this.selectedBedId.set(bed.id);
     this.resetPatientForm();
     this.admissionOpen.set(true);
   }
 
-  protected closePrescriptionPrompt(): void {
-    this.prescriptionPromptOpen.set(false);
+  protected openPrescription(bed: Bed): void {
+    if (bed.status === 'OCCUPIED' && bed.patient) this.openPrescriptionTab(bed.id);
+  }
+
+  protected startEvolution(bed: Bed): void {
+    if (!bed.patient) return;
+    this.showToast('A TELA DE EVOLUÇÃO SERÁ CRIADA APÓS A DEFINIÇÃO DO LAYOUT.');
+  }
+
+  protected openDischarge(bed: Bed): void {
+    if (!bed.patient) return;
+    this.selectedBedId.set(bed.id);
+    this.dischargeReason = '';
+    this.dischargeOpen.set(true);
+  }
+
+  protected closeDischarge(): void {
+    this.dischargeOpen.set(false);
+    this.dischargeReason = '';
     this.selectedBedId.set(null);
+  }
+
+  protected confirmDischarge(): void {
+    const bedId = this.selectedBedId();
+    if (!bedId || !this.dischargeReason) {
+      this.showToast('SELECIONE O MOTIVO DA ALTA.');
+      return;
+    }
+    const patientName = this.store.dischargePatient(bedId, this.dischargeReason);
+    if (!patientName) {
+      this.showToast('NÃO FOI POSSÍVEL CONCLUIR A ALTA.');
+      return;
+    }
+    const reason = this.dischargeReason;
+    this.dischargeOpen.set(false);
+    this.dischargeReason = '';
+    this.selectedBedId.set(null);
+    this.showToast(`ALTA DE ${patientName} REGISTRADA: ${reason}.`);
+  }
+
+  protected openTransfer(bed: Bed): void {
+    if (!bed.patient) return;
+    this.selectedBedId.set(bed.id);
+    this.transferTargetBedId = '';
+    this.transferOpen.set(true);
+  }
+
+  protected closeTransfer(): void {
+    this.transferOpen.set(false);
+    this.transferTargetBedId = '';
+    this.selectedBedId.set(null);
+  }
+
+  protected confirmTransfer(): void {
+    const sourceBedId = this.selectedBedId();
+    if (!sourceBedId || !this.transferTargetBedId) {
+      this.showToast('SELECIONE O LEITO DE DESTINO.');
+      return;
+    }
+    if (!this.store.transferPatient(sourceBedId, this.transferTargetBedId)) {
+      this.showToast('NÃO FOI POSSÍVEL TRANSFERIR O PACIENTE.');
+      return;
+    }
+    this.transferOpen.set(false);
+    this.transferTargetBedId = '';
+    this.selectedBedId.set(null);
+    this.showToast('PACIENTE TRANSFERIDO PARA O NOVO LEITO.');
   }
 
   protected admitPatient(): void {
@@ -351,9 +435,8 @@ export class App implements OnInit {
       allergies: this.prescriptionAllergies.trim() || undefined,
     });
     this.admissionOpen.set(false);
-    this.openPrescriptionTab(bedId);
     this.selectedBedId.set(null);
-    this.showToast('Paciente cadastrado. A prescrição foi aberta em uma nova guia.');
+    this.showToast('PACIENTE ADMITIDO. USE ABRIR PRESCRIÇÃO NO LEITO PARA CONTINUAR.');
   }
 
   protected closeAdmission(): void {

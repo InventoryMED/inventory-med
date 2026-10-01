@@ -736,6 +736,7 @@ svg {
   border-color: var(--navy-700);
 }
 .bed-card--occupied {
+  min-height: 230px;
   border-left: 4px solid var(--occupied-yellow);
 }
 .bed-card--available {
@@ -823,6 +824,7 @@ svg {
   color: var(--navy-700);
   font-size: 12px;
   font-weight: 750;
+  cursor: pointer;
 }
 .bed-action--register {
   width: auto;
@@ -840,6 +842,47 @@ svg {
 }
 .bed-card--available:hover .bed-action--register {
   background: var(--navy-800);
+}
+.bed-card-actions {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+.bed-action-button {
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid #cfd6df;
+  border-radius: 7px;
+  background: white;
+  color: var(--navy-800);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.bed-action-button:hover {
+  border-color: var(--navy-700);
+  background: var(--navy-100);
+}
+.bed-action-button--primary {
+  border-color: var(--navy-900);
+  background: var(--navy-900);
+  color: white;
+}
+.bed-action-button--primary:hover {
+  background: var(--navy-800);
+  color: white;
+}
+.bed-action-button--danger {
+  border-color: #f0aaa5;
+  color: var(--maintenance-red-dark);
+}
+.bed-action-button--danger:hover {
+  border-color: var(--maintenance-red);
+  background: var(--maintenance-red-soft);
 }
 .empty-state {
   padding: 42px;
@@ -918,6 +961,72 @@ svg {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 8px;
+}
+.danger-button {
+  min-height: 42px;
+  padding: 0 20px;
+  border-radius: 9px;
+  background: var(--maintenance-red);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+.danger-button:hover {
+  background: var(--maintenance-red-dark);
+}
+.discharge-reasons {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.discharge-reason {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid #cfd6df;
+  border-radius: 9px;
+  background: #fafbfc;
+  cursor: pointer;
+}
+.discharge-reason--selected {
+  border-color: var(--navy-700);
+  background: var(--navy-100);
+  box-shadow: 0 0 0 2px rgba(18, 61, 104, 0.08);
+}
+.discharge-reason input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--navy-700);
+}
+.discharge-reason span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.discharge-reason strong {
+  font-size: 13px;
+}
+.discharge-reason small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.transfer-destination {
+  display: block;
+  margin-bottom: 20px;
+}
+.modal-empty-message {
+  margin: -8px 0 20px;
+  padding: 11px 13px;
+  border-radius: 8px;
+  background: var(--maintenance-red-soft);
+  color: var(--maintenance-red-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .prescription-appbar {
