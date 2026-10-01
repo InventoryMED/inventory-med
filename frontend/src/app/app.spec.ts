@@ -93,7 +93,7 @@ describe('App', () => {
     store.resetDemo();
     store.selectHospital(INITIAL_HOSPITALS[0].id);
     const bed = store.activeHospital().rooms[0].beds[0];
-    const openSpy = vi.spyOn(window, 'open');
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
     app.selectedBedId.set(bed.id);
     app.patientName = 'Paciente demonstração';
@@ -128,5 +128,45 @@ describe('App', () => {
         reason: 'ALTA MELHORA',
       },
     });
+  });
+
+  it('should open and initialize a blank medical evolution', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    const store = app.store;
+    store.resetDemo();
+    store.selectHospital(INITIAL_HOSPITALS[0].id);
+    const bed = store.activeHospital().rooms[0].beds[0];
+    store.admitPatient(bed.id, { name: 'Paciente evolução' });
+    const occupiedBed = store.findBed(bed.id);
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    app.startEvolution(occupiedBed);
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining('flow=evolution'),
+      '_blank',
+      'noopener',
+    );
+
+    app.prepareEvolution(occupiedBed.patient);
+    expect(app.evolutionAdmission).toBe('');
+    expect(app.evolutionText).toBe('');
+    expect(app.evolutionPhysicalExam).toBe('');
+    expect(app.evolutionConduct).toBe('');
+    expect(app.evolutionAntibioticCurrent).toBe('');
+    expect(app.evolutionAntibioticPrevious).toBe('');
+    expect(app.evolutionExamRows).toHaveLength(8);
+    expect(app.evolutionExamDates).toEqual(['', '', '', '']);
+
+    app.selectedBedId.set(occupiedBed.id);
+    app.screen.set('evolution');
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.evolution-form-card h1')?.textContent).toContain(
+      'Evolução médica',
+    );
+    expect(compiled.querySelector('.evolution-print-sheet')).toBeTruthy();
+    openSpy.mockRestore();
   });
 });

@@ -1003,6 +1003,369 @@
   }
 }
 
+@if (screen() === 'evolution' && activeHospital(); as hospital) {
+  @if (selectedBed(); as bed) {
+    @if (bed.patient; as patient) {
+      <div class="evolution-page">
+        <header class="prescription-appbar evolution-appbar">
+          <div class="product-lockup product-lockup--inverse">
+            <div class="brand-logo brand-logo--header brand-logo--inverse">
+              <img
+                src="inventory-med-logo.png"
+                alt="INVENTORY MED — GESTÃO INTELIGENTE DE LEITOS HOSPITALARES"
+              />
+            </div>
+          </div>
+          <div class="prescription-hospital">
+            <span>Evolução médica</span><strong>{{ hospital.name }}</strong>
+          </div>
+          <div class="profile-menu">
+            <div class="avatar avatar--small avatar--inverse">LG</div>
+            <div class="profile-copy profile-copy--inverse">
+              <strong>DR. LUCAS GALANTE</strong><span>CRM 123456/SP</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="evolution-workspace">
+          <div class="prescription-toolbar evolution-toolbar">
+            <button type="button" class="back-button" (click)="backToRooms()">
+              <span aria-hidden="true">←</span> Voltar aos quartos
+            </button>
+            <span class="draft-indicator">Evolução em preenchimento</span>
+          </div>
+
+          <div class="evolution-screen-content">
+            <section class="evolution-patient-card">
+              <header class="patient-editor-heading">
+                <div>
+                  <p class="eyebrow">Cabeçalho da evolução</p>
+                  <h2>Identificação do paciente</h2>
+                </div>
+                <span>{{ selectedRoom()?.name }} • {{ bed.code }}</span>
+              </header>
+              <div class="evolution-summary-grid">
+                <div class="evolution-summary-wide">
+                  <span>Paciente</span><strong>{{ patient.name }}</strong>
+                </div>
+                <div>
+                  <span>Sexo</span><strong>{{ patient.sex || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div>
+                  <span>Data de nascimento</span
+                  ><strong>{{ patient.birthDate || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div>
+                  <span>Peso</span
+                  ><strong>{{
+                    patient.weightKg ? patient.weightKg + ' KG' : 'NÃO INFORMADO'
+                  }}</strong>
+                </div>
+                <div>
+                  <span>Leito</span><strong>{{ bed.code }}</strong>
+                </div>
+                <div class="evolution-summary-wide">
+                  <span>Diagnóstico</span
+                  ><strong>{{ patient.diagnosis || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div class="evolution-summary-wide">
+                  <span>Comorbidades</span
+                  ><strong>{{ patient.comorbidities || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div class="evolution-summary-wide">
+                  <span>Alergias</span><strong>{{ patient.allergies || 'NÃO INFORMADO' }}</strong>
+                </div>
+                <div>
+                  <span>Data da internação</span
+                  ><strong>{{ patient.admissionAt | date: 'dd/MM/yyyy HH:mm' }}</strong>
+                </div>
+                <div>
+                  <span>Data da evolução</span
+                  ><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
+                </div>
+                <div>
+                  <span>Unidade</span><strong>{{ selectedRoom()?.unit }}</strong>
+                </div>
+                <div>
+                  <span>Dieta</span><strong>{{ evolutionDiet || 'NÃO INFORMADO' }}</strong>
+                </div>
+              </div>
+              <div class="evolution-antibiotic-grid">
+                <label>
+                  <span>Antibióticoterapia atual</span>
+                  <textarea
+                    [(ngModel)]="evolutionAntibioticCurrent"
+                    rows="2"
+                    placeholder="Preencha a antibioticoterapia atual"
+                  ></textarea>
+                </label>
+                <label>
+                  <span>Antibióticoterapia prévia</span>
+                  <textarea
+                    [(ngModel)]="evolutionAntibioticPrevious"
+                    rows="2"
+                    placeholder="Preencha a antibioticoterapia prévia"
+                  ></textarea>
+                </label>
+              </div>
+            </section>
+
+            <section class="evolution-form-card">
+              <header class="sheet-title evolution-form-heading">
+                <div>
+                  <p class="eyebrow">Registro clínico</p>
+                  <h1>Evolução médica</h1>
+                </div>
+                <div class="sheet-date">
+                  <span>Data da evolução</span
+                  ><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
+                </div>
+              </header>
+
+              <label class="evolution-field">
+                <span>Admissão</span>
+                <textarea
+                  [(ngModel)]="evolutionAdmission"
+                  rows="6"
+                  placeholder="Descreva a admissão do paciente"
+                ></textarea>
+              </label>
+              <label class="evolution-field">
+                <span>Evolução</span>
+                <textarea
+                  [(ngModel)]="evolutionText"
+                  rows="6"
+                  placeholder="Registre a evolução clínica"
+                ></textarea>
+              </label>
+              <label class="evolution-field">
+                <span>Exame físico</span>
+                <textarea
+                  [(ngModel)]="evolutionPhysicalExam"
+                  rows="7"
+                  placeholder="Descreva o exame físico"
+                ></textarea>
+              </label>
+
+              <section class="evolution-exams" aria-labelledby="evolution-exams-title">
+                <header>
+                  <div>
+                    <p class="eyebrow">Resultados laboratoriais</p>
+                    <h2 id="evolution-exams-title">Exames complementares</h2>
+                  </div>
+                  <span>Preencha as datas e os resultados</span>
+                </header>
+                <div class="evolution-exam-table-wrap">
+                  <table class="evolution-exam-table">
+                    <thead>
+                      <tr>
+                        <th>Exame</th>
+                        @for (date of evolutionExamDates; track $index; let dateIndex = $index) {
+                          <th>
+                            <input
+                              [(ngModel)]="evolutionExamDates[dateIndex]"
+                              placeholder="Data"
+                              [attr.aria-label]="'Data do exame ' + (dateIndex + 1)"
+                            />
+                          </th>
+                        }
+                        <th aria-label="Ações"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of evolutionExamRows; track $index; let rowIndex = $index) {
+                        <tr>
+                          <td>
+                            <input
+                              [(ngModel)]="row.name"
+                              placeholder="Exame"
+                              [attr.aria-label]="'Nome do exame ' + (rowIndex + 1)"
+                            />
+                          </td>
+                          @for (value of row.values; track $index; let valueIndex = $index) {
+                            <td>
+                              <input
+                                [(ngModel)]="row.values[valueIndex]"
+                                placeholder="Resultado"
+                                [attr.aria-label]="
+                                  'Resultado ' + (valueIndex + 1) + ' do exame ' + (rowIndex + 1)
+                                "
+                              />
+                            </td>
+                          }
+                          <td>
+                            <button
+                              type="button"
+                              class="remove-row"
+                              (click)="removeEvolutionExamRow(rowIndex)"
+                              aria-label="Remover exame"
+                            >
+                              ×
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <button type="button" class="add-row-button" (click)="addEvolutionExamRow()">
+                  + Adicionar exame
+                </button>
+              </section>
+
+              <label class="evolution-field">
+                <span>Conduta</span>
+                <textarea
+                  [(ngModel)]="evolutionConduct"
+                  rows="6"
+                  placeholder="Registre a conduta médica"
+                ></textarea>
+              </label>
+
+              <div class="evolution-actions">
+                <span>Revise os dados antes de imprimir.</span>
+                <button type="button" class="primary-button" (click)="printEvolution()">
+                  Imprimir evolução
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <section class="evolution-print-sheet" aria-label="Evolução médica para impressão">
+            <header class="print-sheet-header">
+              <img
+                src="inventory-med-logo.png"
+                alt="INVENTORY MED — GESTÃO INTELIGENTE DE LEITOS HOSPITALARES"
+              />
+              <div class="print-sheet-heading">
+                <span>{{ hospital.name }}</span>
+                <h1>Evolução médica</h1>
+                <small
+                  >{{ selectedRoom()?.unit }} • {{ selectedRoom()?.name }} • {{ bed.code }}</small
+                >
+              </div>
+              <img
+                class="print-upa-logo"
+                src="upa-24h-logo.png"
+                alt="UPA 24H — UNIDADE DE PRONTO ATENDIMENTO"
+              />
+            </header>
+
+            <section class="print-patient-data evolution-print-patient-data">
+              <div class="print-patient-name">
+                <span>Paciente</span><strong>{{ patient.name }}</strong>
+              </div>
+              <div class="print-diagnosis">
+                <span>Diagnóstico</span><strong>{{ patient.diagnosis || 'NÃO INFORMADO' }}</strong>
+              </div>
+              <div class="print-comorbidities">
+                <span>Comorbidades</span
+                ><strong>{{ patient.comorbidities || 'NÃO INFORMADO' }}</strong>
+              </div>
+              <div class="print-allergies">
+                <span>Alergia</span><strong>{{ patient.allergies || 'NÃO INFORMADO' }}</strong>
+              </div>
+              <div>
+                <span>Sexo</span><strong>{{ patient.sex || 'NÃO INFORMADO' }}</strong>
+              </div>
+              <div>
+                <span>Data de nascimento (DN)</span
+                ><strong>{{ patient.birthDate || 'NÃO INFORMADO' }}</strong>
+              </div>
+              <div>
+                <span>Peso</span
+                ><strong>{{
+                  patient.weightKg ? patient.weightKg + ' KG' : 'NÃO INFORMADO'
+                }}</strong>
+              </div>
+              <div>
+                <span>Leito</span><strong>{{ bed.code }}</strong>
+              </div>
+              <div>
+                <span>Data da internação</span
+                ><strong>{{ patient.admissionAt | date: 'dd/MM/yyyy HH:mm' }}</strong>
+              </div>
+              <div>
+                <span>Data da evolução</span><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
+              </div>
+              <div class="print-unit">
+                <span>Unidade de internação</span
+                ><strong>{{ selectedRoom()?.unit || hospital.name }}</strong>
+              </div>
+              <div class="print-diet">
+                <span>Dieta</span><strong>{{ evolutionDiet || 'NÃO INFORMADO' }}</strong>
+              </div>
+              <div class="evolution-print-antibiotic">
+                <span>Antibióticoterapia atual</span
+                ><strong>{{ evolutionAntibioticCurrent || 'NÃO INFORMADO' }}</strong>
+              </div>
+              <div class="evolution-print-antibiotic">
+                <span>Antibióticoterapia prévia</span
+                ><strong>{{ evolutionAntibioticPrevious || 'NÃO INFORMADO' }}</strong>
+              </div>
+            </section>
+
+            <section class="evolution-print-section">
+              <h2>Admissão</h2>
+              <div class="evolution-print-text evolution-print-text--admission">
+                {{ evolutionAdmission || ' ' }}
+              </div>
+            </section>
+            <section class="evolution-print-section">
+              <h2>Evolução</h2>
+              <div class="evolution-print-text">{{ evolutionText || ' ' }}</div>
+            </section>
+            <section class="evolution-print-section">
+              <h2>Exame físico</h2>
+              <div class="evolution-print-text evolution-print-text--physical">
+                {{ evolutionPhysicalExam || ' ' }}
+              </div>
+            </section>
+            <section class="evolution-print-section evolution-print-exams">
+              <h2>Exames complementares</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Exame</th>
+                    @for (date of evolutionExamDates; track $index) {
+                      <th>{{ date || 'DATA' }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of evolutionExamRows; track $index) {
+                    <tr>
+                      <td>{{ row.name }}</td>
+                      @for (value of row.values; track $index) {
+                        <td>{{ value }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+            <section class="evolution-print-section">
+              <h2>Conduta</h2>
+              <div class="evolution-print-text evolution-print-text--conduct">
+                {{ evolutionConduct || ' ' }}
+              </div>
+            </section>
+
+            <footer class="evolution-print-footer">
+              <span>Inventory MED • Documento gerado em ambiente de demonstração</span>
+              <div class="evolution-print-doctor">
+                <span class="print-signature-line"></span>
+                <strong>DR. LUCAS GALANTE</strong>
+                <small>CRM 123456/SP</small>
+              </div>
+            </footer>
+          </section>
+        </main>
+      </div>
+    }
+  }
+}
+
 @if (admissionOpen() && selectedBed(); as bed) {
   <div class="modal-backdrop" (click)="closeAdmission()">
     <section

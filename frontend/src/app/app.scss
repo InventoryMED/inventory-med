@@ -388,7 +388,8 @@ svg {
 }
 
 .app-shell,
-.prescription-page {
+.prescription-page,
+.evolution-page {
   min-height: 100vh;
   background: var(--background);
 }
@@ -1707,6 +1708,193 @@ svg {
   border: 1px solid var(--navy-700);
   color: var(--navy-700);
 }
+.evolution-workspace {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 26px 0 60px;
+}
+.evolution-patient-card,
+.evolution-form-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 5px 18px rgba(16, 24, 40, 0.05);
+}
+.evolution-patient-card {
+  margin-bottom: 18px;
+}
+.evolution-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border-top: 1px solid #ccd4de;
+  border-left: 1px solid #ccd4de;
+}
+.evolution-summary-grid > div {
+  display: flex;
+  min-height: 70px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px 12px;
+  border-right: 1px solid #ccd4de;
+  border-bottom: 1px solid #ccd4de;
+}
+.evolution-summary-wide {
+  grid-column: span 2;
+}
+.evolution-summary-grid span,
+.evolution-antibiotic-grid label > span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.evolution-summary-grid strong {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.evolution-antibiotic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.evolution-antibiotic-grid label > span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--navy-900);
+}
+.evolution-antibiotic-grid textarea,
+.evolution-field textarea {
+  width: 100%;
+  padding: 11px 12px;
+  resize: vertical;
+  border: 1px solid #c3ccd7;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.evolution-antibiotic-grid textarea:focus,
+.evolution-field textarea:focus {
+  border-color: var(--navy-700);
+  box-shadow: 0 0 0 3px rgba(18, 61, 104, 0.08);
+}
+.evolution-form-heading {
+  margin-bottom: 20px;
+}
+.evolution-field {
+  display: block;
+  margin-top: 18px;
+}
+.evolution-field > span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--navy-900);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.evolution-exams {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #ccd4de;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.evolution-exams > header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.evolution-exams h2 {
+  margin: 0;
+  color: var(--navy-900);
+  font-size: 17px;
+}
+.evolution-exams header .eyebrow {
+  margin-bottom: 3px;
+  font-size: 9px;
+}
+.evolution-exams > header > span {
+  color: var(--muted);
+  font-size: 9px;
+}
+.evolution-exam-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #aeb8c4;
+  background: white;
+}
+.evolution-exam-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.evolution-exam-table th,
+.evolution-exam-table td {
+  height: 42px;
+  padding: 0;
+  border-right: 1px solid #c5cdd6;
+  border-bottom: 1px solid #c5cdd6;
+}
+.evolution-exam-table th {
+  height: 36px;
+  background: var(--navy-900);
+  color: white;
+  font-size: 9px;
+}
+.evolution-exam-table th:first-child,
+.evolution-exam-table td:first-child {
+  width: 180px;
+}
+.evolution-exam-table th:last-child,
+.evolution-exam-table td:last-child {
+  width: 42px;
+  border-right: 0;
+}
+.evolution-exam-table input {
+  width: 100%;
+  height: 41px;
+  padding: 0 9px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 10px;
+}
+.evolution-exam-table thead input {
+  height: 35px;
+  color: white;
+  text-align: center;
+}
+.evolution-exam-table thead input::placeholder {
+  color: #c8d5e3;
+}
+.evolution-exam-table input:focus {
+  box-shadow: inset 0 0 0 2px var(--navy-700);
+}
+.evolution-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #ccd4de;
+}
+.evolution-actions span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.evolution-print-sheet,
 .print-sheet {
   display: none;
 }
@@ -1882,6 +2070,20 @@ svg {
   .prescription-workspace {
     width: min(100% - 20px, 1500px);
   }
+  .evolution-workspace {
+    width: min(100% - 20px, 1180px);
+  }
+  .evolution-patient-card,
+  .evolution-form-card {
+    padding: 18px;
+  }
+  .evolution-summary-grid,
+  .evolution-antibiotic-grid {
+    grid-template-columns: 1fr;
+  }
+  .evolution-summary-wide {
+    grid-column: auto;
+  }
   .prescription-sheet {
     padding: 18px;
   }
@@ -1908,7 +2110,9 @@ svg {
   }
   .clinical-order-header,
   .dxt-guidance > header,
-  .prescription-submit {
+  .prescription-submit,
+  .evolution-exams > header,
+  .evolution-actions {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -1924,6 +2128,9 @@ svg {
   }
   .dxt-ranges {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .evolution-actions .primary-button {
+    width: 100%;
   }
 }
 
@@ -1953,8 +2160,17 @@ svg {
 }
 
 @page {
+  margin: 7mm;
+}
+
+@page prescription {
   size: A4 landscape;
   margin: 7mm;
+}
+
+@page evolution {
+  size: A4 portrait;
+  margin: 8mm;
 }
 
 @media print {
@@ -1971,11 +2187,16 @@ svg {
   .prescription-start-card,
   .prescription-sheet,
   .saved-prescriptions,
+  .evolution-appbar,
+  .evolution-toolbar,
+  .evolution-screen-content,
   .toast {
     display: none !important;
   }
   .prescription-page,
-  .prescription-workspace {
+  .prescription-workspace,
+  .evolution-page,
+  .evolution-workspace {
     width: 100%;
     min-height: 0;
     margin: 0;
@@ -1988,6 +2209,7 @@ svg {
     min-height: 190mm;
     box-sizing: border-box;
     flex-direction: column;
+    page: prescription;
     color: #111827;
     font-family: Arial, Helvetica, sans-serif;
     text-transform: uppercase;
@@ -2245,5 +2467,143 @@ svg {
   }
   .print-document-note {
     color: #667085;
+  }
+  .evolution-print-sheet {
+    display: flex;
+    width: 100%;
+    min-height: 277mm;
+    box-sizing: border-box;
+    flex-direction: column;
+    page: evolution;
+    color: #111827;
+    font-family: Arial, Helvetica, sans-serif;
+    text-transform: uppercase;
+  }
+  .evolution-print-sheet .print-sheet-header {
+    grid-template-columns: 32mm 1fr 40mm;
+    gap: 2mm;
+    padding-bottom: 1.5mm;
+  }
+  .evolution-print-sheet .print-sheet-header > img:first-child {
+    width: 30mm;
+  }
+  .evolution-print-sheet .print-upa-logo {
+    width: 38mm;
+    max-height: 15mm;
+  }
+  .evolution-print-sheet .print-sheet-heading span {
+    font-size: 6pt;
+  }
+  .evolution-print-sheet .print-sheet-heading h1 {
+    font-size: 13pt;
+  }
+  .evolution-print-sheet .print-sheet-heading small {
+    font-size: 5pt;
+  }
+  .evolution-print-patient-data {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .evolution-print-patient-data > div {
+    min-height: 5.8mm;
+    padding: 0.45mm 0.8mm;
+  }
+  .evolution-print-patient-data span {
+    font-size: 4.2pt;
+  }
+  .evolution-print-patient-data strong {
+    font-size: 5.2pt;
+  }
+  .evolution-print-patient-data .evolution-print-antibiotic {
+    grid-column: span 2;
+  }
+  .evolution-print-patient-data .print-diet {
+    grid-column: span 4;
+  }
+  .evolution-print-section {
+    margin-top: 1.5mm;
+    border: 0.6pt solid #98a2b3;
+    break-inside: avoid;
+  }
+  .evolution-print-section h2 {
+    margin: 0;
+    padding: 0.6mm 1mm;
+    border-bottom: 0.6pt solid #98a2b3;
+    background: #eef1f4;
+    color: #111827;
+    font-size: 6.5pt;
+    text-align: center;
+  }
+  .evolution-print-text {
+    min-height: 17mm;
+    padding: 1.2mm;
+    font-size: 6pt;
+    line-height: 1.35;
+    text-align: justify;
+    text-transform: none;
+    white-space: pre-wrap;
+  }
+  .evolution-print-text--admission {
+    min-height: 20mm;
+  }
+  .evolution-print-text--physical {
+    min-height: 22mm;
+  }
+  .evolution-print-text--conduct {
+    min-height: 17mm;
+  }
+  .evolution-print-exams table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 5.5pt;
+  }
+  .evolution-print-exams th,
+  .evolution-print-exams td {
+    height: 4.2mm;
+    padding: 0.4mm 0.7mm;
+    border-right: 0.5pt solid #667085;
+    border-bottom: 0.5pt solid #667085;
+    text-align: center;
+  }
+  .evolution-print-exams th:first-child,
+  .evolution-print-exams td:first-child {
+    width: 30mm;
+    font-weight: 700;
+    text-align: left;
+  }
+  .evolution-print-exams th:last-child,
+  .evolution-print-exams td:last-child {
+    border-right: 0;
+  }
+  .evolution-print-exams tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .evolution-print-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 4mm;
+    color: #667085;
+    font-size: 5pt;
+  }
+  .evolution-print-doctor {
+    display: flex;
+    width: 62mm;
+    flex-direction: column;
+    align-items: center;
+    color: #111827;
+    text-align: center;
+  }
+  .evolution-print-doctor .print-signature-line {
+    margin-top: 10mm;
+  }
+  .evolution-print-doctor strong {
+    margin-top: 1mm;
+    font-size: 6pt;
+  }
+  .evolution-print-doctor small {
+    margin-top: 0.5mm;
+    font-size: 5pt;
   }
 }

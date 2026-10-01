@@ -51,6 +51,11 @@ interface PrintablePrescriptionRow {
   scheduling: string;
 }
 
+interface EvolutionExamRow {
+  name: string;
+  values: string[];
+}
+
 const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
   { id: 'ADMISSION', name: 'ADMISSÃO', description: 'MODELO INICIAL PARA ADMISSÃO HOSPITALAR' },
   { id: 'PAC', name: 'PAC', description: 'PNEUMONIA ADQUIRIDA NA COMUNIDADE' },
@@ -209,6 +214,15 @@ export class App implements OnInit {
   protected prescriptionComorbidities = '';
   protected prescriptionAllergies = '';
   protected prescriptionDiet = '';
+  protected evolutionDiet = '';
+  protected evolutionAdmission = '';
+  protected evolutionText = '';
+  protected evolutionPhysicalExam = '';
+  protected evolutionConduct = '';
+  protected evolutionAntibioticCurrent = '';
+  protected evolutionAntibioticPrevious = '';
+  protected evolutionExamDates: string[] = ['', '', '', ''];
+  protected evolutionExamRows: EvolutionExamRow[] = this.createEvolutionExamRows();
   protected observationRows: string[] = [];
   protected abnormalityRows: string[] = [];
   protected vitalSignRows: VitalSignDraftRow[] = [];
@@ -351,7 +365,7 @@ export class App implements OnInit {
 
   protected startEvolution(bed: Bed): void {
     if (!bed.patient) return;
-    this.showToast('A TELA DE EVOLUÇÃO SERÁ CRIADA APÓS A DEFINIÇÃO DO LAYOUT.');
+    this.openEvolutionTab(bed.id);
   }
 
   protected openDischarge(bed: Bed): void {
@@ -452,6 +466,25 @@ export class App implements OnInit {
 
   protected printPrescription(): void {
     window.print();
+  }
+
+  protected printEvolution(): void {
+    window.print();
+  }
+
+  protected addEvolutionExamRow(): void {
+    this.evolutionExamRows = [
+      ...this.evolutionExamRows,
+      { name: '', values: this.evolutionExamDates.map(() => '') },
+    ];
+  }
+
+  protected removeEvolutionExamRow(index: number): void {
+    if (this.evolutionExamRows.length === 1) {
+      this.evolutionExamRows = this.createEvolutionExamRows(1);
+      return;
+    }
+    this.evolutionExamRows = this.evolutionExamRows.filter((_, rowIndex) => rowIndex !== index);
   }
 
   protected hasMedicationItems(group: MedicationOrderGroup): boolean {
@@ -675,6 +708,26 @@ export class App implements OnInit {
     this.prescriptionReady.set(false);
   }
 
+  private prepareEvolution(patient: Patient): void {
+    this.preparePatientForm(patient);
+    this.evolutionDiet = patient.prescriptions[0]?.diet ?? '';
+    this.evolutionAdmission = '';
+    this.evolutionText = '';
+    this.evolutionPhysicalExam = '';
+    this.evolutionConduct = '';
+    this.evolutionAntibioticCurrent = '';
+    this.evolutionAntibioticPrevious = '';
+    this.evolutionExamDates = ['', '', '', ''];
+    this.evolutionExamRows = this.createEvolutionExamRows();
+  }
+
+  private createEvolutionExamRows(count = 8): EvolutionExamRow[] {
+    return Array.from({ length: count }, () => ({
+      name: '',
+      values: ['', '', '', ''],
+    }));
+  }
+
   private emptyHydrationRow(): PrescriptionDraftRow {
     return { description: '', route: 'EV', frequency: '', scheduling: 'FIXO' };
   }
@@ -779,6 +832,20 @@ export class App implements OnInit {
     window.open(url.toString(), '_blank', 'noopener');
   }
 
+  private openEvolutionTab(bedId: string): void {
+    const hospitalId = this.store.activeHospitalId();
+    if (!hospitalId) return;
+
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('hospital', hospitalId);
+    url.searchParams.set('bed', bedId);
+    url.searchParams.set('flow', 'evolution');
+
+    window.open(url.toString(), '_blank', 'noopener');
+  }
+
   private openRequestedView(): void {
     const params = new URLSearchParams(window.location.search);
     const hospitalId = params.get('hospital');
@@ -800,6 +867,10 @@ export class App implements OnInit {
       this.preparePrescription(bed.patient);
       this.screen.set('prescription');
       return;
+    }
+    if (flow === 'evolution' && bed.status === 'OCCUPIED' && bed.patient) {
+      this.prepareEvolution(bed.patient);
+      this.screen.set('evolution');
     }
   }
 
