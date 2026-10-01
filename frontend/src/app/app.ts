@@ -217,6 +217,21 @@ export class App implements OnInit {
   protected evolutionDiet = '';
   protected evolutionAdmission = '';
   protected evolutionText = '';
+  protected evolutionPosition = '';
+  protected evolutionAccompaniment = '';
+  protected evolutionConsciousness = '';
+  protected evolutionOrientation = '';
+  protected evolutionChiefComplaints: string[] = [];
+  protected evolutionPainLocation = '';
+  protected evolutionPainIntensity = '';
+  protected evolutionShiftEvents: string[] = [];
+  protected evolutionFoodAcceptance = '';
+  protected evolutionUrinaryElimination = '';
+  protected evolutionUrineAppearance = '';
+  protected evolutionIntestinalElimination = '';
+  protected evolutionNoBowelMovementDays = '';
+  protected evolutionStoolAppearance = '';
+  protected evolutionSleepPattern = '';
   protected evolutionVitalSaturation = '';
   protected evolutionHeartRate = '';
   protected evolutionRespiratoryRate = '';
@@ -251,6 +266,76 @@ export class App implements OnInit {
   protected selectedTemplateId: PrescriptionTemplateId | '' = '';
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
   protected readonly dietPresets = DIET_PRESETS;
+  protected readonly evolutionPositionOptions = [
+    'ACAMADO EM DECÚBITO DORSAL',
+    'SENTADO NA POLTRONA',
+    'DEAMBULANDO NO QUARTO',
+    'RESTRITO AO LEITO POR CONTENÇÃO MECÂNICA',
+  ];
+  protected readonly evolutionAccompanimentOptions = [
+    'ACOMPANHADO POR FAMILIAR / CUIDADOR',
+    'DESACOMPANHADO NO MOMENTO',
+  ];
+  protected readonly evolutionConsciousnessOptions = [
+    'VIGIL / ACORDADO',
+    'SONOLENTO (DESPERTA AO CHAMADO)',
+    'TORPOROSO (DESPERTA APENAS COM ESTÍMULO VIGOROSO)',
+    'COMATOSO / SEDADO',
+  ];
+  protected readonly evolutionOrientationOptions = [
+    'ORIENTADO NO TEMPO E NO ESPAÇO',
+    'DESORIENTADO NO TEMPO',
+    'DESORIENTADO NO ESPAÇO',
+    'GLOBALMENTE DESORIENTADO',
+  ];
+  protected readonly evolutionChiefComplaintOptions = [
+    'NEGA NOVAS QUEIXAS ATIVAS',
+    'DOR',
+    'FALTA DE AR / DISPNEIA',
+    'NÁUSEAS / ENJOO',
+    'TONTURA / MAL-ESTAR',
+  ];
+  protected readonly evolutionShiftEventOptions = [
+    'SEM INTERCORRÊNCIAS RELATADAS',
+    'PICO FEBRIL',
+    'EPISÓDIO DE HIPOTENSÃO',
+    'AGITAÇÃO PSICOMOTORA',
+    'QUEDA DA SATURAÇÃO / NECESSIDADE DE O₂',
+    'EPISÓDIO DE VÔMITO / DIARREIA',
+  ];
+  protected readonly evolutionFoodAcceptanceOptions = [
+    'BOA (>75% DA REFEIÇÃO)',
+    'PARCIAL / REGULAR (~50%)',
+    'INAPETENTE / RECUSA ALIMENTAR (<25%)',
+    'EM JEJUM PARA PROCEDIMENTO / EXAME',
+  ];
+  protected readonly evolutionUrinaryEliminationOptions = [
+    'ESPONTÂNEA',
+    'POR SONDA VESICAL DE DEMORA (SVD)',
+    'POR SONDA VESICAL DE ALÍVIO (SVA)',
+    'AUSENTE / ANÚRIA',
+  ];
+  protected readonly evolutionUrineAppearanceOptions = [
+    'CLARA / CITRINA',
+    'CONCENTRADA / COLÚRICA',
+    'HEMATÚRICA (COM SANGUE)',
+    'PIÚRICA / TURVA',
+  ];
+  protected readonly evolutionIntestinalEliminationOptions = [
+    'PRESENTES E PRESERVADAS NAS ÚLTIMAS 24H',
+    'AUSENTES',
+    'EPISÓDIOS DIARREICOS',
+  ];
+  protected readonly evolutionStoolAppearanceOptions = [
+    'PASTOSAS / FORMADAS',
+    'LÍQUIDAS',
+    'ESCÍBALAS (ENDURECIDAS)',
+    'MELENA / ENTERORRAGIA (COM SANGUE)',
+  ];
+  protected readonly evolutionSleepPatternOptions = [
+    'PRESERVADO / DORMIU BEM',
+    'INSÔNIA / AGITADO DURANTE A NOITE',
+  ];
   protected readonly dischargeReasons: Array<{
     value: DischargeReason;
     label: string;
@@ -500,6 +585,37 @@ export class App implements OnInit {
       .join('\n');
   }
 
+  protected toggleEvolutionSelection(selection: string[], option: string, checked: boolean): void {
+    const optionIndex = selection.indexOf(option);
+    if (checked && optionIndex === -1) selection.push(option);
+    if (!checked && optionIndex >= 0) selection.splice(optionIndex, 1);
+  }
+
+  protected hasEvolutionSelection(selection: string[], option: string): boolean {
+    return selection.includes(option);
+  }
+
+  protected formattedEvolutionChiefComplaints(): string {
+    if (!this.evolutionChiefComplaints.length) return 'NÃO INFORMADO';
+    return this.evolutionChiefComplaints
+      .map((complaint) => {
+        if (complaint !== 'DOR') return complaint;
+        const location = this.evolutionPainLocation.trim() || 'LOCAL NÃO INFORMADO';
+        const intensity = this.evolutionPainIntensity.trim();
+        return `DOR EM ${location}${intensity ? ` (INTENSIDADE ${intensity}/10)` : ''}`;
+      })
+      .join('; ');
+  }
+
+  protected formattedEvolutionIntestinalElimination(): string {
+    if (!this.evolutionIntestinalElimination) return 'NÃO INFORMADO';
+    if (this.evolutionIntestinalElimination !== 'AUSENTES') {
+      return this.evolutionIntestinalElimination;
+    }
+    const days = this.evolutionNoBowelMovementDays.trim();
+    return days ? `AUSENTES HÁ ${days} DIA(S)` : 'AUSENTES';
+  }
+
   protected addEvolutionExamRow(): void {
     this.evolutionExamRows = [
       ...this.evolutionExamRows,
@@ -741,6 +857,21 @@ export class App implements OnInit {
     this.evolutionDiet = patient.prescriptions[0]?.diet ?? '';
     this.evolutionAdmission = '';
     this.evolutionText = '';
+    this.evolutionPosition = '';
+    this.evolutionAccompaniment = '';
+    this.evolutionConsciousness = '';
+    this.evolutionOrientation = '';
+    this.evolutionChiefComplaints = [];
+    this.evolutionPainLocation = '';
+    this.evolutionPainIntensity = '';
+    this.evolutionShiftEvents = [];
+    this.evolutionFoodAcceptance = '';
+    this.evolutionUrinaryElimination = '';
+    this.evolutionUrineAppearance = '';
+    this.evolutionIntestinalElimination = '';
+    this.evolutionNoBowelMovementDays = '';
+    this.evolutionStoolAppearance = '';
+    this.evolutionSleepPattern = '';
     this.evolutionVitalSaturation = '';
     this.evolutionHeartRate = '';
     this.evolutionRespiratoryRate = '';

@@ -1138,6 +1138,187 @@
                   placeholder="Registre a evolução clínica"
                 ></textarea>
               </label>
+
+              <section class="evolution-context-card" aria-labelledby="follow-up-title">
+                <header>
+                  <p class="eyebrow">Identificação e acompanhamento</p>
+                  <h2 id="follow-up-title">Condição atual do paciente</h2>
+                </header>
+                <div class="evolution-context-grid evolution-context-grid--two">
+                  <label>
+                    <span>Posição / atividade no leito</span>
+                    <select [(ngModel)]="evolutionPosition">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionPositionOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Acompanhamento</span>
+                    <select [(ngModel)]="evolutionAccompaniment">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionAccompanimentOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Nível de consciência</span>
+                    <select [(ngModel)]="evolutionConsciousness">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionConsciousnessOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Orientação temporoespacial</span>
+                    <select [(ngModel)]="evolutionOrientation">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionOrientationOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <section class="evolution-context-card" aria-labelledby="subjective-title">
+                <header>
+                  <p class="eyebrow">Subjetivo</p>
+                  <h2 id="subjective-title">Queixas e funções fisiológicas</h2>
+                </header>
+
+                <fieldset class="evolution-check-group">
+                  <legend>Queixa principal atual</legend>
+                  <div>
+                    @for (option of evolutionChiefComplaintOptions; track option) {
+                      <label>
+                        <input
+                          type="checkbox"
+                          [checked]="hasEvolutionSelection(evolutionChiefComplaints, option)"
+                          (change)="
+                            toggleEvolutionSelection(
+                              evolutionChiefComplaints,
+                              option,
+                              $any($event.target).checked
+                            )
+                          "
+                        />
+                        <span>{{ option }}</span>
+                      </label>
+                    }
+                  </div>
+                  @if (hasEvolutionSelection(evolutionChiefComplaints, 'DOR')) {
+                    <div class="evolution-inline-details">
+                      <label>
+                        <span>Local da dor</span>
+                        <input [(ngModel)]="evolutionPainLocation" placeholder="Informe o local" />
+                      </label>
+                      <label>
+                        <span>Intensidade</span>
+                        <input
+                          [(ngModel)]="evolutionPainIntensity"
+                          inputmode="numeric"
+                          maxlength="2"
+                          placeholder="0 a 10"
+                        />
+                      </label>
+                    </div>
+                  }
+                </fieldset>
+
+                <fieldset class="evolution-check-group">
+                  <legend>Intercorrências no plantão (24h)</legend>
+                  <div>
+                    @for (option of evolutionShiftEventOptions; track option) {
+                      <label>
+                        <input
+                          type="checkbox"
+                          [checked]="hasEvolutionSelection(evolutionShiftEvents, option)"
+                          (change)="
+                            toggleEvolutionSelection(
+                              evolutionShiftEvents,
+                              option,
+                              $any($event.target).checked
+                            )
+                          "
+                        />
+                        <span>{{ option }}</span>
+                      </label>
+                    }
+                  </div>
+                </fieldset>
+
+                <div class="evolution-context-grid evolution-context-grid--three">
+                  <label>
+                    <span>Aceitação alimentar</span>
+                    <select [(ngModel)]="evolutionFoodAcceptance">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionFoodAcceptanceOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Eliminação urinária</span>
+                    <select [(ngModel)]="evolutionUrinaryElimination">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionUrinaryEliminationOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Aspecto da urina</span>
+                    <select [(ngModel)]="evolutionUrineAppearance">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionUrineAppearanceOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Eliminação intestinal</span>
+                    <select [(ngModel)]="evolutionIntestinalElimination">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionIntestinalEliminationOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  @if (evolutionIntestinalElimination === 'AUSENTES') {
+                    <label>
+                      <span>Ausente há quantos dias?</span>
+                      <input
+                        [(ngModel)]="evolutionNoBowelMovementDays"
+                        inputmode="numeric"
+                        placeholder="Número de dias"
+                      />
+                    </label>
+                  }
+                  <label>
+                    <span>Aspecto das fezes</span>
+                    <select [(ngModel)]="evolutionStoolAppearance">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionStoolAppearanceOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Padrão de sono</span>
+                    <select [(ngModel)]="evolutionSleepPattern">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionSleepPatternOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+              </section>
+
               <section class="evolution-physical-exam" aria-labelledby="physical-exam-title">
                 <header>
                   <p class="eyebrow">Avaliação clínica</p>
@@ -1507,6 +1688,58 @@
             <section class="evolution-print-section">
               <h2>Evolução</h2>
               <div class="evolution-print-text">{{ evolutionText || ' ' }}</div>
+            </section>
+            <section class="evolution-print-section evolution-print-follow-up">
+              <h2>Identificação e acompanhamento</h2>
+              <div class="evolution-print-clinical-grid">
+                <p><strong>Posição:</strong> {{ evolutionPosition || 'NÃO INFORMADO' }}</p>
+                <p>
+                  <strong>Acompanhamento:</strong>
+                  {{ evolutionAccompaniment || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Nível de consciência:</strong>
+                  {{ evolutionConsciousness || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Orientação temporoespacial:</strong>
+                  {{ evolutionOrientation || 'NÃO INFORMADO' }}
+                </p>
+              </div>
+            </section>
+            <section class="evolution-print-section evolution-print-subjective">
+              <h2>Queixas e funções fisiológicas</h2>
+              <div class="evolution-print-clinical-grid">
+                <p><strong>Queixa principal:</strong> {{ formattedEvolutionChiefComplaints() }}</p>
+                <p>
+                  <strong>Intercorrências (24h):</strong>
+                  {{ evolutionShiftEvents.join('; ') || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Aceitação alimentar:</strong>
+                  {{ evolutionFoodAcceptance || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Eliminação urinária:</strong>
+                  {{ evolutionUrinaryElimination || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Aspecto da urina:</strong>
+                  {{ evolutionUrineAppearance || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Eliminação intestinal:</strong>
+                  {{ formattedEvolutionIntestinalElimination() }}
+                </p>
+                <p>
+                  <strong>Aspecto das fezes:</strong>
+                  {{ evolutionStoolAppearance || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Padrão de sono:</strong>
+                  {{ evolutionSleepPattern || 'NÃO INFORMADO' }}
+                </p>
+              </div>
             </section>
             <section class="evolution-print-section">
               <h2>Exame físico</h2>

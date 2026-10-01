@@ -1936,6 +1936,105 @@ svg {
   color: var(--muted);
   font-size: 9px;
 }
+.evolution-context-card {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #ccd4de;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.evolution-context-card > header {
+  margin-bottom: 14px;
+}
+.evolution-context-card h2 {
+  margin: 0;
+  color: var(--navy-900);
+  font-size: 17px;
+}
+.evolution-context-grid {
+  display: grid;
+  gap: 12px;
+}
+.evolution-context-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.evolution-context-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 16px;
+}
+.evolution-context-grid label,
+.evolution-inline-details label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.evolution-context-grid label > span,
+.evolution-inline-details label > span {
+  color: var(--navy-900);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.evolution-context-grid select,
+.evolution-context-grid input,
+.evolution-inline-details input {
+  width: 100%;
+  min-height: 41px;
+  padding: 0 10px;
+  border: 1px solid #c3ccd7;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+}
+.evolution-context-grid select:focus,
+.evolution-context-grid input:focus,
+.evolution-inline-details input:focus {
+  border-color: var(--navy-700);
+  box-shadow: 0 0 0 3px rgba(18, 61, 104, 0.08);
+  outline: 0;
+}
+.evolution-check-group {
+  margin: 16px 0 0;
+  padding: 13px;
+  border: 1px solid #c5cdd6;
+  border-radius: 8px;
+  background: white;
+}
+.evolution-check-group legend {
+  padding: 0 6px;
+  color: var(--navy-900);
+  font-size: 10px;
+  font-weight: 800;
+}
+.evolution-check-group > div:first-of-type {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px 14px;
+}
+.evolution-check-group > div:first-of-type label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 10px;
+  line-height: 1.35;
+}
+.evolution-check-group input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--navy-700);
+}
+.evolution-inline-details {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #d7dee7;
+}
 .evolution-exams {
   margin-top: 20px;
   padding: 18px;
@@ -2218,7 +2317,9 @@ svg {
   .evolution-antibiotic-grid,
   .evolution-select-grid,
   .evolution-select-grid--two,
-  .evolution-system-grid {
+  .evolution-system-grid,
+  .evolution-context-grid,
+  .evolution-inline-details {
     grid-template-columns: 1fr;
   }
   .evolution-summary-wide {
@@ -2232,6 +2333,9 @@ svg {
   }
   .evolution-vitals > strong {
     grid-column: 1 / -1;
+  }
+  .evolution-check-group > div:first-of-type {
+    grid-template-columns: 1fr;
   }
   .prescription-sheet {
     padding: 18px;
@@ -2711,6 +2815,26 @@ svg {
   }
   .evolution-print-text--conduct {
     min-height: 17mm;
+  }
+  .evolution-print-clinical-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    font-size: 5.2pt;
+    line-height: 1.2;
+    text-transform: none;
+  }
+  .evolution-print-clinical-grid p {
+    min-height: 4.2mm;
+    margin: 0;
+    padding: 0.65mm 1mm;
+    border-right: 0.5pt solid #98a2b3;
+    border-bottom: 0.5pt solid #98a2b3;
+  }
+  .evolution-print-clinical-grid p:nth-child(2n) {
+    border-right: 0;
+  }
+  .evolution-print-clinical-grid p:nth-last-child(-n + 2) {
+    border-bottom: 0;
   }
   .evolution-print-exams table {
     width: 100%;

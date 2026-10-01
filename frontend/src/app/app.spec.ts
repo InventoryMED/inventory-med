@@ -152,6 +152,10 @@ describe('App', () => {
     app.prepareEvolution(occupiedBed.patient);
     expect(app.evolutionAdmission).toBe('');
     expect(app.evolutionText).toBe('');
+    expect(app.evolutionPosition).toBe('');
+    expect(app.evolutionChiefComplaints).toEqual([]);
+    expect(app.evolutionFoodAcceptance).toBe('');
+    expect(app.evolutionSleepPattern).toBe('');
     expect(app.evolutionVitalSaturation).toBe('');
     expect(app.evolutionGeneralState).toBe('');
     expect(app.evolutionNeurological).toBe('');
@@ -165,6 +169,10 @@ describe('App', () => {
     expect(app.formatEvolutionConduct('MANTER HIDRATAÇÃO\n- SOLICITAR EXAMES')).toBe(
       '- MANTER HIDRATAÇÃO\n- SOLICITAR EXAMES',
     );
+    app.toggleEvolutionSelection(app.evolutionChiefComplaints, 'DOR', true);
+    app.evolutionPainLocation = 'ABDOME';
+    app.evolutionPainIntensity = '7';
+    expect(app.formattedEvolutionChiefComplaints()).toBe('DOR EM ABDOME (INTENSIDADE 7/10)');
 
     app.selectedBedId.set(occupiedBed.id);
     app.screen.set('evolution');
