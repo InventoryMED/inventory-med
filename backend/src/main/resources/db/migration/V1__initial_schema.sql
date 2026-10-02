@@ -6,8 +6,8 @@ CREATE TABLE dbo.hospital (
     short_name NVARCHAR(40) NOT NULL,
     city NVARCHAR(120) NOT NULL,
     active BIT NOT NULL CONSTRAINT df_hospital_active DEFAULT 1,
-    created_at DATETIME2(3) NOT NULL CONSTRAINT df_hospital_created_at DEFAULT SYSUTCDATETIME(),
-    updated_at DATETIME2(3) NOT NULL CONSTRAINT df_hospital_updated_at DEFAULT SYSUTCDATETIME(),
+    created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_hospital_created_at DEFAULT SYSUTCDATETIME(),
+    updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_hospital_updated_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT uq_hospital_name UNIQUE (name)
 );
 
@@ -19,8 +19,8 @@ CREATE TABLE dbo.app_user (
     email NVARCHAR(254) NOT NULL,
     password_hash VARCHAR(100) NOT NULL,
     active BIT NOT NULL CONSTRAINT df_app_user_active DEFAULT 1,
-    created_at DATETIME2(3) NOT NULL CONSTRAINT df_app_user_created_at DEFAULT SYSUTCDATETIME(),
-    updated_at DATETIME2(3) NOT NULL CONSTRAINT df_app_user_updated_at DEFAULT SYSUTCDATETIME(),
+    created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_app_user_created_at DEFAULT SYSUTCDATETIME(),
+    updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_app_user_updated_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT uq_app_user_email UNIQUE (email)
 );
 
@@ -32,7 +32,7 @@ CREATE TABLE dbo.hospital_membership (
     user_id UNIQUEIDENTIFIER NOT NULL,
     role VARCHAR(30) NOT NULL,
     active BIT NOT NULL CONSTRAINT df_hospital_membership_active DEFAULT 1,
-    created_at DATETIME2(3) NOT NULL
+    created_at DATETIMEOFFSET(7) NOT NULL
         CONSTRAINT df_hospital_membership_created_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT fk_hospital_membership_hospital
         FOREIGN KEY (hospital_id) REFERENCES dbo.hospital (id),
@@ -55,8 +55,8 @@ CREATE TABLE dbo.room (
     floor NVARCHAR(80) NULL,
     unit_name NVARCHAR(120) NOT NULL,
     active BIT NOT NULL CONSTRAINT df_room_active DEFAULT 1,
-    created_at DATETIME2(3) NOT NULL CONSTRAINT df_room_created_at DEFAULT SYSUTCDATETIME(),
-    updated_at DATETIME2(3) NOT NULL CONSTRAINT df_room_updated_at DEFAULT SYSUTCDATETIME(),
+    created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_room_created_at DEFAULT SYSUTCDATETIME(),
+    updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_room_updated_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT fk_room_hospital FOREIGN KEY (hospital_id) REFERENCES dbo.hospital (id),
     CONSTRAINT uq_room_hospital_id_id UNIQUE (hospital_id, id),
     CONSTRAINT uq_room_hospital_name UNIQUE (hospital_id, name)
@@ -72,8 +72,8 @@ CREATE TABLE dbo.bed (
     operational_status VARCHAR(20) NOT NULL
         CONSTRAINT df_bed_operational_status DEFAULT 'AVAILABLE',
     active BIT NOT NULL CONSTRAINT df_bed_active DEFAULT 1,
-    created_at DATETIME2(3) NOT NULL CONSTRAINT df_bed_created_at DEFAULT SYSUTCDATETIME(),
-    updated_at DATETIME2(3) NOT NULL CONSTRAINT df_bed_updated_at DEFAULT SYSUTCDATETIME(),
+    created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_bed_created_at DEFAULT SYSUTCDATETIME(),
+    updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_bed_updated_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT fk_bed_room_same_hospital
         FOREIGN KEY (hospital_id, room_id) REFERENCES dbo.room (hospital_id, id),
     CONSTRAINT ck_bed_operational_status
@@ -98,8 +98,8 @@ CREATE TABLE dbo.patient (
     comorbidities NVARCHAR(2000) NULL,
     allergies NVARCHAR(2000) NULL,
     active BIT NOT NULL CONSTRAINT df_patient_active DEFAULT 1,
-    created_at DATETIME2(3) NOT NULL CONSTRAINT df_patient_created_at DEFAULT SYSUTCDATETIME(),
-    updated_at DATETIME2(3) NOT NULL CONSTRAINT df_patient_updated_at DEFAULT SYSUTCDATETIME(),
+    created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_patient_created_at DEFAULT SYSUTCDATETIME(),
+    updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_patient_updated_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT fk_patient_hospital FOREIGN KEY (hospital_id) REFERENCES dbo.hospital (id),
     CONSTRAINT ck_patient_weight CHECK (weight_kg IS NULL OR weight_kg > 0),
     CONSTRAINT uq_patient_hospital_id_id UNIQUE (hospital_id, id)
@@ -116,12 +116,12 @@ CREATE TABLE dbo.admission (
     patient_id UNIQUEIDENTIFIER NOT NULL,
     bed_id UNIQUEIDENTIFIER NOT NULL,
     admitted_by_user_id UNIQUEIDENTIFIER NOT NULL,
-    admitted_at DATETIME2(3) NOT NULL CONSTRAINT df_admission_admitted_at DEFAULT SYSUTCDATETIME(),
-    discharged_at DATETIME2(3) NULL,
+    admitted_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_admission_admitted_at DEFAULT SYSUTCDATETIME(),
+    discharged_at DATETIMEOFFSET(7) NULL,
     discharge_reason VARCHAR(40) NULL,
     status VARCHAR(20) NOT NULL CONSTRAINT df_admission_status DEFAULT 'ACTIVE',
-    created_at DATETIME2(3) NOT NULL CONSTRAINT df_admission_created_at DEFAULT SYSUTCDATETIME(),
-    updated_at DATETIME2(3) NOT NULL CONSTRAINT df_admission_updated_at DEFAULT SYSUTCDATETIME(),
+    created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_admission_created_at DEFAULT SYSUTCDATETIME(),
+    updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_admission_updated_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT fk_admission_patient_same_hospital
         FOREIGN KEY (hospital_id, patient_id) REFERENCES dbo.patient (hospital_id, id),
     CONSTRAINT fk_admission_bed_same_hospital
@@ -157,8 +157,8 @@ CREATE TABLE dbo.prescription (
     status VARCHAR(20) NOT NULL CONSTRAINT df_prescription_status DEFAULT 'DRAFT',
     diet NVARCHAR(1000) NULL,
     observations NVARCHAR(MAX) NULL,
-    created_at DATETIME2(3) NOT NULL CONSTRAINT df_prescription_created_at DEFAULT SYSUTCDATETIME(),
-    signed_at DATETIME2(3) NULL,
+    created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_prescription_created_at DEFAULT SYSUTCDATETIME(),
+    signed_at DATETIMEOFFSET(7) NULL,
     CONSTRAINT fk_prescription_admission_same_hospital
         FOREIGN KEY (hospital_id, admission_id) REFERENCES dbo.admission (hospital_id, id),
     CONSTRAINT fk_prescription_author_same_hospital
@@ -182,7 +182,7 @@ CREATE TABLE dbo.prescription_item (
     route NVARCHAR(40) NULL,
     frequency NVARCHAR(80) NULL,
     scheduling VARCHAR(20) NULL,
-    created_at DATETIME2(3) NOT NULL
+    created_at DATETIMEOFFSET(7) NOT NULL
         CONSTRAINT df_prescription_item_created_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT fk_prescription_item_prescription_same_hospital
         FOREIGN KEY (hospital_id, prescription_id)
@@ -206,8 +206,8 @@ CREATE TABLE dbo.evolution (
     complementary_exams_json NVARCHAR(MAX) NULL,
     conduct NVARCHAR(MAX) NULL,
     status VARCHAR(20) NOT NULL CONSTRAINT df_evolution_status DEFAULT 'DRAFT',
-    created_at DATETIME2(3) NOT NULL CONSTRAINT df_evolution_created_at DEFAULT SYSUTCDATETIME(),
-    signed_at DATETIME2(3) NULL,
+    created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_evolution_created_at DEFAULT SYSUTCDATETIME(),
+    signed_at DATETIMEOFFSET(7) NULL,
     CONSTRAINT fk_evolution_admission_same_hospital
         FOREIGN KEY (hospital_id, admission_id) REFERENCES dbo.admission (hospital_id, id),
     CONSTRAINT fk_evolution_author_same_hospital
@@ -230,9 +230,9 @@ CREATE TABLE dbo.refresh_token (
     user_id UNIQUEIDENTIFIER NOT NULL,
     hospital_id UNIQUEIDENTIFIER NULL,
     token_hash BINARY(32) NOT NULL,
-    expires_at DATETIME2(3) NOT NULL,
-    revoked_at DATETIME2(3) NULL,
-    created_at DATETIME2(3) NOT NULL CONSTRAINT df_refresh_token_created_at DEFAULT SYSUTCDATETIME(),
+    expires_at DATETIMEOFFSET(7) NOT NULL,
+    revoked_at DATETIMEOFFSET(7) NULL,
+    created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_refresh_token_created_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT fk_refresh_token_user FOREIGN KEY (user_id) REFERENCES dbo.app_user (id),
     CONSTRAINT fk_refresh_token_hospital FOREIGN KEY (hospital_id) REFERENCES dbo.hospital (id),
     CONSTRAINT uq_refresh_token_hash UNIQUE (token_hash)
@@ -250,7 +250,7 @@ CREATE TABLE dbo.audit_event (
     entity_id UNIQUEIDENTIFIER NULL,
     source_ip VARCHAR(64) NULL,
     details_json NVARCHAR(MAX) NULL,
-    occurred_at DATETIME2(3) NOT NULL CONSTRAINT df_audit_event_occurred_at DEFAULT SYSUTCDATETIME(),
+    occurred_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_audit_event_occurred_at DEFAULT SYSUTCDATETIME(),
     CONSTRAINT fk_audit_event_hospital FOREIGN KEY (hospital_id) REFERENCES dbo.hospital (id),
     CONSTRAINT fk_audit_event_user FOREIGN KEY (actor_user_id) REFERENCES dbo.app_user (id),
     CONSTRAINT ck_audit_event_details_json
