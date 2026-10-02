@@ -1,0 +1,9 @@
+inventory:
+  bootstrap:
+    enabled: true
+    doctor-email: ${BOOTSTRAP_DOCTOR_EMAIL:lucas.galante@inventorymed.local}
+    doctor-password: ${BOOTSTRAP_DOCTOR_PASSWORD:Trocar@123}
+
+logging:
+  level:
+    org.springframework.security: INFO

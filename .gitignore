@@ -1,5 +1,7 @@
 Thumbs.db
 .DS_Store
 *.log
+.env
+tmp/
 frontend/public/inventory-med-logo.jpg
 frontend/public/inventory-med-logo-clean.png
