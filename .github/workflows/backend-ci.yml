@@ -34,4 +34,15 @@ jobs:
           cache-dependency-path: backend/pom.xml
 
       - name: Executar testes
-        run: ./mvnw --batch-mode verify
+        run: |
+          set -o pipefail
+          ./mvnw --batch-mode --no-transfer-progress verify 2>&1 | tee backend-build.log
+
+      - name: Expor diagnóstico da falha
+        if: failure()
+        run: |
+          diagnostic=$(tail -n 80 backend-build.log)
+          diagnostic=${diagnostic//'%'/'%25'}
+          diagnostic=${diagnostic//$'\r'/'%0D'}
+          diagnostic=${diagnostic//$'\n'/'%0A'}
+          echo "::error title=Falha na validação do backend::$diagnostic"
