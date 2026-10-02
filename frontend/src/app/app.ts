@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../environments/environment';
+import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
 import {
   AppScreen,
@@ -54,6 +57,14 @@ interface PrintablePrescriptionRow {
 interface EvolutionExamRow {
   name: string;
   values: string[];
+}
+
+interface HospitalOption {
+  id: string;
+  name: string;
+  shortName: string;
+  city: string;
+  detail: string;
 }
 
 const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
@@ -192,6 +203,8 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
 })
 export class App implements OnInit {
   protected readonly store = inject(DemoStore);
+  protected readonly auth = inject(AuthService);
+  protected readonly realApiEnabled = environment.useRealApi;
   protected readonly screen = signal<AppScreen>('login');
   protected readonly expandedRooms = signal<Set<string>>(new Set());
   protected readonly selectedBedId = signal<string | null>(null);
@@ -201,9 +214,13 @@ export class App implements OnInit {
   protected readonly prescriptionReady = signal(false);
   protected readonly searchTerm = signal('');
   protected readonly toast = signal<string | null>(null);
+  protected readonly authBusy = signal(false);
+  protected readonly authError = signal<string | null>(null);
 
-  protected loginEmail = 'lucas.galante@demo.com';
-  protected loginPassword = 'demo123';
+  protected loginEmail = environment.useRealApi
+    ? 'lucas.galante@inventorymed.local'
+    : 'lucas.galante@demo.com';
+  protected loginPassword = environment.useRealApi ? '' : 'demo123';
   protected patientName = '';
   protected patientBirthDate = '';
   protected patientSex = 'FEMININO';
@@ -361,7 +378,51 @@ export class App implements OnInit {
   protected readonly currentDate = new Date();
 
   protected readonly activeHospital = this.store.activeHospital;
-  protected readonly hospitals = this.store.hospitals;
+  protected readonly hospitals = computed<HospitalOption[]>(() => {
+    if (this.realApiEnabled) {
+      return this.auth.hospitals().map((hospital) => ({
+        id: hospital.id,
+        name: hospital.name,
+        shortName: hospital.shortName,
+        city: hospital.city,
+        detail: this.roleLabel(hospital.role),
+      }));
+    }
+    return this.store.hospitals().map((hospital) => ({
+      id: hospital.id,
+      name: hospital.name,
+      shortName: hospital.shortName,
+      city: hospital.city,
+      detail: `${hospital.rooms.length} QUARTOS CADASTRADOS`,
+    }));
+  });
+  protected readonly selectedHospitalOptionId = computed(() =>
+    this.realApiEnabled
+      ? (this.auth.selectedHospitalId() ?? '')
+      : (this.activeHospital()?.id ?? ''),
+  );
+  protected readonly professionalName = computed(() => {
+    const name = this.auth.user()?.name ?? 'LUCAS GALANTE';
+    const role = this.auth.selectedHospital()?.role ?? this.auth.hospitals()[0]?.role ?? 'DOCTOR';
+    return role === 'DOCTOR' && !name.toLocaleUpperCase('pt-BR').startsWith('DR.')
+      ? `DR. ${name}`
+      : name;
+  });
+  protected readonly professionalRole = computed(() =>
+    this.roleLabel(
+      this.auth.selectedHospital()?.role ?? this.auth.hospitals()[0]?.role ?? 'DOCTOR',
+    ),
+  );
+  protected readonly professionalInitials = computed(() =>
+    this.professionalName()
+      .replace(/^DR\.\s*/i, '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toLocaleUpperCase('pt-BR'),
+  );
   protected readonly selectedBed = computed(() => {
     const bedId = this.selectedBedId();
     return bedId ? this.store.findBed(bedId) : undefined;
@@ -405,25 +466,77 @@ export class App implements OnInit {
   });
 
   ngOnInit(): void {
-    this.openRequestedView();
+    if (this.openRequestedView()) return;
+    if (this.realApiEnabled) void this.restoreAuthenticatedSession();
   }
 
-  protected login(): void {
+  protected async login(): Promise<void> {
     if (!this.loginEmail.trim() || !this.loginPassword.trim()) {
-      this.showToast('Informe e-mail e senha para continuar.');
+      this.authError.set('INFORME E-MAIL E SENHA PARA CONTINUAR.');
       return;
     }
-    this.screen.set('hospital-select');
+    this.authError.set(null);
+
+    if (!this.realApiEnabled) {
+      this.screen.set('hospital-select');
+      return;
+    }
+
+    this.authBusy.set(true);
+    try {
+      const response = await this.auth.login(this.loginEmail, this.loginPassword);
+      if (response.selectedHospitalId) {
+        const selected = response.hospitals.find(
+          (hospital) => hospital.id === response.selectedHospitalId,
+        );
+        if (selected) {
+          this.openRoomsForHospital(selected.name);
+          return;
+        }
+      }
+      this.screen.set('hospital-select');
+    } catch (error) {
+      this.authError.set(this.authErrorMessage(error));
+    } finally {
+      this.authBusy.set(false);
+    }
   }
 
-  protected enterHospital(hospitalId: string): void {
-    this.store.selectHospital(hospitalId);
-    this.screen.set('rooms');
-    this.expandedRooms.set(new Set());
+  protected async enterHospital(hospitalId: string): Promise<void> {
+    if (!this.realApiEnabled) {
+      this.store.selectHospital(hospitalId);
+      this.screen.set('rooms');
+      this.expandedRooms.set(new Set());
+      return;
+    }
+
+    this.authBusy.set(true);
+    this.authError.set(null);
+    try {
+      const response = await this.auth.selectHospital(hospitalId);
+      this.openRoomsForHospital(response.hospital.name);
+    } catch (error) {
+      this.authError.set(this.authErrorMessage(error));
+    } finally {
+      this.authBusy.set(false);
+    }
   }
 
-  protected switchHospital(hospitalId: string): void {
-    this.store.selectHospital(hospitalId);
+  protected async switchHospital(hospitalId: string): Promise<void> {
+    if (this.realApiEnabled) {
+      this.authBusy.set(true);
+      try {
+        const response = await this.auth.selectHospital(hospitalId);
+        this.selectDemoHospitalByName(response.hospital.name);
+      } catch (error) {
+        this.showToast(this.authErrorMessage(error));
+        return;
+      } finally {
+        this.authBusy.set(false);
+      }
+    } else {
+      this.store.selectHospital(hospitalId);
+    }
     this.expandedRooms.set(new Set());
     this.selectedBedId.set(null);
     this.admissionOpen.set(false);
@@ -432,6 +545,8 @@ export class App implements OnInit {
   }
 
   protected logout(): void {
+    this.auth.logout();
+    this.authError.set(null);
     this.screen.set('login');
     this.store.activeHospitalId.set(null);
     this.expandedRooms.set(new Set());
@@ -832,6 +947,69 @@ export class App implements OnInit {
     this.showToast('Dados de demonstração restaurados.');
   }
 
+  private async restoreAuthenticatedSession(): Promise<void> {
+    if (!this.auth.isAuthenticated()) return;
+
+    this.authBusy.set(true);
+    const valid = await this.auth.validateSession();
+    this.authBusy.set(false);
+    if (!valid) return;
+
+    const selected = this.auth.selectedHospital();
+    if (selected) {
+      this.openRoomsForHospital(selected.name);
+      return;
+    }
+    this.screen.set('hospital-select');
+  }
+
+  private openRoomsForHospital(hospitalName: string): void {
+    if (!this.selectDemoHospitalByName(hospitalName)) {
+      this.authError.set(
+        'A UNIDADE AUTORIZADA AINDA NÃO POSSUI UMA ESTRUTURA DEMONSTRATIVA DE LEITOS.',
+      );
+      this.screen.set('hospital-select');
+      return;
+    }
+    this.authError.set(null);
+    this.screen.set('rooms');
+    this.expandedRooms.set(new Set());
+  }
+
+  private selectDemoHospitalByName(hospitalName: string): boolean {
+    const normalize = (value: string) =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLocaleUpperCase('pt-BR');
+    const hospital = this.store
+      .hospitals()
+      .find((item) => normalize(item.name) === normalize(hospitalName));
+    if (!hospital) return false;
+    this.store.selectHospital(hospital.id);
+    return true;
+  }
+
+  private authErrorMessage(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse) || error.status === 0) {
+      return 'NÃO FOI POSSÍVEL CONECTAR À API LOCAL. CONFIRA SE O DOCKER ESTÁ EM EXECUÇÃO.';
+    }
+    if (error.status === 401) return 'E-MAIL OU SENHA INVÁLIDOS.';
+    if (error.status === 403) return 'USUÁRIO SEM ACESSO ATIVO A ESTA UNIDADE.';
+    return 'NÃO FOI POSSÍVEL CONCLUIR O ACESSO. TENTE NOVAMENTE.';
+  }
+
+  private roleLabel(role: string): string {
+    return (
+      {
+        ADMIN: 'ADMINISTRADOR',
+        DOCTOR: 'MÉDICO',
+        NURSE: 'ENFERMEIRO(A)',
+      }[role] ?? role
+    );
+  }
+
   private showToast(message: string): void {
     this.toast.set(message);
     window.setTimeout(() => {
@@ -1024,19 +1202,19 @@ export class App implements OnInit {
     window.open(url.toString(), '_blank', 'noopener');
   }
 
-  private openRequestedView(): void {
+  private openRequestedView(): boolean {
     const params = new URLSearchParams(window.location.search);
     const hospitalId = params.get('hospital');
     const bedId = params.get('bed');
     const flow = params.get('flow');
-    if (!hospitalId || !bedId || !flow) return;
+    if (!hospitalId || !bedId || !flow) return false;
 
     this.store.selectHospital(hospitalId);
     const bed = this.store.findBed(bedId);
     const room = this.activeHospital()?.rooms.find((item) =>
       item.beds.some((roomBed) => roomBed.id === bedId),
     );
-    if (!bed || !room) return;
+    if (!bed || !room) return false;
 
     this.selectedBedId.set(bedId);
     this.expandedRooms.set(new Set([room.id]));
@@ -1044,12 +1222,14 @@ export class App implements OnInit {
     if (flow === 'prescription' && bed.status === 'OCCUPIED' && bed.patient) {
       this.preparePrescription(bed.patient);
       this.screen.set('prescription');
-      return;
+      return true;
     }
     if (flow === 'evolution' && bed.status === 'OCCUPIED' && bed.patient) {
       this.prepareEvolution(bed.patient);
       this.screen.set('evolution');
+      return true;
     }
+    return false;
   }
 
   private resetPatientForm(): void {

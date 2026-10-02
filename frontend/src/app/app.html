@@ -14,7 +14,13 @@
           Uma visão clara da ocupação hospitalar para apoiar a rotina da equipe médica.
         </p>
       </div>
-      <div class="brand-footnote">Protótipo com dados fictícios</div>
+      <div class="brand-footnote">
+        {{
+          realApiEnabled
+            ? 'AUTENTICAÇÃO LOCAL • AMBIENTE DE DESENVOLVIMENTO'
+            : 'PROTÓTIPO COM DADOS FICTÍCIOS'
+        }}
+      </div>
     </section>
 
     <section class="login-panel">
@@ -59,10 +65,19 @@
             autocomplete="current-password"
           />
         </div>
-        <button class="primary-button login-button" type="submit">
-          Entrar <span aria-hidden="true">→</span>
+        @if (authError()) {
+          <p class="form-error" role="alert">{{ authError() }}</p>
+        }
+        <button class="primary-button login-button" type="submit" [disabled]="authBusy()">
+          {{ authBusy() ? 'CONECTANDO...' : 'ENTRAR' }} <span aria-hidden="true">→</span>
         </button>
-        <p class="demo-hint">Acesso de demonstração preenchido automaticamente.</p>
+        <p class="demo-hint">
+          {{
+            realApiEnabled
+              ? 'AMBIENTE DEV: A SENHA É DEFINIDA NO ARQUIVO .ENV.'
+              : 'ACESSO DE DEMONSTRAÇÃO PREENCHIDO AUTOMATICAMENTE.'
+          }}
+        </p>
       </form>
     </section>
   </main>
@@ -83,21 +98,29 @@
     </header>
     <section class="selection-content">
       <div class="selection-title">
-        <div class="avatar">LG</div>
+        <div class="avatar">{{ professionalInitials() }}</div>
         <div>
-          <p class="eyebrow">DR. LUCAS GALANTE</p>
+          <p class="eyebrow">{{ professionalName() }}</p>
           <h1>Onde você atenderá hoje?</h1>
           <p>Selecione um hospital para acessar seus quartos, leitos e pacientes.</p>
         </div>
       </div>
+      @if (authError()) {
+        <p class="selection-error form-error" role="alert">{{ authError() }}</p>
+      }
       <div class="hospital-grid">
         @for (hospital of hospitals(); track hospital.id) {
-          <button type="button" class="hospital-card" (click)="enterHospital(hospital.id)">
+          <button
+            type="button"
+            class="hospital-card"
+            (click)="enterHospital(hospital.id)"
+            [disabled]="authBusy()"
+          >
             <span class="hospital-monogram">{{ hospital.shortName }}</span>
             <span class="hospital-info"
               ><strong>{{ hospital.name }}</strong
               ><small>{{ hospital.city }}</small
-              ><small>{{ hospital.rooms.length }} quartos cadastrados</small></span
+              ><small>{{ hospital.detail }}</small></span
             >
             <span class="card-arrow" aria-hidden="true">→</span>
           </button>
@@ -122,8 +145,9 @@
         <span class="context-label">Hospital em atendimento</span>
         <select
           aria-label="Hospital em atendimento"
-          [ngModel]="hospital.id"
+          [ngModel]="selectedHospitalOptionId()"
           (ngModelChange)="switchHospital($event)"
+          [disabled]="authBusy()"
         >
           @for (item of hospitals(); track item.id) {
             <option [value]="item.id">{{ item.name }}</option>
@@ -131,8 +155,11 @@
         </select>
       </div>
       <div class="profile-menu">
-        <div class="avatar avatar--small">LG</div>
-        <div class="profile-copy"><strong>DR. LUCAS GALANTE</strong><span>MÉDICO</span></div>
+        <div class="avatar avatar--small">{{ professionalInitials() }}</div>
+        <div class="profile-copy">
+          <strong>{{ professionalName() }}</strong
+          ><span>{{ professionalRole() }}</span>
+        </div>
         <button type="button" class="header-action" (click)="logout()">Sair</button>
       </div>
     </header>
@@ -148,7 +175,10 @@
           <button type="button" class="ghost-button" (click)="resetDemo()">
             Restaurar demonstração
           </button>
-          <div class="data-badge"><span></span> Dados fictícios</div>
+          <div class="data-badge">
+            <span></span>
+            {{ realApiEnabled ? 'LOGIN REAL • LEITOS DEMONSTRATIVOS' : 'DADOS FICTÍCIOS' }}
+          </div>
         </div>
       </div>
 

@@ -15,7 +15,7 @@ Serviços locais:
 
 - API: `http://localhost:8080/api`
 - Saúde: `http://localhost:8080/api/actuator/health`
-- SQL Server: `127.0.0.1:1433`
+- SQL Server: `127.0.0.1:14330` (porta externa configurável por `DB_HOST_PORT`)
 
 O SQL Server fica restrito ao computador local no ambiente de desenvolvimento. Em produção, a porta 1433 não deve ser publicada na internet.
 

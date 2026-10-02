@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { vi } from 'vitest';
 import { App } from './app';
 import { INITIAL_HOSPITALS } from './mock-data';
@@ -7,6 +8,7 @@ describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [provideHttpClient()],
     }).compileComponents();
   });
 
@@ -24,7 +26,7 @@ describe('App', () => {
       'inventory-med-logo.png',
     );
     expect(compiled.querySelector('h1')?.textContent).toContain('Leitos organizados');
-    expect(compiled.querySelector('button[type="submit"]')?.textContent).toContain('Entrar');
+    expect(compiled.querySelector('button[type="submit"]')?.textContent).toContain('ENTRAR');
   });
 
   it('should start with the requested hospitals and no registered patients', () => {

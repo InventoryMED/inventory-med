@@ -17,18 +17,24 @@ Cada hospital é um domínio independente. Pacientes, quartos, leitos, internaç
 
 ## Executar o ambiente real localmente
 
-Requisitos: Docker Desktop com Docker Compose.
+Requisitos: Docker Desktop com Docker Compose, Node.js 24 e npm.
 
-```bash
-cp .env.example .env
-docker compose up --build
+```powershell
+Copy-Item .env.example .env
+docker compose up --build -d
+cd frontend
+npm install
+npm start
 ```
 
 - Front-end atual: `http://localhost:4200`
 - API: `http://localhost:8080/api`
 - Saúde da API: `http://localhost:8080/api/actuator/health`
+- SQL Server do projeto: `127.0.0.1:14330`
 
-Consulte `backend/README.md` para o fluxo de autenticação.
+O proxy de desenvolvimento do Angular encaminha `/api` para a API local. O build de produção usado no GitHub Pages continua em modo demonstrativo até a API ter uma URL HTTPS pública.
+
+Consulte `docs/local-development.md` para o roteiro completo e `backend/README.md` para o fluxo de autenticação.
 
 ## Executar apenas o protótipo Angular
 

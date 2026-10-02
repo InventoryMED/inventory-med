@@ -251,6 +251,11 @@ svg {
 .primary-button:hover {
   background: var(--navy-800);
 }
+.primary-button:disabled,
+.hospital-card:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
 .login-button {
   display: flex;
   width: 100%;
@@ -268,6 +273,21 @@ svg {
   color: #8a94a3;
   font-size: 12px;
   text-align: center;
+}
+.form-error {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #f3b7b7;
+  border-radius: 8px;
+  background: #fff3f3;
+  color: #9f1c1c;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.selection-error {
+  max-width: 720px;
+  margin: 0 0 18px;
 }
 
 .selection-page {
