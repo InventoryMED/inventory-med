@@ -2,7 +2,7 @@
 
 **Data:** 2026-10-03
 **Responsável:** Codex e Gabriel Pereira
-**Status:** concluída e validada localmente; ainda não implantada na VPS
+**Status:** concluída, ativada e validada localmente; ainda não implantada na VPS
 
 ## Resumo
 
@@ -85,6 +85,16 @@ novo isolamento sem fingir que a unidade já possui estrutura operacional.
 Nenhum. A implantação pública atual foi preservada deliberadamente até aprovação dos
 testes locais e preparação dos segredos de produção.
 
+## Ativação no ambiente local
+
+- `infra/scripts/configure-local-administrator.ps1` foi executado pelo responsável para
+  definir o administrador inicial e a chave criptográfica fora do Git;
+- `docker compose up --build -d api` reconstruiu somente a API local;
+- o Flyway atualizou `inventory_med_core` da versão 1 para a versão 2;
+- o endpoint de saúde respondeu `UP`;
+- o login foi validado pela API sem exibir a senha: autenticação aprovada, perfil
+  `ADMIN_SISTEMA` presente e troca inicial de senha obrigatória.
+
 ## Serviços afetados
 
 - API Java local;
@@ -128,7 +138,7 @@ qualquer recuperação de banco seguirá backup e procedimento documentado.
 
 ## Pendências
 
-- configurar os novos segredos no `.env` local e validar o fluxo manual no navegador;
+- concluir a troca da senha inicial no navegador e validar o painel administrativo;
 - confirmar na homologação que o login técnico da VPS possui somente as permissões
   documentadas para provisionamento;
 - implementar administração hospitalar de quartos e leitos;
