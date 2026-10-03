@@ -53,7 +53,8 @@ cd 'C:\Inventory MED'
 O script:
 
 1. exige repositório Git sem alterações pendentes;
-2. executa os testes e o build Angular;
+2. executa os testes e o build Angular em um contêiner Node isolado, sem interromper o
+   servidor local;
 3. executa `mvn clean verify` em Java 21 com SQL Server descartável;
 4. gera `artifacts/releases/inventory-med-COMMIT.tar.gz`.
 

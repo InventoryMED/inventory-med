@@ -18,18 +18,14 @@ if (Test-Path -LiteralPath $releaseRoot) {
     throw "A pasta da versão já existe: $releaseRoot"
 }
 
-Push-Location (Join-Path $repositoryRoot 'frontend')
-try {
-    npm ci
-    if ($LASTEXITCODE -ne 0) { throw 'Falha ao instalar dependências do frontend.' }
-    npm test -- --watch=false
-    if ($LASTEXITCODE -ne 0) { throw 'Falha nos testes do frontend.' }
-    npm run build
-    if ($LASTEXITCODE -ne 0) { throw 'Falha no build do frontend.' }
-}
-finally {
-    Pop-Location
-}
+docker run --rm `
+    --mount "type=bind,src=$(Join-Path $repositoryRoot 'frontend'),dst=/workspace" `
+    -v inventorymed-node-modules:/workspace/node_modules `
+    -v inventorymed-npm-cache:/root/.npm `
+    -w /workspace `
+    node:24-alpine `
+    sh -c 'npm ci && npm test -- --watch=false && npm run build'
+if ($LASTEXITCODE -ne 0) { throw 'Falha nos testes ou no build do frontend.' }
 
 docker run --rm `
     --add-host host.docker.internal:host-gateway `
