@@ -12,6 +12,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -52,6 +53,19 @@ public class ApiExceptionHandler {
             .distinct()
             .collect(Collectors.joining("; "));
         return response(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message, request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiError> handleUnreadableMessage(
+        HttpMessageNotReadableException exception,
+        HttpServletRequest request
+    ) {
+        return response(
+            HttpStatus.BAD_REQUEST,
+            "INVALID_REQUEST_BODY",
+            "O conteúdo enviado possui formato inválido",
+            request
+        );
     }
 
     @ExceptionHandler(ResourceConflictException.class)

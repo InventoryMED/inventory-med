@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PatchMapping;
 
 @RestController
 @RequestMapping("/administration")
@@ -87,5 +88,39 @@ public class AdministrationController {
         return ResponseEntity.created(
             URI.create("/api/v1/administration/users/" + created.id())
         ).body(created);
+    }
+
+    @PatchMapping("/users/{userId}/status")
+    public AdminUserResponse setUserStatus(
+        @PathVariable java.util.UUID userId,
+        @RequestBody AccessStatusRequest body,
+        @AuthenticationPrincipal InventoryUserPrincipal principal,
+        HttpServletRequest request
+    ) {
+        return userService.setUserActive(
+            userId,
+            body.active(),
+            principal,
+            request.getRemoteAddr(),
+            request.getHeader("User-Agent")
+        );
+    }
+
+    @PatchMapping("/users/{userId}/hospitals/{hospitalId}/status")
+    public AdminUserResponse setHospitalAccessStatus(
+        @PathVariable java.util.UUID userId,
+        @PathVariable java.util.UUID hospitalId,
+        @RequestBody AccessStatusRequest body,
+        @AuthenticationPrincipal InventoryUserPrincipal principal,
+        HttpServletRequest request
+    ) {
+        return userService.setHospitalAccessActive(
+            userId,
+            hospitalId,
+            body.active(),
+            principal,
+            request.getRemoteAddr(),
+            request.getHeader("User-Agent")
+        );
     }
 }

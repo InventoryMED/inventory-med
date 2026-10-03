@@ -13,6 +13,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
+import br.com.inventorymed.common.BusinessValidationException;
+import br.com.inventorymed.identity.SystemRole;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,6 +120,94 @@ public class UserAdministrationService {
             )
         );
         return created;
+    }
+
+    @Transactional
+    public AdminUserResponse setUserActive(
+        UUID userId,
+        boolean active,
+        InventoryUserPrincipal principal,
+        String sourceIp,
+        String userAgent
+    ) {
+        AppUser actor = requiredActor(principal);
+        AppUser target = userRepository
+            .findById(userId)
+            .orElseThrow(() -> new BusinessValidationException("Usuário não encontrado"));
+        if (!active && actor.getId().equals(target.getId())) {
+            throw new BusinessValidationException("Você não pode desativar a própria conta");
+        }
+        if (!active && isLastActiveSystemAdministrator(target)) {
+            throw new BusinessValidationException("Mantenha ao menos um administrador geral ativo");
+        }
+        if (active) target.activate(Instant.now()); else target.deactivate(Instant.now());
+        auditService.record(
+            "ADMIN_USER_STATUS_CHANGED",
+            AuditOutcome.SUCCESS,
+            actor,
+            null,
+            sourceIp,
+            userAgent,
+            Map.of("targetUserId", userId, "active", active)
+        );
+        return response(target);
+    }
+
+    @Transactional
+    public AdminUserResponse setHospitalAccessActive(
+        UUID userId,
+        UUID hospitalId,
+        boolean active,
+        InventoryUserPrincipal principal,
+        String sourceIp,
+        String userAgent
+    ) {
+        AppUser actor = requiredActor(principal);
+        var membership = membershipRepository
+            .findByUserIdAndHospitalId(userId, hospitalId)
+            .orElseThrow(() -> new BusinessValidationException("Perfil hospitalar não encontrado"));
+        if (active) membership.activate(); else membership.deactivate();
+        auditService.record(
+            "ADMIN_HOSPITAL_ACCESS_STATUS_CHANGED",
+            AuditOutcome.SUCCESS,
+            actor,
+            membership.getHospital(),
+            sourceIp,
+            userAgent,
+            Map.of("targetUserId", userId, "active", active, "role", membership.getRole().name())
+        );
+        return response(membership.getUser());
+    }
+
+    private boolean isLastActiveSystemAdministrator(AppUser target) {
+        if (!systemRoleRepository.existsByUserIdAndRole(target.getId(), SystemRole.ADMIN_SISTEMA)) {
+            return false;
+        }
+        long activeAdministrators = systemRoleRepository
+            .findAllWithUser()
+            .stream()
+            .filter(role -> role.getRole() == SystemRole.ADMIN_SISTEMA)
+            .map(role -> role.getUser())
+            .filter(AppUser::isActive)
+            .map(AppUser::getId)
+            .distinct()
+            .count();
+        return activeAdministrators <= 1;
+    }
+
+    private AdminUserResponse response(AppUser user) {
+        List<String> systemRoles = systemRoleRepository
+            .findAllByUserId(user.getId())
+            .stream()
+            .map(role -> role.getRole().name())
+            .toList();
+        List<UserHospitalAccessResponse> hospitals = membershipRepository
+            .findAllWithHospitalAndUser()
+            .stream()
+            .filter(item -> item.getUser().getId().equals(user.getId()))
+            .map(UserHospitalAccessResponse::from)
+            .toList();
+        return AdminUserResponse.from(user, systemRoles, hospitals);
     }
 
     private AppUser requiredActor(InventoryUserPrincipal principal) {

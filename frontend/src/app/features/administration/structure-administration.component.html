@@ -1,0 +1,159 @@
+<section class="module-heading">
+  <div>
+    <p>ESTRUTURA POR HOSPITAL</p>
+    <h2>UNIDADES, QUARTOS E LEITOS</h2>
+  </div>
+  <label
+    ><span>HOSPITAL</span
+    ><select [(ngModel)]="hospitalId" (ngModelChange)="load()">
+      @for (hospital of hospitals; track hospital.id) {
+        @if (hospital.status === 'ACTIVE') {
+          <option [value]="hospital.id">{{ hospital.name }}</option>
+        }
+      }
+    </select></label
+  >
+</section>
+@if (error()) {
+  <div class="module-message error">{{ error() }}</div>
+}
+@if (feedback()) {
+  <div class="module-message success">{{ feedback() }}</div>
+}
+
+<div class="create-grid">
+  <form (ngSubmit)="createUnit()">
+    <h3>NOVA UNIDADE</h3>
+    <input name="unitName" [(ngModel)]="newUnit.name" placeholder="NOME" required /><input
+      name="unitCode"
+      [(ngModel)]="newUnit.code"
+      placeholder="CÓDIGO"
+      required
+    /><input
+      name="unitOrder"
+      type="number"
+      min="0"
+      [(ngModel)]="newUnit.displayOrder"
+      placeholder="ORDEM"
+    /><button type="submit" [disabled]="saving()">CRIAR UNIDADE</button>
+  </form>
+  <form (ngSubmit)="createRoom()">
+    <h3>NOVO QUARTO</h3>
+    <select name="roomUnit" [(ngModel)]="newRoom.careUnitId" required>
+      <option value="">UNIDADE</option>
+      @for (unit of structure().careUnits; track unit.id) {
+        <option [value]="unit.id">{{ unit.name }}</option>
+      }</select
+    ><input name="roomName" [(ngModel)]="newRoom.name" placeholder="NOME" required /><input
+      name="roomCode"
+      [(ngModel)]="newRoom.code"
+      placeholder="CÓDIGO"
+      required
+    /><input name="roomFloor" [(ngModel)]="newRoom.floorName" placeholder="ANDAR / SETOR" /><input
+      name="roomOrder"
+      type="number"
+      min="0"
+      [(ngModel)]="newRoom.displayOrder"
+      placeholder="ORDEM"
+    /><button type="submit" [disabled]="saving()">CRIAR QUARTO</button>
+  </form>
+  <form (ngSubmit)="createBed()">
+    <h3>NOVO LEITO</h3>
+    <select name="bedRoom" [(ngModel)]="newBed.roomId" required>
+      <option value="">QUARTO</option>
+      @for (room of rooms; track room.id) {
+        <option [value]="room.id">{{ room.name }}</option>
+      }</select
+    ><input name="bedCode" [(ngModel)]="newBed.code" placeholder="CÓDIGO" required /><select
+      name="bedStatus"
+      [(ngModel)]="newBed.status"
+    >
+      <option value="AVAILABLE">DISPONÍVEL</option>
+      <option value="CLEANING">HIGIENIZAÇÃO</option>
+      <option value="MAINTENANCE">MANUTENÇÃO</option>
+      <option value="BLOCKED">BLOQUEADO</option></select
+    ><input
+      name="bedOrder"
+      type="number"
+      min="0"
+      [(ngModel)]="newBed.displayOrder"
+      placeholder="ORDEM"
+    /><button type="submit" [disabled]="saving()">CRIAR LEITO</button>
+  </form>
+</div>
+
+@if (loading()) {
+  <div class="empty">CARREGANDO ESTRUTURA...</div>
+} @else {
+  <div class="structure-list">
+    @for (unit of structure().careUnits; track unit.id) {
+      <article class="unit-card">
+        <div class="edit-row">
+          <input [(ngModel)]="unit.name" aria-label="NOME DA UNIDADE" /><input
+            [(ngModel)]="unit.code"
+            aria-label="CÓDIGO DA UNIDADE"
+          /><label class="order"
+            ><span>ORDEM</span
+            ><input type="number" min="0" [(ngModel)]="unit.displayOrder" /></label
+          ><label class="toggle"
+            ><input type="checkbox" [(ngModel)]="unit.active" /><span>ATIVA</span></label
+          ><button type="button" (click)="saveUnit(unit)">SALVAR</button>
+        </div>
+        @for (room of unit.rooms; track room.id) {
+          <section class="room-editor">
+            <div class="edit-row">
+              <input [(ngModel)]="room.name" aria-label="NOME DO QUARTO" /><input
+                [(ngModel)]="room.code"
+                aria-label="CÓDIGO DO QUARTO"
+              /><input [(ngModel)]="room.floorName" placeholder="ANDAR / SETOR" /><label
+                class="order"
+                ><span>ORDEM</span
+                ><input type="number" min="0" [(ngModel)]="room.displayOrder" /></label
+              ><label class="toggle"
+                ><input type="checkbox" [(ngModel)]="room.active" /><span>ATIVO</span></label
+              ><button type="button" (click)="saveRoom(room)">SALVAR QUARTO</button>
+            </div>
+            <div class="bed-editor-grid">
+              @for (bed of room.beds; track bed.id) {
+                <div class="bed-editor">
+                  <strong>LEITO</strong
+                  ><input [(ngModel)]="bed.code" [disabled]="bed.status === 'OCCUPIED'" /><select
+                    [(ngModel)]="bed.status"
+                    [disabled]="bed.status === 'OCCUPIED'"
+                  >
+                    <option value="AVAILABLE">DISPONÍVEL</option>
+                    <option value="CLEANING">HIGIENIZAÇÃO</option>
+                    <option value="MAINTENANCE">MANUTENÇÃO</option>
+                    <option value="BLOCKED">BLOQUEADO</option>
+                    <option value="OCCUPIED" disabled>OCUPADO</option></select
+                  ><label class="order"
+                    ><span>ORDEM</span
+                    ><input
+                      type="number"
+                      min="0"
+                      [(ngModel)]="bed.displayOrder"
+                      [disabled]="bed.status === 'OCCUPIED'" /></label
+                  ><label class="toggle"
+                    ><input
+                      type="checkbox"
+                      [(ngModel)]="bed.active"
+                      [disabled]="bed.status === 'OCCUPIED'"
+                    /><span>ATIVO</span></label
+                  ><button
+                    type="button"
+                    (click)="saveBed(bed)"
+                    [disabled]="bed.status === 'OCCUPIED'"
+                  >
+                    SALVAR
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </article>
+    } @empty {
+      <div class="empty">NENHUMA UNIDADE CADASTRADA NESTE HOSPITAL.</div>
+    }
+  </div>
+}

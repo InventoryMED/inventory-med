@@ -3,6 +3,7 @@ export type AppScreen =
   | 'password-change'
   | 'hospital-select'
   | 'administration'
+  | 'medical'
   | 'rooms'
   | 'prescription'
   | 'evolution';

@@ -6,6 +6,7 @@ import { environment } from '../environments/environment';
 import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
 import { AdministrationComponent } from './features/administration/administration.component';
+import { MedicalWorkspaceComponent } from './features/medical/medical-workspace.component';
 import {
   AppScreen,
   Bed,
@@ -197,7 +198,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
 ];
 
 @Component({
-  imports: [CommonModule, FormsModule, AdministrationComponent],
+  imports: [CommonModule, FormsModule, AdministrationComponent, MedicalWorkspaceComponent],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
@@ -575,6 +576,11 @@ export class App implements OnInit {
     this.admissionOpen.set(false);
     this.dischargeOpen.set(false);
     this.transferOpen.set(false);
+  }
+
+  protected backToHospitalSelection(): void {
+    this.authError.set(null);
+    this.screen.set('hospital-select');
   }
 
   protected toggleRoom(room: Room): void {
@@ -1007,10 +1013,8 @@ export class App implements OnInit {
 
   private openRoomsForHospital(hospitalName: string): void {
     if (this.realApiEnabled) {
-      this.authError.set(
-        'O MÓDULO DE QUARTOS E LEITOS SERÁ LIBERADO APÓS A CONEXÃO COM O BANCO EXCLUSIVO DESTA UNIDADE.',
-      );
-      this.screen.set('hospital-select');
+      this.authError.set(null);
+      this.screen.set('medical');
       return;
     }
     if (!this.selectDemoHospitalByName(hospitalName)) {

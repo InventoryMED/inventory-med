@@ -48,6 +48,32 @@ public class CredentialCipher {
         }
     }
 
+    public String decrypt(String encryptedPayload) {
+        try {
+            byte[] payload = Base64.getDecoder().decode(encryptedPayload);
+            if (payload.length <= IV_LENGTH) {
+                throw new IllegalArgumentException("Credencial criptografada inválida");
+            }
+            byte[] iv = new byte[IV_LENGTH];
+            byte[] encrypted = new byte[payload.length - IV_LENGTH];
+            System.arraycopy(payload, 0, iv, 0, iv.length);
+            System.arraycopy(payload, iv.length, encrypted, 0, encrypted.length);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                new SecretKeySpec(encryptionKey(), "AES"),
+                new GCMParameterSpec(TAG_LENGTH_BITS, iv)
+            );
+            return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
+        } catch (GeneralSecurityException | IllegalArgumentException exception) {
+            throw new ProvisioningException(
+                "Não foi possível abrir a credencial do banco hospitalar",
+                exception
+            );
+        }
+    }
+
     private byte[] encryptionKey() {
         String configuredKey = properties.credentialEncryptionKey();
         if (configuredKey == null || configuredKey.isBlank()) {

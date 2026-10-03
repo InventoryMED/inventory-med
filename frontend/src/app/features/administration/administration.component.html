@@ -31,6 +31,22 @@
           <span class="nav-icon" aria-hidden="true">U</span>
           USUÁRIOS E PERFIS
         </button>
+        <button
+          type="button"
+          [class.is-active]="activeTab() === 'STRUCTURE'"
+          (click)="selectTab('STRUCTURE')"
+        >
+          <span class="nav-icon" aria-hidden="true">L</span>
+          QUARTOS E LEITOS
+        </button>
+        <button
+          type="button"
+          [class.is-active]="activeTab() === 'FORMS'"
+          (click)="selectTab('FORMS')"
+        >
+          <span class="nav-icon" aria-hidden="true">F</span>
+          FORMULÁRIOS CLÍNICOS
+        </button>
       </nav>
       <p>TODA ALTERAÇÃO ADMINISTRATIVA É VALIDADA PELO BACKEND E REGISTRADA NA AUDITORIA.</p>
     </aside>
@@ -39,14 +55,8 @@
       <section class="admin-heading">
         <div>
           <p>PAINEL DO ADMINISTRADOR GERAL</p>
-          <h1>{{ activeTab() === 'HOSPITALS' ? 'HOSPITAIS' : 'USUÁRIOS E ACESSOS' }}</h1>
-          <span>
-            {{
-              activeTab() === 'HOSPITALS'
-                ? 'CRIE E ACOMPANHE AS UNIDADES DA PLATAFORMA.'
-                : 'DEFINA QUEM ACESSA A PLATAFORMA E CADA HOSPITAL.'
-            }}
-          </span>
+          <h1>{{ tabTitle() }}</h1>
+          <span>{{ tabDescription() }}</span>
         </div>
       </section>
 
@@ -155,7 +165,7 @@
             </form>
           </section>
         </div>
-      } @else {
+      } @else if (activeTab() === 'USERS') {
         <div class="admin-grid">
           <section class="admin-panel">
             <div class="panel-heading">
@@ -183,7 +193,32 @@
                           <strong>{{ user.name }}</strong>
                           <span>{{ user.email }}</span>
                         </td>
-                        <td>{{ userAccessLabel(user) }}</td>
+                        <td>
+                          <div class="access-list">
+                            @for (role of user.systemRoles; track role) {
+                              <span class="access-chip">{{ roleLabel(role) }}</span>
+                            }
+                            @for (membership of user.hospitals; track membership.hospitalId) {
+                              <button
+                                type="button"
+                                class="access-chip access-chip--button"
+                                [class.is-disabled]="!membership.active"
+                                [disabled]="updatingUserId() === user.id"
+                                (click)="
+                                  setHospitalAccessActive(
+                                    user,
+                                    membership.hospitalId,
+                                    membership.active
+                                  )
+                                "
+                              >
+                                {{ membership.hospitalName }} — {{ roleLabel(membership.role) }} ({{
+                                  membership.active ? 'ATIVO' : 'INATIVO'
+                                }})
+                              </button>
+                            }
+                          </div>
+                        </td>
                         <td>
                           <span
                             class="status-pill"
@@ -191,6 +226,14 @@
                           >
                             {{ user.active ? 'ATIVO' : 'INATIVO' }}
                           </span>
+                          <button
+                            type="button"
+                            class="user-status-button"
+                            [disabled]="updatingUserId() === user.id"
+                            (click)="setUserActive(user)"
+                          >
+                            {{ user.active ? 'DESATIVAR CONTA' : 'ATIVAR CONTA' }}
+                          </button>
                         </td>
                       </tr>
                     }
@@ -274,6 +317,10 @@
             </form>
           </section>
         </div>
+      } @else if (activeTab() === 'STRUCTURE') {
+        <app-structure-administration [hospitals]="hospitals()" />
+      } @else {
+        <app-form-template-administration [hospitals]="hospitals()" />
       }
     </main>
   </div>

@@ -20,6 +20,8 @@ public interface HospitalMembershipRepository extends JpaRepository<HospitalMemb
 
     boolean existsByUserIdAndHospitalId(UUID userId, UUID hospitalId);
 
+    Optional<HospitalMembership> findByUserIdAndHospitalId(UUID userId, UUID hospitalId);
+
     @EntityGraph(attributePaths = { "hospital", "user" })
     @Query("select membership from HospitalMembership membership")
     List<HospitalMembership> findAllWithHospitalAndUser();

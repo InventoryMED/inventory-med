@@ -67,4 +67,12 @@ public class HospitalMembership {
     public boolean isActive() {
         return active;
     }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
 }

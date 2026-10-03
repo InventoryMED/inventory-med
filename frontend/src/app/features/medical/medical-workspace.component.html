@@ -1,0 +1,423 @@
+<div class="medical-shell">
+  <header class="medical-header">
+    <img src="inventory-med-logo.png" alt="INVENTORY MED" />
+    <div class="hospital-title">
+      <span>UNIDADE EM ATENDIMENTO</span>
+      <strong>{{ auth.selectedHospital()?.name }}</strong>
+    </div>
+    <div class="header-user">
+      <span>{{ auth.user()?.name }}</span>
+      <button type="button" (click)="changeHospital.emit()">TROCAR UNIDADE</button>
+      <button type="button" (click)="exit.emit()">SAIR</button>
+    </div>
+  </header>
+
+  <main class="medical-content">
+    <section class="page-heading">
+      <div>
+        <p>GESTÃO ASSISTENCIAL</p>
+        <h1>QUARTOS E LEITOS</h1>
+        <span>ADMITA O PACIENTE E ACESSE PRESCRIÇÕES E EVOLUÇÕES PELO LEITO.</span>
+      </div>
+      <button type="button" class="refresh-button" (click)="ngOnInit()" [disabled]="loading()">
+        ATUALIZAR
+      </button>
+    </section>
+
+    @if (error() && !dialog()) {
+      <div class="message message--error" role="alert">{{ error() }}</div>
+    }
+    @if (feedback()) {
+      <div class="message message--success" role="status">{{ feedback() }}</div>
+    }
+
+    <section class="medical-metrics">
+      <article>
+        <span>TOTAL DE LEITOS</span><strong>{{ totalBeds() }}</strong>
+      </article>
+      <article class="metric--available">
+        <span>LEITOS LIVRES</span><strong>{{ availableBeds().length }}</strong>
+      </article>
+      <article class="metric--occupied">
+        <span>LEITOS OCUPADOS</span><strong>{{ occupiedBeds().length }}</strong>
+      </article>
+    </section>
+
+    @if (loading()) {
+      <div class="workspace-state">CARREGANDO ESTRUTURA DO HOSPITAL...</div>
+    } @else if (!rooms().length) {
+      <div class="workspace-state">
+        <strong>NENHUM QUARTO CADASTRADO</strong>
+        <span>O ADMINISTRADOR GERAL DEVE CADASTRAR UNIDADES, QUARTOS E LEITOS.</span>
+      </div>
+    } @else {
+      <section class="room-list">
+        @for (room of rooms(); track room.id) {
+          <article class="room-card">
+            <button type="button" class="room-heading" (click)="toggleRoom(room)">
+              <span class="room-code">{{ room.code }}</span>
+              <span>
+                <small>{{ room.unitName }}{{ room.floorName ? ' • ' + room.floorName : '' }}</small>
+                <strong>{{ room.name }}</strong>
+              </span>
+              <span class="room-count">
+                {{ room.beds.length }} LEITO(S) • {{ roomAvailableCount(room) }} LIVRE(S)
+              </span>
+              <span class="chevron">{{ roomExpanded(room.id) ? '−' : '+' }}</span>
+            </button>
+
+            @if (roomExpanded(room.id)) {
+              <div class="bed-grid">
+                @for (bed of room.beds; track bed.id) {
+                  <article class="bed-card" [attr.data-status]="bed.status">
+                    <div class="bed-card__top">
+                      <span class="bed-icon" aria-hidden="true"></span>
+                      <span class="status-pill" [attr.data-status]="bed.status">
+                        {{ statusLabel(bed.status) }}
+                      </span>
+                    </div>
+                    <h3>LEITO {{ bed.code }}</h3>
+                    @if (bed.admission; as admission) {
+                      <div class="patient-summary">
+                        <span>PACIENTE</span>
+                        <strong>{{ admission.patient.fullName }}</strong>
+                        <small
+                          >ADMITIDO EM {{ admission.admittedAt | date: 'dd/MM/yyyy HH:mm' }}</small
+                        >
+                      </div>
+                      <div class="bed-actions">
+                        <button
+                          type="button"
+                          class="primary-action"
+                          (click)="openDocument(bed, 'PRESCRIPTION')"
+                        >
+                          ABRIR PRESCRIÇÃO
+                        </button>
+                        <button type="button" (click)="openDocument(bed, 'EVOLUTION')">
+                          INICIAR EVOLUÇÃO
+                        </button>
+                        <button type="button" (click)="openTransfer(bed)">
+                          TRANSFERIR PACIENTE
+                        </button>
+                        <button type="button" class="danger-action" (click)="openDischarge(bed)">
+                          DAR ALTA
+                        </button>
+                      </div>
+                    } @else if (bed.status === 'AVAILABLE') {
+                      <p>LEITO PRONTO PARA RECEBER PACIENTE.</p>
+                      <button type="button" class="admit-button" (click)="openAdmission(bed)">
+                        ADMITIR PACIENTE
+                      </button>
+                    } @else {
+                      <p>LEITO INDISPONÍVEL PARA ADMISSÃO.</p>
+                    }
+                  </article>
+                }
+              </div>
+            }
+          </article>
+        }
+      </section>
+    }
+  </main>
+</div>
+
+@if (dialog()) {
+  <div class="modal-backdrop" role="presentation">
+    <section
+      class="medical-modal"
+      [class.medical-modal--document]="dialog() === 'DOCUMENT'"
+      role="dialog"
+      aria-modal="true"
+    >
+      <header>
+        <div>
+          <p>{{ auth.selectedHospital()?.name }}</p>
+          <h2>
+            @switch (dialog()) {
+              @case ('ADMIT') {
+                ADMITIR PACIENTE
+              }
+              @case ('TRANSFER') {
+                TRANSFERIR PACIENTE
+              }
+              @case ('DISCHARGE') {
+                REGISTRAR ALTA
+              }
+              @case ('DOCUMENT') {
+                {{ documentKind() === 'PRESCRIPTION' ? 'PRESCRIÇÃO MÉDICA' : 'EVOLUÇÃO MÉDICA' }}
+              }
+            }
+          </h2>
+        </div>
+        <button type="button" class="close-button" (click)="closeDialog()" aria-label="FECHAR">
+          ×
+        </button>
+      </header>
+
+      @if (error()) {
+        <div class="message message--error" role="alert">{{ error() }}</div>
+      }
+
+      @if (dialog() === 'ADMIT') {
+        <div class="modal-body form-grid">
+          <label class="field--wide"
+            ><span>NOME DO PACIENTE *</span><input [(ngModel)]="patientName"
+          /></label>
+          <label
+            ><span>DATA DE NASCIMENTO</span
+            ><input [(ngModel)]="patientBirthDate" placeholder="DD/MM/AAAA" maxlength="10"
+          /></label>
+          <label
+            ><span>SEXO</span
+            ><select [(ngModel)]="patientSex">
+              <option value="NAO_INFORMADO">NÃO INFORMADO</option>
+              <option value="FEMININO">FEMININO</option>
+              <option value="MASCULINO">MASCULINO</option>
+              <option value="OUTRO">OUTRO</option>
+            </select></label
+          >
+          <label
+            ><span>PESO</span>
+            <div class="input-suffix">
+              <input type="number" min="0.1" max="500" step="0.1" [(ngModel)]="patientWeight" /><b
+                >KG</b
+              >
+            </div></label
+          >
+          <label class="field--wide"
+            ><span>DIAGNÓSTICO</span><textarea [(ngModel)]="patientDiagnosis"></textarea>
+          </label>
+          <label class="field--wide"
+            ><span>COMORBIDADES</span><textarea [(ngModel)]="patientComorbidities"></textarea>
+          </label>
+          <label class="field--wide"
+            ><span>ALERGIAS</span><textarea [(ngModel)]="patientAllergies"></textarea>
+          </label>
+        </div>
+        <footer>
+          <button type="button" class="secondary" (click)="closeDialog()">CANCELAR</button
+          ><button type="button" class="primary" [disabled]="saving()" (click)="admit()">
+            {{ saving() ? 'ADMITINDO...' : 'ADMITIR NO LEITO' }}
+          </button>
+        </footer>
+      }
+
+      @if (dialog() === 'TRANSFER') {
+        <div class="modal-body">
+          <p>
+            SELECIONE UM LEITO LIVRE PARA
+            <strong>{{ selectedBed()?.admission?.patient?.fullName }}</strong
+            >.
+          </p>
+          <label
+            ><span>LEITO DE DESTINO</span
+            ><select [(ngModel)]="transferTargetBedId">
+              <option value="">SELECIONE</option>
+              @for (bed of availableTransferBeds(); track bed.id) {
+                <option [value]="bed.id">{{ bed.label }}</option>
+              }
+            </select></label
+          >
+        </div>
+        <footer>
+          <button type="button" class="secondary" (click)="closeDialog()">CANCELAR</button
+          ><button type="button" class="primary" [disabled]="saving()" (click)="transfer()">
+            CONFIRMAR TRANSFERÊNCIA
+          </button>
+        </footer>
+      }
+
+      @if (dialog() === 'DISCHARGE') {
+        <div class="modal-body">
+          <p>
+            REGISTRE O MOTIVO DA ALTA DE
+            <strong>{{ selectedBed()?.admission?.patient?.fullName }}</strong
+            >.
+          </p>
+          <div class="reason-grid">
+            <label
+              ><input
+                type="radio"
+                name="reason"
+                value="ALTA_MELHORA"
+                [(ngModel)]="dischargeReason"
+              /><span>ALTA MELHORA</span></label
+            >
+            <label
+              ><input
+                type="radio"
+                name="reason"
+                value="TRANSFERENCIA"
+                [(ngModel)]="dischargeReason"
+              /><span>TRANSFERÊNCIA</span></label
+            >
+            <label
+              ><input type="radio" name="reason" value="OBITO" [(ngModel)]="dischargeReason" /><span
+                >ÓBITO</span
+              ></label
+            >
+          </div>
+        </div>
+        <footer>
+          <button type="button" class="secondary" (click)="closeDialog()">CANCELAR</button
+          ><button type="button" class="primary" [disabled]="saving()" (click)="discharge()">
+            CONFIRMAR ALTA
+          </button>
+        </footer>
+      }
+
+      @if (dialog() === 'DOCUMENT') {
+        <div class="document-context">
+          <strong>{{ selectedBed()?.admission?.patient?.fullName }}</strong>
+          <span>LEITO {{ selectedBed()?.code }}</span>
+        </div>
+        @if (selectedTemplate(); as template) {
+          <div class="modal-body document-body">
+            @if (templates().length > 1) {
+              <label class="template-select"
+                ><span>MODELO</span
+                ><select [ngModel]="template.templateId" (ngModelChange)="chooseTemplate($event)">
+                  @for (item of templates(); track item.templateId) {
+                    <option [value]="item.templateId">{{ item.name }}</option>
+                  }
+                </select></label
+              >
+            }
+            @for (section of activeSections(template); track section.id) {
+              <fieldset>
+                <legend>{{ section.title }}</legend>
+                <div class="clinical-fields">
+                  @for (field of activeFields(section); track field.id) {
+                    <label
+                      [class.field--wide]="
+                        field.type === 'LONG_TEXT' ||
+                        field.type === 'MEDICATION_LINE' ||
+                        field.type === 'CLINICAL_TABLE'
+                      "
+                    >
+                      <span>{{ field.label }}{{ field.required ? ' *' : '' }}</span>
+                      @switch (field.type) {
+                        @case ('LONG_TEXT') {
+                          <textarea
+                            [attr.maxlength]="field.maxLength"
+                            [placeholder]="field.placeholder ?? ''"
+                            [(ngModel)]="documentValues[fieldPath(section, field)]"
+                          ></textarea>
+                        }
+                        @case ('SINGLE_SELECT') {
+                          <select [(ngModel)]="documentValues[fieldPath(section, field)]">
+                            <option value="">SELECIONE</option>
+                            @for (option of field.options; track option.id) {
+                              @if (option.active) {
+                                <option [value]="option.value">{{ option.label }}</option>
+                              }
+                            }
+                          </select>
+                        }
+                        @case ('MULTI_SELECT') {
+                          <div class="option-grid">
+                            @for (option of field.options; track option.id) {
+                              @if (option.active) {
+                                <label
+                                  ><input
+                                    type="checkbox"
+                                    [checked]="
+                                      optionChecked(fieldPath(section, field), option.value)
+                                    "
+                                    (change)="
+                                      toggleOption(
+                                        fieldPath(section, field),
+                                        option.value,
+                                        $any($event.target).checked
+                                      )
+                                    "
+                                  /><span>{{ option.label }}</span></label
+                                >
+                              }
+                            }
+                          </div>
+                        }
+                        @case ('BOOLEAN') {
+                          <input
+                            type="checkbox"
+                            [(ngModel)]="documentValues[fieldPath(section, field)]"
+                          />
+                        }
+                        @case ('INTEGER') {
+                          <input
+                            type="number"
+                            step="1"
+                            [(ngModel)]="documentValues[fieldPath(section, field)]"
+                          />
+                        }
+                        @case ('DECIMAL') {
+                          <input
+                            type="number"
+                            step="0.01"
+                            [(ngModel)]="documentValues[fieldPath(section, field)]"
+                          />
+                        }
+                        @case ('DATE') {
+                          <input
+                            type="date"
+                            [(ngModel)]="documentValues[fieldPath(section, field)]"
+                          />
+                        }
+                        @case ('TIME') {
+                          <input
+                            type="time"
+                            [(ngModel)]="documentValues[fieldPath(section, field)]"
+                          />
+                        }
+                        @case ('MEDICATION_LINE') {
+                          <textarea
+                            rows="3"
+                            placeholder="MEDICAÇÃO / VIA / FREQUÊNCIA / APRAZAMENTO"
+                            [(ngModel)]="documentValues[fieldPath(section, field)]"
+                          ></textarea>
+                        }
+                        @case ('CLINICAL_TABLE') {
+                          <textarea
+                            rows="4"
+                            placeholder="REGISTRE OS RESULTADOS DOS EXAMES"
+                            [(ngModel)]="documentValues[fieldPath(section, field)]"
+                          ></textarea>
+                        }
+                        @default {
+                          <input
+                            type="text"
+                            [attr.maxlength]="field.maxLength"
+                            [placeholder]="field.placeholder ?? ''"
+                            [(ngModel)]="documentValues[fieldPath(section, field)]"
+                          />
+                        }
+                      }
+                    </label>
+                  }
+                </div>
+              </fieldset>
+            }
+          </div>
+          <footer>
+            <button
+              type="button"
+              class="secondary"
+              (click)="saveDocument(false)"
+              [disabled]="saving()"
+            >
+              SALVAR RASCUNHO</button
+            ><button
+              type="button"
+              class="primary"
+              (click)="saveDocument(true)"
+              [disabled]="saving()"
+            >
+              {{ saving() ? 'PROCESSANDO...' : 'FINALIZAR DOCUMENTO' }}
+            </button>
+          </footer>
+        }
+      }
+    </section>
+  </div>
+}

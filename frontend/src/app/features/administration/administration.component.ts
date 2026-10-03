@@ -5,13 +5,20 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../auth/auth.service';
 import { AdministrationHospital, AdministrationUser } from './administration.models';
 import { AdministrationService } from './administration.service';
+import { StructureAdministrationComponent } from './structure-administration.component';
+import { FormTemplateAdministrationComponent } from './form-template-administration.component';
 
-type AdministrationTab = 'HOSPITALS' | 'USERS';
+type AdministrationTab = 'HOSPITALS' | 'USERS' | 'STRUCTURE' | 'FORMS';
 type UserScope = 'SYSTEM' | 'HOSPITAL';
 
 @Component({
   selector: 'app-administration',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    StructureAdministrationComponent,
+    FormTemplateAdministrationComponent,
+  ],
   templateUrl: './administration.component.html',
   styleUrl: './administration.component.scss',
 })
@@ -28,6 +35,7 @@ export class AdministrationComponent implements OnInit {
   protected readonly savingHospital = signal(false);
   protected readonly provisioningHospitalId = signal<string | null>(null);
   protected readonly savingUser = signal(false);
+  protected readonly updatingUserId = signal<string | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly feedback = signal<string | null>(null);
 
@@ -178,6 +186,60 @@ export class AdministrationComponent implements OnInit {
     return [...systemRoles, ...hospitalRoles].join(' • ');
   }
 
+  protected tabTitle(): string {
+    return {
+      HOSPITALS: 'HOSPITAIS',
+      USERS: 'USUÁRIOS E ACESSOS',
+      STRUCTURE: 'ESTRUTURA HOSPITALAR',
+      FORMS: 'FORMULÁRIOS CLÍNICOS',
+    }[this.activeTab()];
+  }
+
+  protected tabDescription(): string {
+    return {
+      HOSPITALS: 'CRIE E ACOMPANHE AS UNIDADES DA PLATAFORMA.',
+      USERS: 'DEFINA QUEM ACESSA A PLATAFORMA E CADA HOSPITAL.',
+      STRUCTURE: 'CADASTRE, ORDENE E DESATIVE UNIDADES, QUARTOS E LEITOS.',
+      FORMS: 'CONTROLE CAMPOS E VERSÕES DE PRESCRIÇÕES E EVOLUÇÕES.',
+    }[this.activeTab()];
+  }
+
+  protected async setUserActive(user: AdministrationUser): Promise<void> {
+    this.updatingUserId.set(user.id);
+    this.clearMessages();
+    try {
+      const updated = await this.administration.setUserActive(user.id, !user.active);
+      this.replaceUser(updated);
+      this.feedback.set(updated.active ? 'USUÁRIO ATIVADO.' : 'USUÁRIO DESATIVADO.');
+    } catch (error) {
+      this.error.set(this.errorMessage(error));
+    } finally {
+      this.updatingUserId.set(null);
+    }
+  }
+
+  protected async setHospitalAccessActive(
+    user: AdministrationUser,
+    hospitalId: string,
+    active: boolean,
+  ): Promise<void> {
+    this.updatingUserId.set(user.id);
+    this.clearMessages();
+    try {
+      const updated = await this.administration.setHospitalAccessActive(
+        user.id,
+        hospitalId,
+        !active,
+      );
+      this.replaceUser(updated);
+      this.feedback.set(!active ? 'PERFIL HOSPITALAR ATIVADO.' : 'PERFIL HOSPITALAR DESATIVADO.');
+    } catch (error) {
+      this.error.set(this.errorMessage(error));
+    } finally {
+      this.updatingUserId.set(null);
+    }
+  }
+
   private async loadData(): Promise<void> {
     this.loading.set(true);
     this.clearMessages();
@@ -198,6 +260,10 @@ export class AdministrationComponent implements OnInit {
   private clearMessages(): void {
     this.error.set(null);
     this.feedback.set(null);
+  }
+
+  private replaceUser(updated: AdministrationUser): void {
+    this.users.update((users) => users.map((user) => (user.id === updated.id ? updated : user)));
   }
 
   private errorMessage(error: unknown): string {

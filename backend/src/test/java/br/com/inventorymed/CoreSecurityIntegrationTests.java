@@ -3,6 +3,7 @@ package br.com.inventorymed;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,11 +18,17 @@ import br.com.inventorymed.identity.HospitalRole;
 import br.com.inventorymed.identity.SystemRole;
 import br.com.inventorymed.identity.SystemUserRole;
 import br.com.inventorymed.identity.SystemUserRoleRepository;
+import br.com.inventorymed.administration.HospitalAdministrationService;
+import br.com.inventorymed.administration.HospitalCreateRequest;
+import br.com.inventorymed.security.InventoryUserPrincipal;
+import br.com.inventorymed.tenancy.TenantJdbcExecutor;
 import jakarta.servlet.http.Cookie;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.UUID;
+import java.util.List;
+import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,6 +81,12 @@ class CoreSecurityIntegrationTests {
 
     @Autowired
     private SystemUserRoleRepository systemRoleRepository;
+
+    @Autowired
+    private HospitalAdministrationService hospitalAdministrationService;
+
+    @Autowired
+    private TenantJdbcExecutor tenantJdbc;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -531,6 +544,147 @@ class CoreSecurityIntegrationTests {
         ).isEqualTo(1);
     }
 
+    @Test
+    void medicalWorkspaceIsIsolatedAndFinalizedDocumentCannotBeOverwritten()
+        throws Exception {
+        AppUser administrator = createSystemAdministrator("isolation.admin@example.test");
+        InventoryUserPrincipal administratorPrincipal = new InventoryUserPrincipal(
+            administrator.getId(),
+            administrator.getFullName(),
+            administrator.getEmail(),
+            null,
+            true,
+            false,
+            List.of(SystemRole.ADMIN_SISTEMA.name())
+        );
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        hospitalAdministrationService.create(
+            new HospitalCreateRequest("HOSPITAL A " + suffix, "HA", "JOÃO PINHEIRO, MG"),
+            administratorPrincipal,
+            "127.0.0.1",
+            "integration-test"
+        );
+        hospitalAdministrationService.create(
+            new HospitalCreateRequest("HOSPITAL B " + suffix, "HB", "JOÃO PINHEIRO, MG"),
+            administratorPrincipal,
+            "127.0.0.1",
+            "integration-test"
+        );
+        Hospital firstHospital = hospitalRepository
+            .findByNameIgnoreCase("HOSPITAL A " + suffix)
+            .orElseThrow();
+        Hospital secondHospital = hospitalRepository
+            .findByNameIgnoreCase("HOSPITAL B " + suffix)
+            .orElseThrow();
+        UUID firstBedId = insertStructure(firstHospital.getId(), "UNIDADE_A");
+        insertStructure(secondHospital.getId(), "UNIDADE_B");
+
+        AppUser doctor = userRepository.save(
+            new AppUser(
+                "MÉDICO ISOLAMENTO",
+                "isolation.doctor@example.test",
+                passwordEncoder.encode("Secret@12345")
+            )
+        );
+        membershipRepository.save(
+            new HospitalMembership(firstHospital, doctor, HospitalRole.MEDICO)
+        );
+
+        MvcResult login = login("isolation.doctor@example.test", "Secret@12345");
+        Cookie sessionCookie = latestCookie(login, "INVENTORYMED_SESSION");
+        Cookie csrfCookie = latestCookie(login, "XSRF-TOKEN");
+
+        mockMvc
+            .perform(get("/clinical/workspace").cookie(sessionCookie))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.hospitalId").value(firstHospital.getId().toString()))
+            .andExpect(jsonPath("$.careUnits[0].code").value("UNIDADE_A"));
+
+        MvcResult admitted = mockMvc
+            .perform(
+                post("/clinical/admissions")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "bedId":"%s",
+                          "fullName":"Paciente Isolamento",
+                          "birthDate":null,
+                          "sex":"NAO_INFORMADO",
+                          "weightKg":null,
+                          "diagnosis":null,
+                          "comorbidities":null,
+                          "allergies":null
+                        }
+                        """.formatted(firstBedId)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.patient.fullName").value("PACIENTE ISOLAMENTO"))
+            .andReturn();
+        UUID admissionId = firstUuid(admitted.getResponse().getContentAsString(), "id");
+
+        UUID templateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
+                "JOIN dbo.form_template t ON t.id = v.template_id " +
+                "WHERE t.kind = 'PRESCRIPTION' AND v.status = 'PUBLISHED'",
+                UUID.class
+            )
+        );
+        MvcResult finalized = mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"PRESCRIPTION",
+                          "values":{},
+                          "finalizeDocument":true
+                        }
+                        """.formatted(templateVersionId)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value("FINALIZED"))
+            .andReturn();
+        UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");
+
+        mockMvc
+            .perform(
+                put("/clinical/documents/" + documentId)
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"PRESCRIPTION",
+                          "values":{},
+                          "finalizeDocument":false
+                        }
+                        """.formatted(templateVersionId)
+                    )
+            )
+            .andExpect(status().isBadRequest());
+
+        Integer firstHospitalPatients = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject("SELECT COUNT(*) FROM dbo.patient", Integer.class)
+        );
+        Integer secondHospitalPatients = tenantJdbc.read(secondHospital.getId(), jdbc ->
+            jdbc.queryForObject("SELECT COUNT(*) FROM dbo.patient", Integer.class)
+        );
+        assertThat(firstHospitalPatients).isEqualTo(1);
+        assertThat(secondHospitalPatients).isZero();
+    }
+
     private HospitalMembership createMembership(
         String email,
         String hospitalName,
@@ -552,6 +706,41 @@ class CoreSecurityIntegrationTests {
                 )
             );
         return membershipRepository.save(new HospitalMembership(hospital, user, role));
+    }
+
+    private UUID insertStructure(UUID hospitalId, String code) {
+        return tenantJdbc.write(hospitalId, jdbc -> {
+            UUID unitId = UUID.randomUUID();
+            UUID roomId = UUID.randomUUID();
+            UUID bedId = UUID.randomUUID();
+            jdbc.update(
+                "INSERT INTO dbo.care_unit (id, name, code, display_order, active) " +
+                "VALUES (?, ?, ?, 10, 1)",
+                unitId,
+                code,
+                code
+            );
+            jdbc.update(
+                "INSERT INTO dbo.room (id, care_unit_id, name, code, display_order, active) " +
+                "VALUES (?, ?, ?, 'Q1', 10, 1)",
+                roomId,
+                unitId,
+                "QUARTO 1"
+            );
+            jdbc.update(
+                "INSERT INTO dbo.bed (id, room_id, code, status, display_order, active) " +
+                "VALUES (?, ?, 'A', 'AVAILABLE', 10, 1)",
+                bedId,
+                roomId
+            );
+            return bedId;
+        });
+    }
+
+    private UUID firstUuid(String json, String field) {
+        var matcher = Pattern.compile("\\\"" + field + "\\\":\\\"([^\\\"]+)\\\"").matcher(json);
+        assertThat(matcher.find()).isTrue();
+        return UUID.fromString(matcher.group(1));
     }
 
     private MvcResult login(String email, String password) throws Exception {

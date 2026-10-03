@@ -1,0 +1,161 @@
+:host {
+  display: block;
+}
+* {
+  box-sizing: border-box;
+}
+input,
+select,
+button {
+  font: inherit;
+}
+.module-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 18px;
+}
+.module-heading p {
+  margin: 0 0 4px;
+  color: #0871c5;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+}
+.module-heading h2 {
+  margin: 0;
+}
+.module-heading label {
+  min-width: 300px;
+}
+label {
+  display: grid;
+  gap: 5px;
+}
+label > span {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+}
+input,
+select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #cbd6e2;
+  border-radius: 7px;
+  background: #fff;
+  color: #102840;
+}
+button {
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: #075a9c;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+.module-message {
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 1px solid;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.error {
+  color: #9b1c1c;
+  background: #fff1f1;
+  border-color: #efb4b4;
+}
+.success {
+  color: #17603c;
+  background: #eefaf3;
+  border-color: #aad9bf;
+}
+.create-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.create-grid form {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 16px;
+  border: 1px solid #d7e0e9;
+  border-radius: 10px;
+  background: #fff;
+}
+.create-grid h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+.structure-list {
+  display: grid;
+  gap: 14px;
+}
+.unit-card {
+  padding: 14px;
+  border: 1px solid #cfd9e4;
+  border-left: 4px solid #075a9c;
+  border-radius: 10px;
+  background: #fff;
+}
+.edit-row {
+  display: grid;
+  grid-template-columns: 1.7fr 0.7fr 1fr 0.7fr 0.55fr auto;
+  align-items: end;
+  gap: 8px;
+}
+.room-editor {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f3f6fa;
+}
+.bed-editor-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 8px;
+}
+.bed-editor {
+  padding: 10px;
+  display: grid;
+  gap: 7px;
+  border: 1px solid #d6e0e9;
+  border-radius: 8px;
+  background: #fff;
+}
+.bed-editor strong {
+  font-size: 10px;
+  color: #68798b;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 10px;
+}
+.toggle input {
+  width: auto;
+}
+.empty {
+  padding: 30px;
+  text-align: center;
+  color: #68798b;
+  border: 1px dashed #bcc9d7;
+  border-radius: 9px;
+  background: #fff;
+}
+@media (max-width: 1000px) {
+  .create-grid {
+    grid-template-columns: 1fr;
+  }
+  .edit-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

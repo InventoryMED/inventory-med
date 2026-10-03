@@ -243,6 +243,44 @@ select {
   align-items: start;
 }
 
+.access-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.access-chip {
+  padding: 5px 7px;
+  border: 1px solid #cbd7e2;
+  border-radius: 999px;
+  background: #eef3f7;
+  color: #26445f;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.access-chip--button {
+  cursor: pointer;
+}
+
+.access-chip--button.is-disabled {
+  border-color: #e2c3c3;
+  background: #f9eeee;
+  color: #8c3a3a;
+}
+
+.user-status-button {
+  display: block;
+  margin-top: 7px;
+  padding: 6px 8px;
+  border: 1px solid #c8d3df;
+  border-radius: 6px;
+  background: white;
+  color: #173c5e;
+  font-size: 8px;
+  font-weight: 800;
+}
+
 .admin-panel {
   border: 1px solid var(--line);
   background: white;
