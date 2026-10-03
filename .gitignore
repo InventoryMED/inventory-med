@@ -3,5 +3,6 @@ Thumbs.db
 *.log
 .env
 tmp/
+artifacts/
 frontend/public/inventory-med-logo.jpg
 frontend/public/inventory-med-logo-clean.png

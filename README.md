@@ -45,7 +45,9 @@ npm start
 - Saúde da API: `http://localhost:8080/api/v1/actuator/health`
 - SQL Server do projeto: `127.0.0.1:14330`
 
-O proxy de desenvolvimento do Angular encaminha `/api` para a API local. O build de produção usado no GitHub Pages continua em modo demonstrativo até a API ter uma URL HTTPS pública.
+O proxy de desenvolvimento do Angular encaminha `/api` para a API local. O build
+`production` usa a API real no mesmo endereço do frontend. O GitHub Pages utiliza a
+configuração separada `pages`, que continua exclusivamente demonstrativa.
 
 Consulte `docs/local-development.md` para o roteiro completo e `backend/README.md` para o fluxo de autenticação.
 
@@ -59,8 +61,15 @@ npm install
 npm start
 ```
 
-## Publicação atual
+## Ambientes
 
-O GitHub Pages publica o protótipo Angular automaticamente. A API real será implantada em servidor próprio com HTTPS; o SQL Server ficará acessível somente pela rede privada do servidor.
+- desenvolvimento local: API e SQL Server em Docker e Angular em `localhost:4200`;
+- homologação pública: frontend e API na VPS pelo IP, somente com dados fictícios;
+- demonstração estática: GitHub Pages sem acesso à API real;
+- produção clínica: será liberada somente com domínio, HTTPS, backup e validação de
+  segurança concluídos.
+
+O procedimento da VPS está em
+[`docs/operations/vps-deployment.md`](docs/operations/vps-deployment.md).
 
 > O sistema ainda está em desenvolvimento e não deve receber dados reais de pacientes até que autenticação, auditoria, backup, segurança da infraestrutura e validação clínica estejam concluídos.

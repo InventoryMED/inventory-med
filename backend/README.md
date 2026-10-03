@@ -69,6 +69,17 @@ src/main/resources/db/migration/core
 O Flyway as executa ao iniciar a API. O Hibernate usa `ddl-auto=validate`: ele confere
 o mapeamento, mas nunca cria ou altera tabelas automaticamente.
 
+Na VPS, `DB_USERNAME` é o login de execução com acesso aos dados, enquanto
+`DB_MIGRATION_USERNAME` é usado exclusivamente pelo Flyway para alterar o schema. No
+ambiente local, as credenciais de migração herdam as credenciais do datasource.
+
+## Dados iniciais controlados
+
+O bootstrap é desabilitado por padrão e só roda quando `BOOTSTRAP_ENABLED=true`. Ele
+cria de forma idempotente Lucas Galante e os dois hospitais de demonstração. A senha
+deve ter no mínimo 12 caracteres. Na VPS, ela fica temporariamente no arquivo protegido
+`/etc/inventory-med/api.env` e é removida depois da validação inicial.
+
 ## Testes
 
 Os testes de integração iniciam um SQL Server 2022 descartável por Testcontainers e

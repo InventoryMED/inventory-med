@@ -119,9 +119,10 @@ complexidade.
 ## 5. Organização física da VPS
 
 ```text
-/srv/inventory-med/source/          clone do repositório Git
+/srv/inventory-med/source/          clone opcional do repositório para consulta
 /opt/inventory-med/api/             arquivo executável da API
-/var/www/inventory-med/             build estático do Angular
+/var/www/inventory-med/releases/    versões estáticas do Angular
+/var/www/inventory-med/current      versão do Angular em uso
 /etc/inventory-med/api.env          configurações e segredos da API
 /var/opt/mssql/                     arquivos administrados pelo SQL Server
 /var/opt/mssql/backups/             backups locais temporários
@@ -429,19 +430,21 @@ O GitHub é a fonte oficial. A VPS executa uma versão do repositório, mas não
 Fluxo inicial, mantido simples:
 
 ```text
-alteração -> testes -> commit -> GitHub -> script de implantação na VPS
+alteração -> testes locais -> commit -> GitHub -> pacote identificado pelo commit -> VPS
 ```
 
-O script de implantação deverá:
+O computador de desenvolvimento gera o JAR e o build Angular depois que todos os testes
+passam. A VPS recebe esse pacote imutável e não precisa manter Maven ou Node.js. O script
+de implantação deverá:
 
-1. buscar a versão autorizada no GitHub;
-2. executar os testes;
-3. compilar a API;
-4. compilar o Angular;
+1. confirmar que o repositório local está limpo e identificar o commit;
+2. executar os testes da API e do Angular;
+3. compilar a API e o Angular;
+4. enviar o pacote identificado à VPS;
 5. copiar o `.jar` para `/opt/inventory-med/api/`;
-6. copiar o frontend para `/var/www/inventory-med/`;
-7. reiniciar `inventory-med-api`;
-8. validar `/api/v1/actuator/health`.
+6. criar uma versão do frontend em `/var/www/inventory-med/releases/`;
+7. alternar os links da versão ativa e reiniciar `inventory-med-api`;
+8. validar `/api/v1/actuator/health` e restaurar a versão anterior em caso de falha.
 
 Uma implantação não executará comandos SQL manuais; as alterações estruturais serão
 aplicadas pelo Flyway.

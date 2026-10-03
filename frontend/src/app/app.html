@@ -17,7 +17,9 @@
       <div class="brand-footnote">
         {{
           realApiEnabled
-            ? 'AUTENTICAÇÃO LOCAL • AMBIENTE DE DESENVOLVIMENTO'
+            ? productionBuild
+              ? 'HOMOLOGAÇÃO PÚBLICA • USE SOMENTE DADOS FICTÍCIOS'
+              : 'AUTENTICAÇÃO LOCAL • AMBIENTE DE DESENVOLVIMENTO'
             : 'PROTÓTIPO COM DADOS FICTÍCIOS'
         }}
       </div>
@@ -74,7 +76,9 @@
         <p class="demo-hint">
           {{
             realApiEnabled
-              ? 'AMBIENTE DEV: A SENHA É DEFINIDA NO ARQUIVO .ENV.'
+              ? productionBuild
+                ? 'AMBIENTE DE HOMOLOGAÇÃO: USE AS CREDENCIAIS FORNECIDAS PELO RESPONSÁVEL.'
+                : 'AMBIENTE DEV: A SENHA É DEFINIDA NO ARQUIVO .ENV.'
               : 'ACESSO DE DEMONSTRAÇÃO PREENCHIDO AUTOMATICAMENTE.'
           }}
         </p>

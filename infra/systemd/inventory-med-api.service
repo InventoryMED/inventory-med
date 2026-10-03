@@ -1,0 +1,38 @@
+[Unit]
+Description=Inventory MED API
+After=network-online.target mssql-server.service
+Wants=network-online.target
+Requires=mssql-server.service
+
+[Service]
+Type=simple
+User=inventorymed
+Group=inventorymed
+WorkingDirectory=/opt/inventory-med/api
+EnvironmentFile=/etc/inventory-med/api.env
+ExecStart=/usr/bin/java -Xms256m -Xmx2048m -jar /opt/inventory-med/api/inventory-med-api.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+UMask=0077
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=inventory-med-api
+
+[Install]
+WantedBy=multi-user.target

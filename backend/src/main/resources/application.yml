@@ -19,6 +19,8 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration/core
+    user: ${DB_MIGRATION_USERNAME:${spring.datasource.username}}
+    password: ${DB_MIGRATION_PASSWORD:${spring.datasource.password}}
   session:
     timeout: ${SESSION_TIMEOUT:30m}
     jdbc:
@@ -27,6 +29,7 @@ spring:
     default-property-inclusion: non_null
 
 server:
+  address: ${SERVER_ADDRESS:0.0.0.0}
   port: ${SERVER_PORT:8080}
   servlet:
     context-path: /api/v1
@@ -52,5 +55,9 @@ management:
         enabled: true
 
 inventory:
+  bootstrap:
+    enabled: ${BOOTSTRAP_ENABLED:false}
+    doctor-email: ${BOOTSTRAP_DOCTOR_EMAIL:lucas.galante@inventorymed.local}
+    doctor-password: ${BOOTSTRAP_DOCTOR_PASSWORD:}
   security:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:4200,http://127.0.0.1:4200}

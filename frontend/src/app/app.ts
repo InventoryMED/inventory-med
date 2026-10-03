@@ -205,6 +205,7 @@ export class App implements OnInit {
   protected readonly store = inject(DemoStore);
   protected readonly auth = inject(AuthService);
   protected readonly realApiEnabled = environment.useRealApi;
+  protected readonly productionBuild = environment.production;
   protected readonly screen = signal<AppScreen>('login');
   protected readonly expandedRooms = signal<Set<string>>(new Set());
   protected readonly selectedBedId = signal<string | null>(null);

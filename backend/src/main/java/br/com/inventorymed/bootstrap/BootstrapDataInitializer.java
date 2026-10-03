@@ -8,16 +8,20 @@ import br.com.inventorymed.identity.HospitalMembershipRepository;
 import br.com.inventorymed.identity.HospitalRepository;
 import br.com.inventorymed.identity.HospitalRole;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@Profile("dev")
-public class DevelopmentDataInitializer implements ApplicationRunner {
+@ConditionalOnProperty(
+    prefix = "inventory.bootstrap",
+    name = "enabled",
+    havingValue = "true"
+)
+public class BootstrapDataInitializer implements ApplicationRunner {
 
     private final BootstrapProperties properties;
     private final HospitalRepository hospitalRepository;
@@ -25,7 +29,7 @@ public class DevelopmentDataInitializer implements ApplicationRunner {
     private final HospitalMembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DevelopmentDataInitializer(
+    public BootstrapDataInitializer(
         BootstrapProperties properties,
         HospitalRepository hospitalRepository,
         AppUserRepository userRepository,
