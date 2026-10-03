@@ -2,7 +2,7 @@
 
 **Data:** 2026-10-03
 **Responsável:** Codex e Gabriel Pereira
-**Status:** em implantação
+**Status:** implantada em homologação; aguardando validação do primeiro login
 
 ## Resumo
 
@@ -40,11 +40,17 @@ sem expor SQL Server ou Java diretamente à internet.
 
 ## Comandos executados na VPS
 
-Nenhum até este ponto do registro. Os comandos serão acrescentados após a implantação.
+- envio e conferência SHA-256 do pacote `inventory-med-e59449b2ce3b.tar.gz`;
+- `sudo bash infra/scripts/provision-vps.sh`;
+- `sudo bash infra/scripts/configure-vps-environment.sh`;
+- `sudo bash infra/scripts/install-release.sh "$PWD" e59449b2ce3b`.
+
+A versão publicada corresponde ao commit Git `e59449b2ce3b`. Nenhuma senha foi
+registrada neste documento ou passada como argumento de linha de comando.
 
 ## Serviços afetados
 
-- previstos: `inventory-med-api` e `nginx`;
+- ativos e habilitados no boot: `inventory-med-api`, `nginx` e `mssql-server`;
 - o SQL Server não será exposto nem reiniciado pela implantação da aplicação.
 
 ## Configurações
@@ -67,8 +73,16 @@ Nenhum valor secreto foi incluído.
 - provisionamento SQL validado em SQL Server Express descartável;
 - API iniciada com logins separados de execução e migração, saúde `UP`, login de Lucas
   Galante aprovado e dois hospitais retornados;
-- `npm audit --omit=dev --audit-level=high`: nenhuma vulnerabilidade encontrada;
-- pendente: acesso externo pelo IP e fluxo de autenticação.
+- Angular atualizado para `22.2.1` e `npm audit --audit-level=low`: nenhuma
+  vulnerabilidade encontrada;
+- frontend externo `http://179.236.237.36/`: HTTP 200 via Nginx;
+- saúde externa `http://179.236.237.36/api/v1/actuator/health`: `UP`;
+- rota `/api/v1/auth/me`: HTTP 401 sem autenticação;
+- token CSRF, política CSP e cabeçalhos contra framing e MIME sniffing verificados;
+- SQL Server escutando somente em `127.0.0.1:1433`;
+- API escutando somente em `127.0.0.1:8080`;
+- somente o Nginx escutando publicamente na porta HTTP 80;
+- pendente: validar o primeiro login no navegador e desativar o bootstrap.
 
 ## Recuperação
 
@@ -77,7 +91,9 @@ saúde. Banco não é apagado nem rebaixado automaticamente.
 
 ## Pendências
 
-- desbloquear a chave SSH no agente do Windows;
-- executar o provisionamento inicial com `sudo`;
-- validar a homologação pelo IP;
-- configurar domínio e HTTPS antes de qualquer dado real.
+- validar o primeiro login de Lucas Galante e a seleção de hospital;
+- executar `sudo bash infra/scripts/disable-bootstrap.sh` imediatamente depois da
+  validação, removendo a senha inicial do ambiente da API;
+- manter a homologação restrita a dados fictícios enquanto o acesso usar HTTP por IP;
+- configurar domínio, HTTPS, política de backup e restauração testada antes de qualquer
+  dado real.
