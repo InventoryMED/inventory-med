@@ -79,6 +79,9 @@ novo isolamento sem fingir que a unidade já possui estrutura operacional.
 - dados clínicos temporários deixaram de ser gravados no armazenamento do navegador.
 - durante uma atualização coordenada, uma sessão retornada pela versão anterior da API é
   tratada como não administrativa em vez de causar falha na interface.
+- a liberação dos endpoints de primeiro acesso usa o caminho interno do servlet, para
+  funcionar também sob o prefixo real `/api/v1`; isso evita que a obtenção do token CSRF
+  seja bloqueada antes da troca obrigatória de senha.
 
 ## Comandos executados na VPS
 
@@ -94,6 +97,8 @@ testes locais e preparação dos segredos de produção.
 - o endpoint de saúde respondeu `UP`;
 - o login foi validado pela API sem exibir a senha: autenticação aprovada, perfil
   `ADMIN_SISTEMA` presente e troca inicial de senha obrigatória.
+- foi incluído teste de regressão com o contexto `/api/v1` após a identificação do
+  bloqueio indevido do token CSRF no primeiro acesso.
 
 ## Serviços afetados
 

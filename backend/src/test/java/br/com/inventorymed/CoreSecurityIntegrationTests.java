@@ -237,6 +237,14 @@ class CoreSecurityIntegrationTests {
 
         mockMvc
             .perform(
+                get("/api/v1/auth/csrf")
+                    .contextPath("/api/v1")
+                    .cookie(sessionCookie)
+            )
+            .andExpect(status().isOk());
+
+        mockMvc
+            .perform(
                 post("/auth/select-hospital")
                     .cookie(sessionCookie, csrfCookie)
                     .header("X-XSRF-TOKEN", csrfCookie.getValue())

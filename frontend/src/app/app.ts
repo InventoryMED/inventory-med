@@ -1043,7 +1043,10 @@ export class App implements OnInit {
       return 'NÃO FOI POSSÍVEL CONECTAR À API LOCAL. CONFIRA SE O DOCKER ESTÁ EM EXECUÇÃO.';
     }
     if (error.status === 401) return 'E-MAIL OU SENHA INVÁLIDOS.';
-    if (error.status === 403) return 'USUÁRIO SEM ACESSO ATIVO A ESTA UNIDADE.';
+    if (error.status === 403 && typeof error.error?.message === 'string') {
+      return error.error.message.toLocaleUpperCase('pt-BR');
+    }
+    if (error.status === 403) return 'ACESSO NEGADO PARA ESTA OPERAÇÃO.';
     if (error.status === 400 && typeof error.error?.message === 'string') {
       return error.error.message.toLocaleUpperCase('pt-BR');
     }

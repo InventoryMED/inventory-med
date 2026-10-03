@@ -104,11 +104,29 @@ public class SessionAuthorizationFilter extends OncePerRequestFilter {
     }
 
     private boolean isPasswordChangeAllowedPath(HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String path = applicationPath(request);
         return path.equals("/auth/me") ||
             path.equals("/auth/change-password") ||
             path.equals("/auth/logout") ||
             path.equals("/auth/csrf");
+    }
+
+    private String applicationPath(HttpServletRequest request) {
+        String servletPath = request.getServletPath();
+        if (servletPath != null && !servletPath.isBlank()) {
+            return servletPath;
+        }
+
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        if (
+            contextPath != null &&
+            !contextPath.isBlank() &&
+            requestUri.startsWith(contextPath)
+        ) {
+            return requestUri.substring(contextPath.length());
+        }
+        return requestUri;
     }
 
     private UUID selectedHospitalId(HttpSession session) {
