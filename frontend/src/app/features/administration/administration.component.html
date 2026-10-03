@@ -1,0 +1,280 @@
+<div class="admin-shell">
+  <header class="admin-header">
+    <img src="inventory-med-logo.png" alt="INVENTORY MED" />
+    <div class="admin-identity">
+      <span>ADMINISTRAÇÃO GERAL</span>
+      <strong>{{ auth.user()?.name }}</strong>
+      <button type="button" (click)="exit.emit()">SAIR</button>
+    </div>
+  </header>
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar__title">
+        <span>INVENTORY MED</span>
+        <strong>GESTÃO DA PLATAFORMA</strong>
+      </div>
+      <nav aria-label="MÓDULOS ADMINISTRATIVOS">
+        <button
+          type="button"
+          [class.is-active]="activeTab() === 'HOSPITALS'"
+          (click)="selectTab('HOSPITALS')"
+        >
+          <span class="nav-icon" aria-hidden="true">H</span>
+          HOSPITAIS
+        </button>
+        <button
+          type="button"
+          [class.is-active]="activeTab() === 'USERS'"
+          (click)="selectTab('USERS')"
+        >
+          <span class="nav-icon" aria-hidden="true">U</span>
+          USUÁRIOS E PERFIS
+        </button>
+      </nav>
+      <p>TODA ALTERAÇÃO ADMINISTRATIVA É VALIDADA PELO BACKEND E REGISTRADA NA AUDITORIA.</p>
+    </aside>
+
+    <main class="admin-content">
+      <section class="admin-heading">
+        <div>
+          <p>PAINEL DO ADMINISTRADOR GERAL</p>
+          <h1>{{ activeTab() === 'HOSPITALS' ? 'HOSPITAIS' : 'USUÁRIOS E ACESSOS' }}</h1>
+          <span>
+            {{
+              activeTab() === 'HOSPITALS'
+                ? 'CRIE E ACOMPANHE AS UNIDADES DA PLATAFORMA.'
+                : 'DEFINA QUEM ACESSA A PLATAFORMA E CADA HOSPITAL.'
+            }}
+          </span>
+        </div>
+      </section>
+
+      @if (error()) {
+        <div class="admin-message admin-message--error" role="alert">{{ error() }}</div>
+      }
+      @if (feedback()) {
+        <div class="admin-message admin-message--success" role="status">{{ feedback() }}</div>
+      }
+
+      <section class="admin-metrics" aria-label="RESUMO ADMINISTRATIVO">
+        <article>
+          <span>HOSPITAIS ATIVOS</span>
+          <strong>{{ activeHospitals() }}</strong>
+        </article>
+        <article>
+          <span>USUÁRIOS ATIVOS</span>
+          <strong>{{ activeUsers() }}</strong>
+        </article>
+        <article>
+          <span>ADMINISTRADORES GERAIS</span>
+          <strong>{{ systemAdministrators() }}</strong>
+        </article>
+      </section>
+
+      @if (loading()) {
+        <div class="admin-loading">CARREGANDO DADOS ADMINISTRATIVOS...</div>
+      } @else if (activeTab() === 'HOSPITALS') {
+        <div class="admin-grid">
+          <section class="admin-panel">
+            <div class="panel-heading">
+              <div>
+                <p>UNIDADES CADASTRADAS</p>
+                <h2>HOSPITAIS</h2>
+              </div>
+              <span>{{ hospitals().length }} REGISTRO(S)</span>
+            </div>
+
+            @if (hospitals().length) {
+              <div class="admin-list">
+                @for (hospital of hospitals(); track hospital.id) {
+                  <article class="hospital-row">
+                    <div class="hospital-mark">{{ hospital.shortName.slice(0, 3) }}</div>
+                    <div>
+                      <strong>{{ hospital.name }}</strong>
+                      <span>{{ hospital.city }}</span>
+                    </div>
+                    <div class="hospital-row__actions">
+                      <span class="status-pill" [attr.data-status]="hospital.status">
+                        {{ statusLabel(hospital.status) }}
+                      </span>
+                      @if (hospital.status === 'PROVISIONING_FAILED') {
+                        <button
+                          type="button"
+                          class="retry-button"
+                          [disabled]="provisioningHospitalId() === hospital.id"
+                          (click)="retryHospitalProvisioning(hospital)"
+                        >
+                          {{
+                            provisioningHospitalId() === hospital.id
+                              ? 'PROCESSANDO...'
+                              : 'CRIAR BANCO'
+                          }}
+                        </button>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+            } @else {
+              <div class="admin-empty">
+                <strong>NENHUM HOSPITAL CADASTRADO</strong>
+                <span>USE O FORMULÁRIO AO LADO PARA CRIAR A PRIMEIRA UNIDADE.</span>
+              </div>
+            }
+          </section>
+
+          <section class="admin-panel admin-panel--form">
+            <div class="panel-heading">
+              <div>
+                <p>NOVA UNIDADE</p>
+                <h2>CRIAR HOSPITAL</h2>
+              </div>
+            </div>
+            <p class="form-intro">
+              O BANCO EXCLUSIVO E SUA ESTRUTURA INICIAL SERÃO CRIADOS AUTOMATICAMENTE.
+            </p>
+            <form [formGroup]="hospitalForm" (ngSubmit)="createHospital()">
+              <label>
+                <span>NOME DO HOSPITAL</span>
+                <input type="text" formControlName="name" autocomplete="organization" />
+              </label>
+              <div class="form-columns">
+                <label>
+                  <span>NOME CURTO</span>
+                  <input type="text" formControlName="shortName" />
+                </label>
+                <label>
+                  <span>CIDADE / UF</span>
+                  <input type="text" formControlName="city" />
+                </label>
+              </div>
+              <button class="admin-primary" type="submit" [disabled]="savingHospital()">
+                {{ savingHospital() ? 'CRIANDO E PROVISIONANDO...' : 'CRIAR HOSPITAL' }}
+              </button>
+            </form>
+          </section>
+        </div>
+      } @else {
+        <div class="admin-grid">
+          <section class="admin-panel">
+            <div class="panel-heading">
+              <div>
+                <p>CONTAS CADASTRADAS</p>
+                <h2>USUÁRIOS</h2>
+              </div>
+              <span>{{ users().length }} REGISTRO(S)</span>
+            </div>
+
+            @if (users().length) {
+              <div class="admin-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>USUÁRIO</th>
+                      <th>ACESSO</th>
+                      <th>SITUAÇÃO</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (user of users(); track user.id) {
+                      <tr>
+                        <td>
+                          <strong>{{ user.name }}</strong>
+                          <span>{{ user.email }}</span>
+                        </td>
+                        <td>{{ userAccessLabel(user) }}</td>
+                        <td>
+                          <span
+                            class="status-pill"
+                            [attr.data-status]="user.active ? 'ACTIVE' : 'SUSPENDED'"
+                          >
+                            {{ user.active ? 'ATIVO' : 'INATIVO' }}
+                          </span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="admin-empty">
+                <strong>NENHUM USUÁRIO CADASTRADO</strong>
+              </div>
+            }
+          </section>
+
+          <section class="admin-panel admin-panel--form">
+            <div class="panel-heading">
+              <div>
+                <p>NOVA CONTA</p>
+                <h2>CRIAR USUÁRIO</h2>
+              </div>
+            </div>
+            <form [formGroup]="userForm" (ngSubmit)="createUser()">
+              <label>
+                <span>NOME COMPLETO</span>
+                <input type="text" formControlName="fullName" autocomplete="name" />
+              </label>
+              <label>
+                <span>E-MAIL</span>
+                <input type="email" formControlName="email" autocomplete="email" />
+              </label>
+              <label>
+                <span>SENHA INICIAL</span>
+                <input
+                  type="password"
+                  formControlName="initialPassword"
+                  autocomplete="new-password"
+                />
+                <small>MÍNIMO DE 12 CARACTERES, COM MAIÚSCULA, MINÚSCULA, NÚMERO E SÍMBOLO.</small>
+              </label>
+              <label>
+                <span>ESCOPO DO ACESSO</span>
+                <select formControlName="scope">
+                  <option value="HOSPITAL">VINCULADO A UM HOSPITAL</option>
+                  <option value="SYSTEM">ADMINISTRADOR GERAL</option>
+                </select>
+              </label>
+
+              @if (userForm.controls.scope.value === 'HOSPITAL') {
+                <div class="form-columns">
+                  <label>
+                    <span>HOSPITAL</span>
+                    <select formControlName="hospitalId">
+                      <option value="">SELECIONE</option>
+                      @for (hospital of hospitals(); track hospital.id) {
+                        @if (hospital.status === 'ACTIVE') {
+                          <option [value]="hospital.id">{{ hospital.name }}</option>
+                        }
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>PERFIL</span>
+                    <select formControlName="hospitalRole">
+                      <option value="ADMIN_HOSPITAL">ADMINISTRADOR HOSPITALAR</option>
+                      <option value="RESPONSAVEL_CLINICO">RESPONSÁVEL CLÍNICO</option>
+                      <option value="MEDICO">MÉDICO</option>
+                      <option value="ENFERMAGEM">ENFERMAGEM</option>
+                      <option value="RECEPCAO">RECEPÇÃO</option>
+                    </select>
+                  </label>
+                </div>
+              } @else {
+                <div class="scope-warning">
+                  ESTE PERFIL PODERÁ ADMINISTRAR TODA A PLATAFORMA. CRIE APENAS CONTAS INDIVIDUAIS
+                  AUTORIZADAS.
+                </div>
+              }
+
+              <button class="admin-primary" type="submit" [disabled]="savingUser()">
+                {{ savingUser() ? 'CRIANDO USUÁRIO...' : 'CRIAR USUÁRIO' }}
+              </button>
+            </form>
+          </section>
+        </div>
+      }
+    </main>
+  </div>
+</div>

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { environment } from '../environments/environment';
 import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
+import { AdministrationComponent } from './features/administration/administration.component';
 import {
   AppScreen,
   Bed,
@@ -196,7 +197,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
 ];
 
 @Component({
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AdministrationComponent],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
@@ -205,7 +206,6 @@ export class App implements OnInit {
   protected readonly store = inject(DemoStore);
   protected readonly auth = inject(AuthService);
   protected readonly realApiEnabled = environment.useRealApi;
-  protected readonly productionBuild = environment.production;
   protected readonly screen = signal<AppScreen>('login');
   protected readonly expandedRooms = signal<Set<string>>(new Set());
   protected readonly selectedBedId = signal<string | null>(null);
@@ -218,10 +218,11 @@ export class App implements OnInit {
   protected readonly authBusy = signal(false);
   protected readonly authError = signal<string | null>(null);
 
-  protected loginEmail = environment.useRealApi
-    ? 'lucas.galante@inventorymed.local'
-    : 'lucas.galante@demo.com';
-  protected loginPassword = environment.useRealApi ? '' : 'demo123';
+  protected loginEmail = '';
+  protected loginPassword = '';
+  protected currentPassword = '';
+  protected newPassword = '';
+  protected confirmNewPassword = '';
   protected patientName = '';
   protected patientBirthDate = '';
   protected patientSex = 'FEMININO';
@@ -467,8 +468,11 @@ export class App implements OnInit {
   });
 
   ngOnInit(): void {
-    if (this.openRequestedView()) return;
-    if (this.realApiEnabled) void this.restoreAuthenticatedSession();
+    if (this.realApiEnabled) {
+      void this.restoreAuthenticatedSession();
+      return;
+    }
+    this.openRequestedView();
   }
 
   protected async login(): Promise<void> {
@@ -485,17 +489,34 @@ export class App implements OnInit {
 
     this.authBusy.set(true);
     try {
-      const response = await this.auth.login(this.loginEmail, this.loginPassword);
-      if (response.selectedHospitalId) {
-        const selected = response.hospitals.find(
-          (hospital) => hospital.id === response.selectedHospitalId,
-        );
-        if (selected) {
-          this.openRoomsForHospital(selected.name);
-          return;
-        }
-      }
-      this.screen.set('hospital-select');
+      await this.auth.login(this.loginEmail, this.loginPassword);
+      this.loginPassword = '';
+      this.continueAfterAuthentication();
+    } catch (error) {
+      this.authError.set(this.authErrorMessage(error));
+    } finally {
+      this.authBusy.set(false);
+    }
+  }
+
+  protected async changeInitialPassword(): Promise<void> {
+    this.authError.set(null);
+    if (!this.currentPassword || !this.newPassword || !this.confirmNewPassword) {
+      this.authError.set('PREENCHA OS TRÊS CAMPOS DE SENHA.');
+      return;
+    }
+    if (this.newPassword !== this.confirmNewPassword) {
+      this.authError.set('A CONFIRMAÇÃO NÃO É IGUAL À NOVA SENHA.');
+      return;
+    }
+
+    this.authBusy.set(true);
+    try {
+      await this.auth.changePassword(this.currentPassword, this.newPassword);
+      this.currentPassword = '';
+      this.newPassword = '';
+      this.confirmNewPassword = '';
+      this.continueAfterAuthentication();
     } catch (error) {
       this.authError.set(this.authErrorMessage(error));
     } finally {
@@ -882,7 +903,7 @@ export class App implements OnInit {
       validHydrationRows,
       validMedicationSections,
     );
-    this.showToast('Prescrição criada no protótipo.');
+    this.showToast('PRESCRIÇÃO CRIADA.');
     const patient = this.selectedBed()?.patient;
     if (patient) this.preparePrescription(patient);
   }
@@ -943,16 +964,21 @@ export class App implements OnInit {
     }[status];
   }
 
-  protected resetDemo(): void {
-    this.store.resetDemo();
-    this.showToast('Dados de demonstração restaurados.');
-  }
-
   private async restoreAuthenticatedSession(): Promise<void> {
     this.authBusy.set(true);
     const valid = await this.auth.validateSession();
     this.authBusy.set(false);
     if (!valid) return;
+
+    if (this.auth.user()?.mustChangePassword) {
+      this.screen.set('password-change');
+      return;
+    }
+
+    if (this.auth.isSystemAdministrator()) {
+      this.screen.set('administration');
+      return;
+    }
 
     const selected = this.auth.selectedHospital();
     if (selected) {
@@ -962,11 +988,33 @@ export class App implements OnInit {
     this.screen.set('hospital-select');
   }
 
+  private continueAfterAuthentication(): void {
+    if (this.auth.user()?.mustChangePassword) {
+      this.screen.set('password-change');
+      return;
+    }
+    if (this.auth.isSystemAdministrator()) {
+      this.screen.set('administration');
+      return;
+    }
+    const selected = this.auth.selectedHospital();
+    if (selected) {
+      this.openRoomsForHospital(selected.name);
+      return;
+    }
+    this.screen.set('hospital-select');
+  }
+
   private openRoomsForHospital(hospitalName: string): void {
-    if (!this.selectDemoHospitalByName(hospitalName)) {
+    if (this.realApiEnabled) {
       this.authError.set(
-        'A UNIDADE AUTORIZADA AINDA NÃO POSSUI UMA ESTRUTURA DEMONSTRATIVA DE LEITOS.',
+        'O MÓDULO DE QUARTOS E LEITOS SERÁ LIBERADO APÓS A CONEXÃO COM O BANCO EXCLUSIVO DESTA UNIDADE.',
       );
+      this.screen.set('hospital-select');
+      return;
+    }
+    if (!this.selectDemoHospitalByName(hospitalName)) {
+      this.authError.set('A UNIDADE AUTORIZADA AINDA NÃO POSSUI QUARTOS E LEITOS CADASTRADOS.');
       this.screen.set('hospital-select');
       return;
     }
@@ -996,6 +1044,9 @@ export class App implements OnInit {
     }
     if (error.status === 401) return 'E-MAIL OU SENHA INVÁLIDOS.';
     if (error.status === 403) return 'USUÁRIO SEM ACESSO ATIVO A ESTA UNIDADE.';
+    if (error.status === 400 && typeof error.error?.message === 'string') {
+      return error.error.message.toLocaleUpperCase('pt-BR');
+    }
     return 'NÃO FOI POSSÍVEL CONCLUIR O ACESSO. TENTE NOVAMENTE.';
   }
 

@@ -10,9 +10,9 @@ testes continuam em `localhost`; somente uma versão aprovada e vinculada a um c
 
 | Ambiente | Endereço | Dados | Finalidade |
 | --- | --- | --- | --- |
-| Local | `http://127.0.0.1:4200` | fictícios | desenvolvimento e testes |
-| GitHub Pages | endereço do Pages | fictícios | demonstração estática |
-| VPS por IP | `http://179.236.237.36` | somente fictícios | homologação pública |
+| Local | `http://127.0.0.1:4200` | dados técnicos de desenvolvimento | desenvolvimento e testes |
+| GitHub Pages anterior | endereço do Pages | versão antiga congelada | referência visual, sem novas publicações |
+| VPS por IP | `http://179.236.237.36` | sem dados clínicos reais | homologação pública |
 | Produção clínica | domínio HTTPS a definir | reais após aprovação | uso hospitalar |
 
 O IP público usa HTTP nesta primeira etapa. Por isso, `SESSION_COOKIE_SECURE=false` é
@@ -33,13 +33,14 @@ O navegador nunca acessa diretamente as portas 8080 ou 1433.
 ## Configuração do frontend
 
 - `ng build` usa `environment.production.ts` e acessa a API real em `/api/v1`;
-- `ng build --configuration pages` usa `environment.pages.ts` e mantém a demonstração
-  sem backend;
+- `ng build --configuration pages` também exige a API em `/api/v1` e não produz mais
+  uma aplicação autônoma;
 - `ng serve` usa `environment.ts` e encaminha `/api` para a API local.
 
-As telas de leitos, admissão, prescrição e evolução já estão presentes, mas os dados
-operacionais ainda vêm do armazenamento demonstrativo. Na homologação, a autenticação e
-a seleção de hospital são reais; essa limitação aparece visivelmente na interface.
+O painel geral, autenticação, hospitais e usuários usam a API real. As telas clínicas
+permanecem inacessíveis no modo conectado até que seus endpoints e bancos hospitalares
+sejam implementados. Isso impede a aparência enganosa de dados persistidos quando o
+módulo ainda não está pronto.
 
 ## 1. Gerar uma versão no Windows
 
@@ -96,11 +97,12 @@ O primeiro script instala Java 21 e Nginx, cria o usuário de serviço e configu
 firewall HTTP. O segundo pede no terminal:
 
 - a senha atual de `sa`, usada apenas para provisionar o banco;
-- uma senha inicial para Lucas Galante.
+- o e-mail e uma senha temporária para o primeiro administrador geral.
 
-Ele gera internamente senhas diferentes para o login de execução e para o login de
-migração, cria `inventory_med_core` e grava o arquivo protegido de ambiente. A senha de
-`sa` não entra em argumento de processo, arquivo permanente ou Git.
+Ele gera internamente senhas diferentes para execução, migração e provisionamento de
+bancos hospitalares, além da chave usada para criptografar credenciais hospitalares.
+Cria `inventory_med_core` e grava o arquivo protegido de ambiente. A senha de `sa` não
+entra em argumento de processo, arquivo permanente ou Git.
 
 ## 5. Instalar a versão
 
@@ -122,8 +124,8 @@ Invoke-RestMethod http://179.236.237.36/api/v1/actuator/health
 Start-Process http://179.236.237.36
 ```
 
-Validar login, escolha de hospital, atualização da página e logout. Depois do primeiro
-acesso bem-sucedido, na VPS:
+Validar login, troca obrigatória da senha, criação de hospital, atualização da página e
+logout. Depois do primeiro acesso bem-sucedido, na VPS:
 
 ```bash
 sudo bash infra/scripts/disable-bootstrap.sh

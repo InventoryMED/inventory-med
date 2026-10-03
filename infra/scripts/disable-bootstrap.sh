@@ -13,6 +13,6 @@ if [[ ! -f ${ENV_FILE} ]]; then
 fi
 
 sed -i 's/^BOOTSTRAP_ENABLED=.*/BOOTSTRAP_ENABLED="false"/' "${ENV_FILE}"
-sed -i '/^BOOTSTRAP_DOCTOR_PASSWORD=/d' "${ENV_FILE}"
+sed -i '/^BOOTSTRAP_SYSTEM_ADMIN_PASSWORD=/d' "${ENV_FILE}"
 systemctl restart inventory-med-api
 echo "Bootstrap desativado e API reiniciada."

@@ -13,10 +13,14 @@ Esta primeira base implementa somente o núcleo central:
 - autenticação por sessão armazenada no SQL Server;
 - seleção segura da unidade ativa;
 - auditoria de autenticação;
+- criação de hospitais com banco e login SQL exclusivos;
+- criação de usuários gerais ou vinculados a um hospital;
+- troca obrigatória da senha inicial;
 - proteção CSRF para todas as operações de escrita.
 
-Pacientes e documentos clínicos não ficam no banco central. As migrações dos bancos
-operacionais de cada hospital serão adicionadas em uma etapa própria.
+Pacientes e documentos clínicos não ficam no banco central. A estrutura inicial de cada
+banco hospitalar já é criada pelo Flyway; os módulos clínicos serão acrescentados em
+migrações próprias.
 
 ## Executar localmente
 
@@ -48,8 +52,10 @@ O navegador não recebe JWT nem armazena credencial no `localStorage` ou
    `INVENTORYMED_SESSION`, marcado como `HttpOnly`;
 4. quando o usuário possui mais de um vínculo, `POST /api/v1/auth/select-hospital`
    seleciona a unidade;
-5. `GET /api/v1/auth/me` restaura o estado visível após recarregar a página;
-6. `POST /api/v1/auth/logout` invalida a sessão no servidor.
+5. uma conta com senha inicial usa `POST /api/v1/auth/change-password` antes de acessar
+   qualquer outro módulo;
+6. `GET /api/v1/auth/me` restaura o estado visível após recarregar a página;
+7. `POST /api/v1/auth/logout` invalida a sessão no servidor.
 
 O `GET /auth/csrf` cria o cookie legível `XSRF-TOKEN`. Nas chamadas de escrita, o
 Angular copia esse valor para o cabeçalho `X-XSRF-TOKEN`. O cookie da sessão continua
@@ -73,12 +79,20 @@ Na VPS, `DB_USERNAME` é o login de execução com acesso aos dados, enquanto
 `DB_MIGRATION_USERNAME` é usado exclusivamente pelo Flyway para alterar o schema. No
 ambiente local, as credenciais de migração herdam as credenciais do datasource.
 
-## Dados iniciais controlados
+## Administrador inicial controlado
 
 O bootstrap é desabilitado por padrão e só roda quando `BOOTSTRAP_ENABLED=true`. Ele
-cria de forma idempotente Lucas Galante e os dois hospitais de demonstração. A senha
-deve ter no mínimo 12 caracteres. Na VPS, ela fica temporariamente no arquivo protegido
-`/etc/inventory-med/api.env` e é removida depois da validação inicial.
+cria de forma idempotente apenas a primeira conta `ADMIN_SISTEMA`; hospitais e demais
+usuários são criados pelo painel. A senha inicial é temporária e deve ser trocada no
+primeiro acesso. Na VPS, ela fica apenas durante a ativação no arquivo protegido
+`/etc/inventory-med/api.env` e é removida logo depois.
+
+## Bancos hospitalares
+
+Ao criar um hospital, a API registra a unidade como `PROVISIONING`, cria o banco e o
+login SQL exclusivos, aplica `db/migration/tenant`, limita o login ao banco criado e só
+então ativa a unidade. A senha técnica do hospital é guardada criptografada no banco
+central; a chave de criptografia fica somente na configuração segura da API.
 
 ## Testes
 

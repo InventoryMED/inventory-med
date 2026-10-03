@@ -74,6 +74,19 @@ public class SessionAuthorizationFilter extends OncePerRequestFilter {
             context.setAuthentication(refreshedAuthentication);
             SecurityContextHolder.getContextHolderStrategy().setContext(context);
             securityContextRepository.saveContext(context, request, response);
+            if (
+                refreshed.principal().mustChangePassword() &&
+                !isPasswordChangeAllowedPath(request)
+            ) {
+                errorWriter.write(
+                    request,
+                    response,
+                    HttpServletResponse.SC_FORBIDDEN,
+                    "PASSWORD_CHANGE_REQUIRED",
+                    "Altere a senha inicial antes de continuar"
+                );
+                return;
+            }
             filterChain.doFilter(request, response);
         } catch (AccessDeniedException exception) {
             SecurityContextHolder.getContextHolderStrategy().clearContext();
@@ -88,6 +101,14 @@ public class SessionAuthorizationFilter extends OncePerRequestFilter {
                 "A autorização desta sessão não é mais válida"
             );
         }
+    }
+
+    private boolean isPasswordChangeAllowedPath(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/auth/me") ||
+            path.equals("/auth/change-password") ||
+            path.equals("/auth/logout") ||
+            path.equals("/auth/csrf");
     }
 
     private UUID selectedHospitalId(HttpSession session) {

@@ -57,7 +57,7 @@ essa verificação.
 
 ```powershell
 cd 'C:\Inventory MED\frontend'
-npm test -- --watch=false
+npm test
 npm run build
 ```
 

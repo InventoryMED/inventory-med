@@ -57,7 +57,14 @@ management:
 inventory:
   bootstrap:
     enabled: ${BOOTSTRAP_ENABLED:false}
-    doctor-email: ${BOOTSTRAP_DOCTOR_EMAIL:lucas.galante@inventorymed.local}
-    doctor-password: ${BOOTSTRAP_DOCTOR_PASSWORD:}
+    system-admin-email: ${BOOTSTRAP_SYSTEM_ADMIN_EMAIL:admin@inventorymed.local}
+    system-admin-password: ${BOOTSTRAP_SYSTEM_ADMIN_PASSWORD:}
+  tenancy:
+    provisioning:
+      enabled: ${TENANT_PROVISIONING_ENABLED:false}
+      server-jdbc-url: ${DB_PROVISIONING_URL:${DB_URL}}
+      username: ${DB_PROVISIONING_USERNAME:${DB_MIGRATION_USERNAME:${DB_USERNAME}}}
+      password: ${DB_PROVISIONING_PASSWORD:${DB_MIGRATION_PASSWORD:${DB_PASSWORD}}}
+      credential-encryption-key: ${TENANT_CREDENTIAL_ENCRYPTION_KEY:}
   security:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:4200,http://127.0.0.1:4200}

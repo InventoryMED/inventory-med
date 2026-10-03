@@ -54,6 +54,8 @@ describe('AuthService', () => {
         id: 'user-id',
         name: 'LUCAS GALANTE',
         email: 'lucas.galante@inventorymed.local',
+        systemRoles: [],
+        mustChangePassword: false,
       },
       hospitals: [
         {
@@ -105,6 +107,8 @@ describe('AuthService', () => {
         id: 'user-id',
         name: 'LUCAS GALANTE',
         email: 'lucas.galante@inventorymed.local',
+        systemRoles: [],
+        mustChangePassword: false,
       },
       hospitals: [],
       selectedHospitalId: null,
@@ -113,5 +117,50 @@ describe('AuthService', () => {
 
     expect(await validationPromise).toBe(true);
     expect(service.isAuthenticated()).toBe(true);
+  });
+
+  it('treats a session created by the previous API version as non-administrative', async () => {
+    const validationPromise = service.validateSession();
+    const profileRequest = http.expectOne('/api/v1/auth/me');
+    profileRequest.flush({
+      user: {
+        id: 'legacy-user-id',
+        name: 'USUÁRIO EXISTENTE',
+        email: 'usuario@inventorymed.local',
+        mustChangePassword: false,
+      },
+      hospitals: [],
+      selectedHospitalId: null,
+      selectedHospitalRole: null,
+    });
+
+    expect(await validationPromise).toBe(true);
+    expect(service.isSystemAdministrator()).toBe(false);
+  });
+
+  it('changes the initial password through the protected session', async () => {
+    const changePromise = service.changePassword('Initial@Password1', 'Personal@Password2');
+    const csrfRequest = http.expectOne('/api/v1/auth/csrf');
+    csrfRequest.flush({ headerName: 'X-XSRF-TOKEN' });
+    document.cookie = 'XSRF-TOKEN=password-csrf-token; Path=/';
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const request = http.expectOne('/api/v1/auth/change-password');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      currentPassword: 'Initial@Password1',
+      newPassword: 'Personal@Password2',
+    });
+    request.flush({
+      id: 'user-id',
+      name: 'ADMINISTRADOR GERAL',
+      email: 'admin@inventorymed.local',
+      systemRoles: ['ADMIN_SISTEMA'],
+      mustChangePassword: false,
+    });
+
+    await changePromise;
+    expect(service.user()?.mustChangePassword).toBe(false);
   });
 });

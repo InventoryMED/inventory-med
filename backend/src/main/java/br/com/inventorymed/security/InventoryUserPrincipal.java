@@ -20,6 +20,7 @@ public final class InventoryUserPrincipal
     private final String fullName;
     private final String email;
     private final boolean active;
+    private final boolean mustChangePassword;
     private final List<String> systemRoles;
     private String passwordHash;
 
@@ -29,6 +30,7 @@ public final class InventoryUserPrincipal
         String email,
         String passwordHash,
         boolean active,
+        boolean mustChangePassword,
         List<String> systemRoles
     ) {
         this.userId = userId;
@@ -36,6 +38,7 @@ public final class InventoryUserPrincipal
         this.email = email;
         this.passwordHash = passwordHash;
         this.active = active;
+        this.mustChangePassword = mustChangePassword;
         this.systemRoles = List.copyOf(systemRoles);
     }
 
@@ -53,6 +56,10 @@ public final class InventoryUserPrincipal
 
     public boolean hasSystemRole(String role) {
         return systemRoles.contains(role);
+    }
+
+    public boolean mustChangePassword() {
+        return mustChangePassword;
     }
 
     @Override

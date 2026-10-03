@@ -14,10 +14,14 @@ import br.com.inventorymed.identity.HospitalMembership;
 import br.com.inventorymed.identity.HospitalMembershipRepository;
 import br.com.inventorymed.identity.HospitalRepository;
 import br.com.inventorymed.identity.HospitalRole;
+import br.com.inventorymed.identity.SystemRole;
+import br.com.inventorymed.identity.SystemUserRole;
+import br.com.inventorymed.identity.SystemUserRoleRepository;
 import jakarta.servlet.http.Cookie;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.UUID;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +47,9 @@ class CoreSecurityIntegrationTests {
     @Container
     static final MSSQLServerContainer SQL_SERVER = new MSSQLServerContainer(
         "mcr.microsoft.com/mssql/server:2022-latest"
-    ).acceptLicense();
+    )
+        .acceptLicense()
+        .withInitScript("sql/create-test-tenant-provisioner.sql");
 
     @Autowired
     private DataSource dataSource;
@@ -66,6 +72,9 @@ class CoreSecurityIntegrationTests {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private SystemUserRoleRepository systemRoleRepository;
+
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", SQL_SERVER::getJdbcUrl);
@@ -73,6 +82,23 @@ class CoreSecurityIntegrationTests {
         registry.add("spring.datasource.password", SQL_SERVER::getPassword);
         registry.add("server.servlet.session.cookie.secure", () -> false);
         registry.add("inventory.bootstrap.enabled", () -> false);
+        registry.add("inventory.tenancy.provisioning.enabled", () -> true);
+        registry.add(
+            "inventory.tenancy.provisioning.server-jdbc-url",
+            SQL_SERVER::getJdbcUrl
+        );
+        registry.add(
+            "inventory.tenancy.provisioning.username",
+            () -> "inventorymed_test_tenant_provisioner"
+        );
+        registry.add(
+            "inventory.tenancy.provisioning.password",
+            () -> "TenantProvisioner@Test123"
+        );
+        registry.add(
+            "inventory.tenancy.provisioning.credential-encryption-key",
+            () -> "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+        );
     }
 
     @BeforeEach
@@ -80,6 +106,7 @@ class CoreSecurityIntegrationTests {
         jdbcTemplate.update("DELETE FROM dbo.SPRING_SESSION_ATTRIBUTES");
         jdbcTemplate.update("DELETE FROM dbo.SPRING_SESSION");
         jdbcTemplate.update("DELETE FROM dbo.audit_event");
+        jdbcTemplate.update("DELETE FROM dbo.hospital_database_secret");
         jdbcTemplate.update("DELETE FROM dbo.hospital_membership");
         jdbcTemplate.update("DELETE FROM dbo.system_user_role");
         jdbcTemplate.update("DELETE FROM dbo.app_user");
@@ -107,6 +134,12 @@ class CoreSecurityIntegrationTests {
             Integer.class
         );
         assertThat(clinicalTableCount).isZero();
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM sys.tables WHERE name = 'hospital_database_secret'",
+                Integer.class
+            )
+        ).isEqualTo(1);
     }
 
     @Test
@@ -271,6 +304,225 @@ class CoreSecurityIntegrationTests {
             .andExpect(jsonPath("$.code").value("SESSION_REVOKED"));
     }
 
+    @Test
+    void systemAdministratorCreatesAnIsolatedHospitalDatabase() throws Exception {
+        AppUser administrator = createSystemAdministrator("admin@example.test");
+        MvcResult login = login("admin@example.test", "AdminSecret@123");
+        Cookie sessionCookie = latestCookie(login, "INVENTORYMED_SESSION");
+        Cookie csrfCookie = latestCookie(login, "XSRF-TOKEN");
+
+        MvcResult created = mockMvc
+            .perform(
+                post("/administration/hospitals")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                          "name":"Hospital Isolado",
+                          "shortName":"HI",
+                          "city":"João Pinheiro, MG"
+                        }
+                        """)
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.name").value("HOSPITAL ISOLADO"))
+            .andExpect(jsonPath("$.status").value("ACTIVE"))
+            .andReturn();
+
+        Hospital hospital = hospitalRepository
+            .findByNameIgnoreCase("HOSPITAL ISOLADO")
+            .orElseThrow();
+        assertThat(hospital.isActive()).isTrue();
+        assertThat(created.getResponse().getContentAsString())
+            .doesNotContain(hospital.getDatabaseName())
+            .doesNotContain("password");
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM sys.databases WHERE name = ?",
+                Integer.class,
+                hospital.getDatabaseName()
+            )
+        ).isEqualTo(1);
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM dbo.hospital_database_secret WHERE hospital_id = ? " +
+                "AND encrypted_password NOT LIKE '%AdminSecret%'",
+                Integer.class,
+                hospital.getId()
+            )
+        ).isEqualTo(1);
+
+        try (
+            Connection tenantConnection = java.sql.DriverManager.getConnection(
+                databaseUrl(hospital.getDatabaseName()),
+                SQL_SERVER.getUsername(),
+                SQL_SERVER.getPassword()
+            );
+            Statement statement = tenantConnection.createStatement();
+            ResultSet tables = statement.executeQuery(
+                "SELECT COUNT(*) FROM sys.tables WHERE name IN " +
+                "('tenant_metadata', 'care_unit', 'room', 'bed', 'clinical_audit_event')"
+            )
+        ) {
+            assertThat(tables.next()).isTrue();
+            assertThat(tables.getInt(1)).isEqualTo(5);
+        }
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM dbo.audit_event WHERE actor_user_id = ? " +
+                "AND event_type = 'ADMIN_HOSPITAL_CREATED' AND outcome = 'SUCCESS'",
+                Integer.class,
+                administrator.getId()
+            )
+        ).isEqualTo(1);
+    }
+
+    @Test
+    void systemAdministratorCreatesAUserScopedToOneHospital() throws Exception {
+        createSystemAdministrator("admin@example.test");
+        Hospital hospital = hospitalRepository.save(
+            new Hospital(
+                "HOSPITAL AUTORIZADO",
+                "HA",
+                "JOÃO PINHEIRO, MG",
+                "inventory_med_hospital_authorized_" + UUID.randomUUID().toString().replace("-", "")
+            )
+        );
+        MvcResult login = login("admin@example.test", "AdminSecret@123");
+        Cookie sessionCookie = latestCookie(login, "INVENTORYMED_SESSION");
+        Cookie csrfCookie = latestCookie(login, "XSRF-TOKEN");
+
+        mockMvc
+            .perform(
+                post("/administration/users")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "fullName":"Gestor Hospitalar",
+                          "email":"gestor@example.test",
+                          "initialPassword":"InitialSecret@123",
+                          "systemRoles":[],
+                          "hospitalAssignments":[
+                            {"hospitalId":"%s","role":"ADMIN_HOSPITAL"}
+                          ]
+                        }
+                        """.formatted(hospital.getId())
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.name").value("GESTOR HOSPITALAR"))
+            .andExpect(jsonPath("$.mustChangePassword").value(true))
+            .andExpect(jsonPath("$.hospitals[0].hospitalId").value(hospital.getId().toString()))
+            .andExpect(jsonPath("$.hospitals[0].role").value("ADMIN_HOSPITAL"));
+
+        AppUser created = userRepository
+            .findByEmailIgnoreCase("gestor@example.test")
+            .orElseThrow();
+        assertThat(created.mustChangePassword()).isTrue();
+        assertThat(
+            membershipRepository.existsByUserIdAndHospitalId(
+                created.getId(),
+                hospital.getId()
+            )
+        ).isTrue();
+    }
+
+    @Test
+    void ordinaryHospitalUserCannotAccessSystemAdministration() throws Exception {
+        createMembership(
+            "doctor@example.test",
+            "UPA TESTE",
+            "inventory_med_hospital_teste",
+            HospitalRole.MEDICO
+        );
+        MvcResult login = login("doctor@example.test", "Secret@12345");
+
+        mockMvc
+            .perform(
+                get("/administration/hospitals")
+                    .cookie(latestCookie(login, "INVENTORYMED_SESSION"))
+            )
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void userMustReplaceTheInitialPasswordBeforeAccessingTheSystem()
+        throws Exception {
+        Hospital hospital = hospitalRepository.save(
+            new Hospital(
+                "HOSPITAL PRIMEIRO ACESSO",
+                "HPA",
+                "JOÃO PINHEIRO, MG",
+                "inventory_med_hospital_first_access"
+            )
+        );
+        AppUser user = userRepository.save(
+            new AppUser(
+                "GESTOR PRIMEIRO ACESSO",
+                "first.access@example.test",
+                passwordEncoder.encode("InitialSecret@123"),
+                true
+            )
+        );
+        membershipRepository.save(
+            new HospitalMembership(hospital, user, HospitalRole.ADMIN_HOSPITAL)
+        );
+
+        MvcResult login = login(
+            "first.access@example.test",
+            "InitialSecret@123"
+        );
+        Cookie sessionCookie = latestCookie(login, "INVENTORYMED_SESSION");
+        Cookie csrfCookie = latestCookie(login, "XSRF-TOKEN");
+
+        mockMvc
+            .perform(
+                post("/auth/select-hospital")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"hospitalId\":\"" + hospital.getId() + "\"}")
+            )
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.code").value("PASSWORD_CHANGE_REQUIRED"));
+
+        mockMvc
+            .perform(
+                post("/auth/change-password")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "currentPassword":"InitialSecret@123",
+                          "newPassword":"PersonalSecret@456"
+                        }
+                        """
+                    )
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.mustChangePassword").value(false));
+
+        mockMvc
+            .perform(get("/auth/me").cookie(sessionCookie))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.user.mustChangePassword").value(false));
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM dbo.audit_event WHERE actor_user_id = ? " +
+                "AND event_type = 'AUTHENTICATION_PASSWORD_CHANGED' AND outcome = 'SUCCESS'",
+                Integer.class,
+                user.getId()
+            )
+        ).isEqualTo(1);
+    }
+
     private HospitalMembership createMembership(
         String email,
         String hospitalName,
@@ -309,6 +561,31 @@ class CoreSecurityIntegrationTests {
             .andExpect(status().isOk())
             .andExpect(cookie().httpOnly("INVENTORYMED_SESSION", true))
             .andReturn();
+    }
+
+    private AppUser createSystemAdministrator(String email) {
+        AppUser user = userRepository.save(
+            new AppUser(
+                "ADMINISTRADOR TESTE",
+                email,
+                passwordEncoder.encode("AdminSecret@123")
+            )
+        );
+        systemRoleRepository.save(
+            new SystemUserRole(user, SystemRole.ADMIN_SISTEMA)
+        );
+        return user;
+    }
+
+    private String databaseUrl(String databaseName) {
+        String jdbcUrl = SQL_SERVER.getJdbcUrl();
+        if (jdbcUrl.matches("(?i).*databaseName=[^;]*.*")) {
+            return jdbcUrl.replaceFirst(
+                "(?i)databaseName=[^;]*",
+                "databaseName=" + databaseName
+            );
+        }
+        return jdbcUrl + ";databaseName=" + databaseName;
     }
 
     private CsrfCookie csrfCookie() throws Exception {

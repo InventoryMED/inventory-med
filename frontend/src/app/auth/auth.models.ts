@@ -2,6 +2,8 @@ export interface AuthenticatedUser {
   id: string;
   name: string;
   email: string;
+  systemRoles: string[];
+  mustChangePassword: boolean;
 }
 
 export interface HospitalAccess {

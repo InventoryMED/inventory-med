@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface HospitalMembershipRepository extends JpaRepository<HospitalMembership, UUID> {
 
@@ -18,4 +19,8 @@ public interface HospitalMembershipRepository extends JpaRepository<HospitalMemb
     );
 
     boolean existsByUserIdAndHospitalId(UUID userId, UUID hospitalId);
+
+    @EntityGraph(attributePaths = { "hospital", "user" })
+    @Query("select membership from HospitalMembership membership")
+    List<HospitalMembership> findAllWithHospitalAndUser();
 }

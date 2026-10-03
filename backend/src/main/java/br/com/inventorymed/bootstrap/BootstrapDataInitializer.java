@@ -2,12 +2,10 @@ package br.com.inventorymed.bootstrap;
 
 import br.com.inventorymed.identity.AppUser;
 import br.com.inventorymed.identity.AppUserRepository;
-import br.com.inventorymed.identity.Hospital;
-import br.com.inventorymed.identity.HospitalMembership;
-import br.com.inventorymed.identity.HospitalMembershipRepository;
-import br.com.inventorymed.identity.HospitalRepository;
-import br.com.inventorymed.identity.HospitalRole;
-import java.util.List;
+import br.com.inventorymed.identity.SystemRole;
+import br.com.inventorymed.identity.SystemUserRole;
+import br.com.inventorymed.identity.SystemUserRoleRepository;
+import br.com.inventorymed.security.PasswordPolicy;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -24,85 +22,59 @@ import org.springframework.transaction.annotation.Transactional;
 public class BootstrapDataInitializer implements ApplicationRunner {
 
     private final BootstrapProperties properties;
-    private final HospitalRepository hospitalRepository;
     private final AppUserRepository userRepository;
-    private final HospitalMembershipRepository membershipRepository;
+    private final SystemUserRoleRepository systemRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicy passwordPolicy;
 
     public BootstrapDataInitializer(
         BootstrapProperties properties,
-        HospitalRepository hospitalRepository,
         AppUserRepository userRepository,
-        HospitalMembershipRepository membershipRepository,
-        PasswordEncoder passwordEncoder
+        SystemUserRoleRepository systemRoleRepository,
+        PasswordEncoder passwordEncoder,
+        PasswordPolicy passwordPolicy
     ) {
         this.properties = properties;
-        this.hospitalRepository = hospitalRepository;
         this.userRepository = userRepository;
-        this.membershipRepository = membershipRepository;
+        this.systemRoleRepository = systemRoleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicy = passwordPolicy;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         if (!properties.enabled()) return;
-        if (
-            properties.doctorPassword() == null ||
-            properties.doctorPassword().length() < 12
-        ) {
-            throw new IllegalStateException(
-                "BOOTSTRAP_DOCTOR_PASSWORD deve ter pelo menos 12 caracteres"
-            );
-        }
+        createSystemAdministrator();
+    }
 
-        Hospital upa = findOrCreateHospital(
-            "UPA DE JOÃO PINHEIRO",
-            "UPA JP",
-            "inventory_med_hospital_upa_joao_pinheiro"
-        );
-        Hospital hospital = findOrCreateHospital(
-            "HOSPITAL DE JOÃO PINHEIRO",
-            "HJP",
-            "inventory_med_hospital_joao_pinheiro"
-        );
-        AppUser doctor = userRepository
-            .findByEmailIgnoreCase(properties.doctorEmail())
+    private void createSystemAdministrator() {
+        if (properties.systemAdminPassword() == null || properties.systemAdminPassword().isBlank()) {
+            return;
+        }
+        passwordPolicy.validate(properties.systemAdminPassword());
+        AppUser administrator = userRepository
+            .findByEmailIgnoreCase(properties.systemAdminEmail())
             .orElseGet(() ->
                 userRepository.save(
                     new AppUser(
-                        "LUCAS GALANTE",
-                        properties.doctorEmail(),
-                        passwordEncoder.encode(properties.doctorPassword())
+                        "ADMINISTRADOR GERAL",
+                        properties.systemAdminEmail(),
+                        passwordEncoder.encode(properties.systemAdminPassword()),
+                        true
                     )
                 )
             );
-
-        List.of(upa, hospital).forEach(item -> {
-            if (!membershipRepository.existsByUserIdAndHospitalId(doctor.getId(), item.getId())) {
-                membershipRepository.save(
-                    new HospitalMembership(item, doctor, HospitalRole.MEDICO)
-                );
-            }
-        });
-    }
-
-    private Hospital findOrCreateHospital(
-        String name,
-        String shortName,
-        String databaseName
-    ) {
-        return hospitalRepository
-            .findByNameIgnoreCase(name)
-            .orElseGet(() ->
-                hospitalRepository.save(
-                    new Hospital(
-                        name,
-                        shortName,
-                        "JOÃO PINHEIRO, MG",
-                        databaseName
-                    )
-                )
+        if (
+            !systemRoleRepository.existsByUserIdAndRole(
+                administrator.getId(),
+                SystemRole.ADMIN_SISTEMA
+            )
+        ) {
+            systemRoleRepository.save(
+                new SystemUserRole(administrator, SystemRole.ADMIN_SISTEMA)
             );
+        }
     }
+
 }

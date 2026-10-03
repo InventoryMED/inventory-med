@@ -73,6 +73,7 @@ public class SessionAuthorizationService {
             user.getEmail(),
             null,
             true,
+            user.mustChangePassword(),
             systemRoles
         );
         return new RefreshedSessionAuthorization(

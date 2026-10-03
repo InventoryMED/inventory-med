@@ -1,7 +1,8 @@
 package br.com.inventorymed.auth;
 
 import br.com.inventorymed.audit.AuditOutcome;
-import br.com.inventorymed.audit.AuthenticationAuditService;
+import br.com.inventorymed.audit.AuditService;
+import br.com.inventorymed.common.BusinessValidationException;
 import br.com.inventorymed.identity.AppUser;
 import br.com.inventorymed.identity.AppUserRepository;
 import br.com.inventorymed.identity.HospitalMembership;
@@ -41,7 +42,8 @@ public class AuthService {
     private final HospitalMembershipRepository membershipRepository;
     private final SecurityContextRepository securityContextRepository;
     private final CsrfTokenRepository csrfTokenRepository;
-    private final AuthenticationAuditService auditService;
+    private final PasswordChangeService passwordChangeService;
+    private final AuditService auditService;
 
     public AuthService(
         AuthenticationManager authenticationManager,
@@ -49,13 +51,15 @@ public class AuthService {
         HospitalMembershipRepository membershipRepository,
         SecurityContextRepository securityContextRepository,
         CsrfTokenRepository csrfTokenRepository,
-        AuthenticationAuditService auditService
+        PasswordChangeService passwordChangeService,
+        AuditService auditService
     ) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.membershipRepository = membershipRepository;
         this.securityContextRepository = securityContextRepository;
         this.csrfTokenRepository = csrfTokenRepository;
+        this.passwordChangeService = passwordChangeService;
         this.auditService = auditService;
     }
 
@@ -133,7 +137,7 @@ public class AuthService {
         );
 
         return new LoginResponse(
-            UserResponse.from(user),
+            UserResponse.from(user, principal.systemRoles()),
             memberships.stream().map(HospitalAccessResponse::from).toList(),
             memberships.size() > 1,
             selectedMembership == null ? null : selectedMembership.getHospital().getId(),
@@ -194,11 +198,44 @@ public class AuthService {
         }
 
         return new MeResponse(
-            UserResponse.from(user),
+            UserResponse.from(user, principal.systemRoles()),
             memberships.stream().map(HospitalAccessResponse::from).toList(),
             selectedHospitalId,
             selectedHospitalRole
         );
+    }
+
+    public UserResponse changePassword(
+        InventoryUserPrincipal principal,
+        ChangePasswordRequest request,
+        String sourceIp,
+        String userAgent
+    ) {
+        AppUser user;
+        try {
+            user = passwordChangeService.change(principal.userId(), request);
+        } catch (BusinessValidationException exception) {
+            auditService.record(
+                "AUTHENTICATION_PASSWORD_CHANGED",
+                AuditOutcome.FAILURE,
+                activeUser(principal.userId()),
+                null,
+                sourceIp,
+                userAgent,
+                Map.of("reason", "PASSWORD_VALIDATION_FAILED")
+            );
+            throw exception;
+        }
+        auditService.record(
+            "AUTHENTICATION_PASSWORD_CHANGED",
+            AuditOutcome.SUCCESS,
+            user,
+            null,
+            sourceIp,
+            userAgent,
+            Map.of("forcedChangeCompleted", true)
+        );
+        return UserResponse.from(user, principal.systemRoles());
     }
 
     private Authentication sessionAuthentication(InventoryUserPrincipal principal) {

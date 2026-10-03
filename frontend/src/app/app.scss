@@ -268,11 +268,25 @@ svg {
 .login-button span {
   font-size: 21px;
 }
-.demo-hint {
+.access-hint {
   margin: 16px 0 0;
   color: #8a94a3;
   font-size: 12px;
   text-align: center;
+}
+.password-policy {
+  margin: 12px 0 0;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.login-card .input-shell + .field-label {
+  margin-top: 20px;
+}
+.password-change-exit {
+  display: block;
+  margin: 18px auto 0;
 }
 .form-error {
   margin: 16px 0 0;

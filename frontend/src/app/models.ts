@@ -1,4 +1,11 @@
-export type AppScreen = 'login' | 'hospital-select' | 'rooms' | 'prescription' | 'evolution';
+export type AppScreen =
+  | 'login'
+  | 'password-change'
+  | 'hospital-select'
+  | 'administration'
+  | 'rooms'
+  | 'prescription'
+  | 'evolution';
 
 export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE';
 export type DischargeReason = 'ÓBITO' | 'TRANSFERÊNCIA' | 'ALTA MELHORA';

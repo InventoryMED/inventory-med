@@ -14,15 +14,7 @@
           Uma visão clara da ocupação hospitalar para apoiar a rotina da equipe médica.
         </p>
       </div>
-      <div class="brand-footnote">
-        {{
-          realApiEnabled
-            ? productionBuild
-              ? 'HOMOLOGAÇÃO PÚBLICA • USE SOMENTE DADOS FICTÍCIOS'
-              : 'AUTENTICAÇÃO LOCAL • AMBIENTE DE DESENVOLVIMENTO'
-            : 'PROTÓTIPO COM DADOS FICTÍCIOS'
-        }}
-      </div>
+      <div class="brand-footnote">ACESSO SEGURO • INVENTORY MED</div>
     </section>
 
     <section class="login-panel">
@@ -73,18 +65,89 @@
         <button class="primary-button login-button" type="submit" [disabled]="authBusy()">
           {{ authBusy() ? 'CONECTANDO...' : 'ENTRAR' }} <span aria-hidden="true">→</span>
         </button>
-        <p class="demo-hint">
-          {{
-            realApiEnabled
-              ? productionBuild
-                ? 'AMBIENTE DE HOMOLOGAÇÃO: USE AS CREDENCIAIS FORNECIDAS PELO RESPONSÁVEL.'
-                : 'AMBIENTE DEV: A SENHA É DEFINIDA NO ARQUIVO .ENV.'
-              : 'ACESSO DE DEMONSTRAÇÃO PREENCHIDO AUTOMATICAMENTE.'
-          }}
-        </p>
+        <p class="access-hint">ACESSO RESTRITO A USUÁRIOS AUTORIZADOS.</p>
       </form>
     </section>
   </main>
+}
+
+@if (screen() === 'password-change') {
+  <main class="login-page">
+    <section class="login-brand">
+      <div class="brand-logo brand-logo--hero">
+        <img
+          src="inventory-med-logo.png"
+          alt="INVENTORY MED — GESTÃO INTELIGENTE DE LEITOS HOSPITALARES"
+        />
+      </div>
+      <div>
+        <p class="eyebrow">PRIMEIRO ACESSO</p>
+        <h1>Proteja sua conta.</h1>
+        <p class="brand-copy">
+          A senha inicial é temporária. Cadastre uma senha pessoal antes de acessar o sistema.
+        </p>
+      </div>
+      <div class="brand-footnote">ACESSO SEGURO • INVENTORY MED</div>
+    </section>
+
+    <section class="login-panel">
+      <form class="login-card" (ngSubmit)="changeInitialPassword()">
+        <div class="login-heading">
+          <p class="eyebrow">SEGURANÇA DA CONTA</p>
+          <h2>Alterar senha inicial</h2>
+          <p>Use uma senha exclusiva com, no mínimo, 12 caracteres.</p>
+        </div>
+        <label class="field-label" for="current-password">SENHA INICIAL</label>
+        <div class="input-shell">
+          <input
+            id="current-password"
+            name="currentPassword"
+            type="password"
+            [(ngModel)]="currentPassword"
+            autocomplete="current-password"
+          />
+        </div>
+        <label class="field-label" for="new-password">NOVA SENHA</label>
+        <div class="input-shell">
+          <input
+            id="new-password"
+            name="newPassword"
+            type="password"
+            [(ngModel)]="newPassword"
+            autocomplete="new-password"
+          />
+        </div>
+        <label class="field-label" for="confirm-new-password">CONFIRMAR NOVA SENHA</label>
+        <div class="input-shell">
+          <input
+            id="confirm-new-password"
+            name="confirmNewPassword"
+            type="password"
+            [(ngModel)]="confirmNewPassword"
+            autocomplete="new-password"
+          />
+        </div>
+        <p class="password-policy">
+          MAIÚSCULA, MINÚSCULA, NÚMERO E SÍMBOLO. NÃO REUTILIZE A SENHA INICIAL.
+        </p>
+        @if (authError()) {
+          <p class="form-error" role="alert">{{ authError() }}</p>
+        }
+        <button class="primary-button login-button" type="submit" [disabled]="authBusy()">
+          {{ authBusy() ? 'ALTERANDO...' : 'CADASTRAR NOVA SENHA' }}
+        </button>
+        <button class="text-button password-change-exit" type="button" (click)="logout()">
+          SAIR DA CONTA
+        </button>
+      </form>
+    </section>
+  </main>
+}
+
+@if (screen() === 'administration') {
+  @defer {
+    <app-administration (exit)="logout()" />
+  }
 }
 
 @if (screen() === 'hospital-select') {
@@ -174,15 +237,6 @@
           <p class="eyebrow">Visão operacional</p>
           <h1>Quartos e leitos</h1>
           <p>{{ hospital.name }} • Atualizado agora</p>
-        </div>
-        <div class="heading-actions">
-          <button type="button" class="ghost-button" (click)="resetDemo()">
-            Restaurar demonstração
-          </button>
-          <div class="data-badge">
-            <span></span>
-            {{ realApiEnabled ? 'LOGIN REAL • LEITOS DEMONSTRATIVOS' : 'DADOS FICTÍCIOS' }}
-          </div>
         </div>
       </div>
 
@@ -489,7 +543,7 @@
                 </button>
               </div>
               <small
-                >Os modelos são demonstrativos e devem ser revisados pela equipe clínica.</small
+                >Os modelos devem ser revisados pela equipe clínica responsável antes do uso.</small
               >
             </div>
           </section>
@@ -829,7 +883,7 @@
                 </button>
               </section>
               <footer class="sheet-footer">
-                <p>Ambiente de demonstração • Nenhuma informação possui validade clínica.</p>
+                <p>DOCUMENTO ASSISTENCIAL • CONFIRA OS DADOS ANTES DA FINALIZAÇÃO.</p>
                 <div><span>Prescritor</span><strong>DR. LUCAS GALANTE • CRM 123456/SP</strong></div>
               </footer>
               <div class="prescription-submit">
@@ -993,7 +1047,7 @@
 
               <footer class="print-sheet-footer">
                 <span class="print-document-note"
-                  >Inventory MED • Documento gerado em ambiente de demonstração</span
+                  >INVENTORY MED • DOCUMENTO GERADO PELO SISTEMA</span
                 >
                 <div class="print-signatures">
                   <div class="print-signature-block">
@@ -1019,7 +1073,7 @@
           }
           @if (patient.prescriptions.length) {
             <section class="saved-prescriptions">
-              <h2>Prescrições salvas nesta demonstração</h2>
+              <h2>PRESCRIÇÕES DO PACIENTE</h2>
               @for (prescription of patient.prescriptions; track prescription.id) {
                 <div class="saved-row">
                   <div>
@@ -1841,7 +1895,7 @@
             </section>
 
             <footer class="evolution-print-footer">
-              <span>Inventory MED • Documento gerado em ambiente de demonstração</span>
+              <span>INVENTORY MED • DOCUMENTO GERADO PELO SISTEMA</span>
               <div class="evolution-print-doctor">
                 <span class="print-signature-line"></span>
                 <strong>DR. LUCAS GALANTE</strong>

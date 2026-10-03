@@ -43,4 +43,8 @@ public class SystemUserRole {
     public SystemRole getRole() {
         return role;
     }
+
+    public AppUser getUser() {
+        return user;
+    }
 }

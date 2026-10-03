@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { HospitalSelectionResponse, LoginResponse, MeResponse } from './auth.models';
+import {
+  AuthenticatedUser,
+  HospitalSelectionResponse,
+  LoginResponse,
+  MeResponse,
+} from './auth.models';
 import { AuthSessionStore } from './auth-session.store';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +20,7 @@ export class AuthService {
   readonly selectedHospitalId = this.session.selectedHospitalId;
   readonly selectedHospital = this.session.selectedHospital;
   readonly isAuthenticated = this.session.isAuthenticated;
+  readonly isSystemAdministrator = this.session.isSystemAdministrator;
 
   async login(email: string, password: string): Promise<LoginResponse> {
     this.session.clear();
@@ -51,6 +57,17 @@ export class AuthService {
       this.session.clear();
       return false;
     }
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await this.ensureCsrfCookie();
+    const user = await firstValueFrom(
+      this.http.post<AuthenticatedUser>(`${environment.apiBaseUrl}/auth/change-password`, {
+        currentPassword,
+        newPassword,
+      }),
+    );
+    this.session.applyUser(user);
   }
 
   async logout(): Promise<void> {

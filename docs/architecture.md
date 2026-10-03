@@ -1,8 +1,8 @@
 # Arquitetura oficial do Inventory MED
 
-**Versão:** 1.0
+**Versão:** 1.1
 
-**Data da decisão:** 02/10/2026
+**Data da decisão:** 02/10/2026 — atualização operacional em 03/10/2026
 
 **Status:** arquitetura oficial a ser seguida
 
@@ -162,6 +162,8 @@ SQL SERVER EXPRESS
 |   +-- vínculos de usuário com hospital
 |   +-- sessões
 |   +-- auditoria de autenticação
+|   +-- estado do provisionamento dos hospitais
+|   +-- credenciais SQL hospitalares criptografadas
 |
 +-- inventory_med_hospital_<id>
     +-- quartos
@@ -192,6 +194,30 @@ global de pacientes e não haverá chave estrangeira entre bancos hospitalares.
 
 O SQL Server Express limita cada banco a 10 GB. O uso será monitorado; uma mudança de
 edição ou banco será avaliada antes que qualquer unidade se aproxime desse limite.
+
+### Criação de um hospital
+
+O `ADMIN_SISTEMA` cria a unidade pelo painel geral. O backend executa o processo abaixo,
+sem aceitar nomes de banco ou credenciais vindos do navegador:
+
+```text
+registro central PROVISIONING
+        -> banco exclusivo
+        -> login SQL exclusivo
+        -> migrações Flyway do hospital
+        -> usuário SQL com acesso somente ao banco criado
+        -> credencial criptografada no banco central
+        -> registro central ACTIVE
+```
+
+Em caso de falha, o hospital fica inativo com estado `PROVISIONING_FAILED`. O painel
+permite reprocessar o provisionamento e a tentativa fica na auditoria. Hospitais
+anteriores a esse processo também entram nesse estado até que o administrador geral
+crie seu banco exclusivo.
+
+A chave que protege as credenciais hospitalares fica fora do banco e do Git, na
+configuração segura da API. A credencial técnica capaz de criar bancos e logins será
+exclusiva para essa finalidade e não será a conta `sa` nem a conta comum da aplicação.
 
 ## 8. Backend
 
@@ -316,6 +342,8 @@ login -> sessão autenticada -> seleção do hospital -> acesso aos módulos aut
 Regras:
 
 - senha armazenada com hash forte;
+- senha inicial temporária e troca obrigatória antes de acessar qualquer módulo;
+- política mínima de 12 caracteres com maiúscula, minúscula, número e símbolo;
 - cookie `HttpOnly`, `Secure` e `SameSite` em produção;
 - proteção CSRF habilitada;
 - expiração por inatividade;

@@ -17,6 +17,9 @@ export class AuthSessionStore {
   readonly hospitals = this.hospitalsState.asReadonly();
   readonly selectedHospitalId = this.selectedHospitalIdState.asReadonly();
   readonly isAuthenticated = computed(() => Boolean(this.userState()));
+  readonly isSystemAdministrator = computed(
+    () => this.userState()?.systemRoles?.includes('ADMIN_SISTEMA') ?? false,
+  );
   readonly selectedHospital = computed(() =>
     this.hospitalsState().find((hospital) => hospital.id === this.selectedHospitalIdState()),
   );
@@ -40,6 +43,10 @@ export class AuthSessionStore {
     this.userState.set(response.user);
     this.hospitalsState.set(response.hospitals);
     this.selectedHospitalIdState.set(response.selectedHospitalId);
+  }
+
+  applyUser(user: AuthenticatedUser): void {
+    this.userState.set(user);
   }
 
   clear(): void {

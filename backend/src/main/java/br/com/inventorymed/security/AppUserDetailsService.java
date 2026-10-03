@@ -35,6 +35,7 @@ public class AppUserDetailsService implements UserDetailsService {
             user.getEmail(),
             user.getPasswordHash(),
             user.isActive(),
+            user.mustChangePassword(),
             systemRoleRepository
                 .findAllByUserId(user.getId())
                 .stream()

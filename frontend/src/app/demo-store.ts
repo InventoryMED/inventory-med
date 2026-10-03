@@ -10,8 +10,6 @@ import {
   VitalSignDraftRow,
 } from './models';
 
-const STORAGE_KEY = 'inventory-med-demo-v6';
-
 interface PatientFormData {
   name: string;
   birthDate?: string;
@@ -131,7 +129,6 @@ export class DemoStore {
             },
       );
       transferred = true;
-      this.persist(next);
       return next;
     });
     return transferred;
@@ -214,7 +211,6 @@ export class DemoStore {
   resetDemo(): void {
     const hospitals = structuredClone(INITIAL_HOSPITALS);
     this.hospitalsState.set(hospitals);
-    this.persist(hospitals);
   }
 
   private updateBed(bedId: string, updater: (bed: Bed) => Bed): void {
@@ -233,42 +229,11 @@ export class DemoStore {
               })),
             },
       );
-      this.persist(next);
       return next;
     });
   }
 
   private loadHospitals(): Hospital[] {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      const hospitals = saved
-        ? (JSON.parse(saved) as Hospital[])
-        : structuredClone(INITIAL_HOSPITALS);
-      return hospitals.map((hospital) => {
-        if (hospital.id === 'hospital-municipal-pronto-socorro') {
-          return {
-            ...hospital,
-            name: 'UPA DE JOÃO PINHEIRO',
-            shortName: 'UPA JP',
-            city: 'JOÃO PINHEIRO, MG',
-          };
-        }
-        if (hospital.id === 'hospital-municipal-pronto-atendimento') {
-          return {
-            ...hospital,
-            name: 'HOSPITAL DE JOÃO PINHEIRO',
-            shortName: 'HJP',
-            city: 'JOÃO PINHEIRO, MG',
-          };
-        }
-        return hospital;
-      });
-    } catch {
-      return structuredClone(INITIAL_HOSPITALS);
-    }
-  }
-
-  private persist(hospitals: Hospital[]): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(hospitals));
+    return structuredClone(INITIAL_HOSPITALS);
   }
 }

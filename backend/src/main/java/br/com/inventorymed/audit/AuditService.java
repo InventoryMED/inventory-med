@@ -10,7 +10,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
-public class AuthenticationAuditService {
+public class AuditService {
 
     private static final int MAX_IP_LENGTH = 64;
     private static final int MAX_USER_AGENT_LENGTH = 512;
@@ -18,10 +18,7 @@ public class AuthenticationAuditService {
     private final AuditEventRepository repository;
     private final ObjectMapper objectMapper;
 
-    public AuthenticationAuditService(
-        AuditEventRepository repository,
-        ObjectMapper objectMapper
-    ) {
+    public AuditService(AuditEventRepository repository, ObjectMapper objectMapper) {
         this.repository = repository;
         this.objectMapper = objectMapper;
     }

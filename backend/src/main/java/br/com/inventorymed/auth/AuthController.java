@@ -60,4 +60,18 @@ public class AuthController {
     ) {
         return authService.me(principal, session);
     }
+
+    @PostMapping("/change-password")
+    public UserResponse changePassword(
+        @AuthenticationPrincipal InventoryUserPrincipal principal,
+        @Valid @RequestBody ChangePasswordRequest changePasswordRequest,
+        HttpServletRequest request
+    ) {
+        return authService.changePassword(
+            principal,
+            changePasswordRequest,
+            request.getRemoteAddr(),
+            request.getHeader("User-Agent")
+        );
+    }
 }
