@@ -1,4 +1,4 @@
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXsrfConfiguration } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { authInterceptor } from './auth.interceptor';
@@ -9,10 +9,16 @@ describe('AuthService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    window.sessionStorage.clear();
+    document.cookie = 'XSRF-TOKEN=; Max-Age=0; Path=/';
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClient(
+          withXsrfConfiguration({
+            cookieName: 'XSRF-TOKEN',
+            headerName: 'X-XSRF-TOKEN',
+          }),
+          withInterceptors([authInterceptor]),
+        ),
         provideHttpClientTesting(),
       ],
     });
@@ -22,21 +28,28 @@ describe('AuthService', () => {
 
   afterEach(() => {
     http.verify();
-    service.logout();
   });
 
-  it('authenticates and scopes the next token to the selected hospital', async () => {
+  it('authenticates with CSRF and scopes the server session to a hospital', async () => {
     const loginPromise = service.login('lucas.galante@inventorymed.local', 'secret');
-    const loginRequest = http.expectOne('/api/auth/login');
+    const loginCsrfRequest = http.expectOne('/api/v1/auth/csrf');
+    expect(loginCsrfRequest.request.method).toBe('GET');
+    expect(loginCsrfRequest.request.withCredentials).toBe(true);
+    loginCsrfRequest.flush({
+      headerName: 'X-XSRF-TOKEN',
+    });
+    document.cookie = 'XSRF-TOKEN=login-csrf-token; Path=/';
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const loginRequest = http.expectOne('/api/v1/auth/login');
     expect(loginRequest.request.body).toEqual({
       email: 'lucas.galante@inventorymed.local',
       password: 'secret',
     });
-    expect(loginRequest.request.headers.has('Authorization')).toBe(false);
+    expect(loginRequest.request.headers.get('X-XSRF-TOKEN')).toBe('login-csrf-token');
+    expect(loginRequest.request.withCredentials).toBe(true);
     loginRequest.flush({
-      accessToken: 'unscoped-token',
-      tokenType: 'Bearer',
-      expiresInSeconds: 900,
       user: {
         id: 'user-id',
         name: 'LUCAS GALANTE',
@@ -48,32 +61,57 @@ describe('AuthService', () => {
           name: 'UPA DE JOÃO PINHEIRO',
           shortName: 'UPA JP',
           city: 'JOÃO PINHEIRO',
-          role: 'DOCTOR',
+          role: 'MEDICO',
         },
       ],
       requiresHospitalSelection: true,
       selectedHospitalId: null,
+      selectedHospitalRole: null,
     });
     await loginPromise;
 
     const selectionPromise = service.selectHospital('hospital-id');
-    const selectionRequest = http.expectOne('/api/auth/select-hospital');
-    expect(selectionRequest.request.headers.get('Authorization')).toBe('Bearer unscoped-token');
+    const selectionCsrfRequest = http.expectOne('/api/v1/auth/csrf');
+    selectionCsrfRequest.flush({
+      headerName: 'X-XSRF-TOKEN',
+    });
+    document.cookie = 'XSRF-TOKEN=selection-csrf-token; Path=/';
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const selectionRequest = http.expectOne('/api/v1/auth/select-hospital');
+    expect(selectionRequest.request.headers.get('X-XSRF-TOKEN')).toBe('selection-csrf-token');
     selectionRequest.flush({
-      accessToken: 'hospital-token',
-      tokenType: 'Bearer',
-      expiresInSeconds: 900,
       hospital: {
         id: 'hospital-id',
         name: 'UPA DE JOÃO PINHEIRO',
         shortName: 'UPA JP',
         city: 'JOÃO PINHEIRO',
-        role: 'DOCTOR',
+        role: 'MEDICO',
       },
     });
     await selectionPromise;
 
-    expect(service.accessToken()).toBe('hospital-token');
     expect(service.selectedHospitalId()).toBe('hospital-id');
+    expect(window.sessionStorage.length).toBe(0);
+  });
+
+  it('restores the visible state from the HttpOnly server session', async () => {
+    const validationPromise = service.validateSession();
+    const profileRequest = http.expectOne('/api/v1/auth/me');
+    expect(profileRequest.request.withCredentials).toBe(true);
+    profileRequest.flush({
+      user: {
+        id: 'user-id',
+        name: 'LUCAS GALANTE',
+        email: 'lucas.galante@inventorymed.local',
+      },
+      hospitals: [],
+      selectedHospitalId: null,
+      selectedHospitalRole: null,
+    });
+
+    expect(await validationPromise).toBe(true);
+    expect(service.isAuthenticated()).toBe(true);
   });
 });

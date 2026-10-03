@@ -43,9 +43,25 @@ public class DevelopmentDataInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         if (!properties.enabled()) return;
+        if (
+            properties.doctorPassword() == null ||
+            properties.doctorPassword().length() < 12
+        ) {
+            throw new IllegalStateException(
+                "BOOTSTRAP_DOCTOR_PASSWORD deve ter pelo menos 12 caracteres"
+            );
+        }
 
-        Hospital upa = findOrCreateHospital("UPA DE JOÃO PINHEIRO", "UPA JP");
-        Hospital hospital = findOrCreateHospital("HOSPITAL DE JOÃO PINHEIRO", "HJP");
+        Hospital upa = findOrCreateHospital(
+            "UPA DE JOÃO PINHEIRO",
+            "UPA JP",
+            "inventory_med_hospital_upa_joao_pinheiro"
+        );
+        Hospital hospital = findOrCreateHospital(
+            "HOSPITAL DE JOÃO PINHEIRO",
+            "HJP",
+            "inventory_med_hospital_joao_pinheiro"
+        );
         AppUser doctor = userRepository
             .findByEmailIgnoreCase(properties.doctorEmail())
             .orElseGet(() ->
@@ -61,17 +77,28 @@ public class DevelopmentDataInitializer implements ApplicationRunner {
         List.of(upa, hospital).forEach(item -> {
             if (!membershipRepository.existsByUserIdAndHospitalId(doctor.getId(), item.getId())) {
                 membershipRepository.save(
-                    new HospitalMembership(item, doctor, HospitalRole.DOCTOR)
+                    new HospitalMembership(item, doctor, HospitalRole.MEDICO)
                 );
             }
         });
     }
 
-    private Hospital findOrCreateHospital(String name, String shortName) {
+    private Hospital findOrCreateHospital(
+        String name,
+        String shortName,
+        String databaseName
+    ) {
         return hospitalRepository
             .findByNameIgnoreCase(name)
             .orElseGet(() ->
-                hospitalRepository.save(new Hospital(name, shortName, "JOÃO PINHEIRO, MG"))
+                hospitalRepository.save(
+                    new Hospital(
+                        name,
+                        shortName,
+                        "JOÃO PINHEIRO, MG",
+                        databaseName
+                    )
+                )
             );
     }
 }

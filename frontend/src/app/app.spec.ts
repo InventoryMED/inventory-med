@@ -1,14 +1,32 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { vi } from 'vitest';
 import { App } from './app';
+import { AuthService } from './auth/auth.service';
 import { INITIAL_HOSPITALS } from './mock-data';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideHttpClient()],
+      providers: [
+        provideHttpClient(),
+        {
+          provide: AuthService,
+          useValue: {
+            user: signal(null),
+            hospitals: signal([]),
+            selectedHospitalId: signal(null),
+            selectedHospital: signal(null),
+            isAuthenticated: signal(false),
+            validateSession: vi.fn().mockResolvedValue(false),
+            login: vi.fn(),
+            selectHospital: vi.fn(),
+            logout: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+      ],
     }).compileComponents();
   });
 

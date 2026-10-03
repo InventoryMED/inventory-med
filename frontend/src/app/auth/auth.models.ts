@@ -9,23 +9,18 @@ export interface HospitalAccess {
   name: string;
   shortName: string;
   city: string;
-  role: 'ADMIN' | 'DOCTOR' | 'NURSE' | string;
+  role: 'ADMIN_HOSPITAL' | 'RESPONSAVEL_CLINICO' | 'MEDICO' | 'ENFERMAGEM' | 'RECEPCAO' | string;
 }
 
 export interface LoginResponse {
-  accessToken: string;
-  tokenType: string;
-  expiresInSeconds: number;
   user: AuthenticatedUser;
   hospitals: HospitalAccess[];
   requiresHospitalSelection: boolean;
   selectedHospitalId: string | null;
+  selectedHospitalRole: string | null;
 }
 
 export interface HospitalSelectionResponse {
-  accessToken: string;
-  tokenType: string;
-  expiresInSeconds: number;
   hospital: HospitalAccess;
 }
 
@@ -33,4 +28,5 @@ export interface MeResponse {
   user: AuthenticatedUser;
   hospitals: HospitalAccess[];
   selectedHospitalId: string | null;
+  selectedHospitalRole: string | null;
 }

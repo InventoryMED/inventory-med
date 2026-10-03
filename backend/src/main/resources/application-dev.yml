@@ -1,8 +1,14 @@
 inventory:
   bootstrap:
-    enabled: true
+    enabled: ${BOOTSTRAP_ENABLED:false}
     doctor-email: ${BOOTSTRAP_DOCTOR_EMAIL:lucas.galante@inventorymed.local}
-    doctor-password: ${BOOTSTRAP_DOCTOR_PASSWORD:Trocar@123}
+    doctor-password: ${BOOTSTRAP_DOCTOR_PASSWORD:}
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
 
 logging:
   level:

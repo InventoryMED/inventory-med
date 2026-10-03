@@ -26,6 +26,9 @@ public class Hospital {
     @Column(nullable = false, length = 120)
     private String city;
 
+    @Column(name = "database_name", nullable = false, length = 128)
+    private String databaseName;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -37,10 +40,11 @@ public class Hospital {
 
     protected Hospital() {}
 
-    public Hospital(String name, String shortName, String city) {
+    public Hospital(String name, String shortName, String city, String databaseName) {
         this.name = name;
         this.shortName = shortName;
         this.city = city;
+        this.databaseName = databaseName;
     }
 
     public UUID getId() {
@@ -57,6 +61,10 @@ public class Hospital {
 
     public String getCity() {
         return city;
+    }
+
+    public String getDatabaseName() {
+        return databaseName;
     }
 
     public boolean isActive() {

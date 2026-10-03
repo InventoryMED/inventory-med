@@ -6,5 +6,6 @@ import java.util.UUID;
 public record MeResponse(
     UserResponse user,
     List<HospitalAccessResponse> hospitals,
-    UUID selectedHospitalId
+    UUID selectedHospitalId,
+    String selectedHospitalRole
 ) {}

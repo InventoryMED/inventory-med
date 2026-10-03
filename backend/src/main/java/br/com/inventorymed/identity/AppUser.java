@@ -24,11 +24,17 @@ public class AppUser {
     @Column(nullable = false, length = 254)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 100)
+    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
     @Column(nullable = false)
     private boolean active = true;
+
+    @Column(name = "password_changed_at", nullable = false, insertable = false)
+    private Instant passwordChangedAt;
+
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
 
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
@@ -62,5 +68,10 @@ public class AppUser {
 
     public boolean isActive() {
         return active;
+    }
+
+    public void recordSuccessfulLogin(Instant occurredAt) {
+        this.lastLoginAt = occurredAt;
+        this.updatedAt = occurredAt;
     }
 }

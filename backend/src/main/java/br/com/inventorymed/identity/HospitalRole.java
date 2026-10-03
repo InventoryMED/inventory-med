@@ -1,7 +1,9 @@
 package br.com.inventorymed.identity;
 
 public enum HospitalRole {
-    DOCTOR,
-    NURSE,
-    ADMIN
+    ADMIN_HOSPITAL,
+    RESPONSAVEL_CLINICO,
+    MEDICO,
+    ENFERMAGEM,
+    RECEPCAO
 }

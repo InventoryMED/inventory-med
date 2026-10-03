@@ -4,11 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 public record LoginResponse(
-    String accessToken,
-    String tokenType,
-    long expiresInSeconds,
     UserResponse user,
     List<HospitalAccessResponse> hospitals,
     boolean requiresHospitalSelection,
-    UUID selectedHospitalId
+    UUID selectedHospitalId,
+    String selectedHospitalRole
 ) {}

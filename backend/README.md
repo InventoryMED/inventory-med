@@ -1,66 +1,85 @@
 # Inventory MED API
 
-API do Inventory MED construída com Java 21, Spring Boot, Spring Security, Spring Data JPA, Flyway e SQL Server.
+API do Inventory MED construída com Java 21, Spring Boot 4, Spring Security,
+Spring Session JDBC, Spring Data JPA, Flyway e SQL Server 2022.
 
-## Executar com Docker
+## Responsabilidade atual
+
+Esta primeira base implementa somente o núcleo central:
+
+- hospitais e nome do banco operacional correspondente;
+- usuários e vínculos por hospital;
+- perfil global `ADMIN_SISTEMA`;
+- autenticação por sessão armazenada no SQL Server;
+- seleção segura da unidade ativa;
+- auditoria de autenticação;
+- proteção CSRF para todas as operações de escrita.
+
+Pacientes e documentos clínicos não ficam no banco central. As migrações dos bancos
+operacionais de cada hospital serão adicionadas em uma etapa própria.
+
+## Executar localmente
 
 Na raiz do repositório:
 
-```bash
-cp .env.example .env
-docker compose up --build
+```powershell
+Copy-Item .env.example .env
+docker compose up --build -d
+docker compose logs -f api
 ```
 
 Serviços locais:
 
-- API: `http://localhost:8080/api`
-- Saúde: `http://localhost:8080/api/actuator/health`
-- SQL Server: `127.0.0.1:14330` (porta externa configurável por `DB_HOST_PORT`)
+- API: `http://127.0.0.1:8080/api/v1`;
+- saúde: `http://127.0.0.1:8080/api/v1/actuator/health`;
+- SQL Server: `127.0.0.1:14330`.
 
-O SQL Server fica restrito ao computador local no ambiente de desenvolvimento. Em produção, a porta 1433 não deve ser publicada na internet.
+Docker é usado apenas no desenvolvimento e nos testes locais. A implantação oficial
+na VPS executará Java, SQL Server e Nginx diretamente no Ubuntu.
 
-## Autenticação inicial
+## Autenticação
 
-No perfil `dev`, o inicializador cria o usuário e os dois hospitais informados no `.env`.
+O navegador não recebe JWT nem armazena credencial no `localStorage` ou
+`sessionStorage`. O fluxo é:
 
-```http
-POST /api/auth/login
-Content-Type: application/json
+1. `GET /api/v1/auth/csrf` obtém a proteção CSRF;
+2. `POST /api/v1/auth/login` valida e-mail e senha;
+3. o backend cria uma sessão no SQL Server e envia apenas o cookie
+   `INVENTORYMED_SESSION`, marcado como `HttpOnly`;
+4. quando o usuário possui mais de um vínculo, `POST /api/v1/auth/select-hospital`
+   seleciona a unidade;
+5. `GET /api/v1/auth/me` restaura o estado visível após recarregar a página;
+6. `POST /api/v1/auth/logout` invalida a sessão no servidor.
 
-{
-  "email": "lucas.galante@inventorymed.local",
-  "password": "senha-configurada-no-env"
-}
-```
+O `GET /auth/csrf` cria o cookie legível `XSRF-TOKEN`. Nas chamadas de escrita, o
+Angular copia esse valor para o cabeçalho `X-XSRF-TOKEN`. O cookie da sessão continua
+`HttpOnly` e nunca é lido pelo frontend.
 
-Se o profissional possuir acesso a mais de um hospital, use o token retornado para selecionar a unidade:
-
-```http
-POST /api/auth/select-hospital
-Authorization: Bearer TOKEN_DO_LOGIN
-Content-Type: application/json
-
-{
-  "hospitalId": "UUID_DO_HOSPITAL"
-}
-```
-
-O segundo token contém o `hospital_id` selecionado e a função do profissional. Endpoints clínicos exigirão esse token hospitalar.
+Os perfis e vínculos são reconsultados em toda requisição autenticada. Desativar o
+usuário ou remover seu último vínculo revoga a sessão existente.
 
 ## Banco de dados
 
-As mudanças estruturais ficam em `src/main/resources/db/migration` e são aplicadas pelo Flyway na inicialização.
+As migrações do banco central ficam em:
 
-Cada entidade clínica contém `hospital_id`. As chaves estrangeiras compostas impedem que paciente, leito, internação, prescrição ou evolução de um hospital seja relacionado a outro hospital.
+```text
+src/main/resources/db/migration/core
+```
+
+O Flyway as executa ao iniciar a API. O Hibernate usa `ddl-auto=validate`: ele confere
+o mapeamento, mas nunca cria ou altera tabelas automaticamente.
 
 ## Testes
 
-```bash
-./mvnw verify
-```
+Os testes de integração iniciam um SQL Server 2022 descartável por Testcontainers e
+validam migrações e segurança contra o banco real.
 
-No Windows:
+Com Java 21, Maven e Docker disponíveis:
 
 ```powershell
-.\mvnw.cmd verify
+cd backend
+.\mvnw.cmd clean test
 ```
+
+No ambiente atual, Java/Maven também podem ser executados pelo contêiner Maven. Isso
+continua sendo uma ferramenta de desenvolvimento local, não o formato de produção.

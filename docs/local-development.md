@@ -29,8 +29,10 @@ notepad .env
 No `.env`, substitua pelo menos estas credenciais:
 
 - `MSSQL_SA_PASSWORD` e `DB_PASSWORD` devem possuir exatamente o mesmo valor;
-- `JWT_SECRET` deve ser um segredo longo, aleatório e ter pelo menos 32 caracteres;
-- `BOOTSTRAP_DOCTOR_PASSWORD` será a senha inicial de Lucas Galante.
+- `BOOTSTRAP_ENABLED=true` autoriza somente o perfil local `dev` a criar os dados de
+  demonstração;
+- `BOOTSTRAP_DOCTOR_PASSWORD` será a senha inicial local de Lucas Galante e deve ter
+  pelo menos 12 caracteres.
 
 O arquivo `.env` é ignorado pelo Git. Não envie essas senhas ao repositório.
 
@@ -48,7 +50,7 @@ docker compose logs -f api
 Quando a API estiver pronta, interrompa apenas a visualização dos logs com `Ctrl+C` e valide:
 
 ```powershell
-Invoke-RestMethod http://127.0.0.1:8080/api/actuator/health
+Invoke-RestMethod http://127.0.0.1:8080/api/v1/actuator/health
 ```
 
 O retorno esperado contém `status` igual a `UP`.
@@ -86,8 +88,8 @@ Esse comando preserva o banco no volume Docker. `docker compose down -v` também
 | Serviço | Endereço local |
 | --- | --- |
 | Angular | `http://127.0.0.1:4200` |
-| API | `http://127.0.0.1:8080/api` |
-| Saúde da API | `http://127.0.0.1:8080/api/actuator/health` |
+| API | `http://127.0.0.1:8080/api/v1` |
+| Saúde da API | `http://127.0.0.1:8080/api/v1/actuator/health` |
 | SQL Server do projeto | `127.0.0.1:14330` |
 
 A porta externa `14330` evita conflito com instalações locais do SQL Server que normalmente utilizam `1433`. Dentro da rede Docker, a API continua acessando o banco na porta padrão `1433`.
@@ -95,6 +97,9 @@ A porta externa `14330` evita conflito com instalações locais do SQL Server qu
 ## Estado atual da integração
 
 - login e seleção de hospital usam a API real;
-- o token de acesso fica no `sessionStorage` e é enviado automaticamente à API;
-- cada seleção de hospital gera um token limitado à unidade;
+- a autenticação usa sessão armazenada no SQL Server e cookie `HttpOnly`;
+- o navegador não guarda JWT, senha ou token de autenticação no `sessionStorage`;
+- operações de escrita usam proteção CSRF;
+- a seleção do hospital fica na sessão do servidor e o vínculo é revalidado em cada
+  requisição;
 - quartos, leitos, pacientes, prescrições e evoluções ainda usam o armazenamento demonstrativo do navegador e serão migrados módulo por módulo para a API.

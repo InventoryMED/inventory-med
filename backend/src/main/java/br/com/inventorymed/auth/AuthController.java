@@ -1,9 +1,12 @@
 package br.com.inventorymed.auth;
 
+import br.com.inventorymed.security.InventoryUserPrincipal;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,29 +23,41 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @GetMapping("/csrf")
+    public CsrfResponse csrf(CsrfToken csrfToken) {
+        csrfToken.getToken();
+        return new CsrfResponse(csrfToken.getHeaderName());
+    }
+
     @PostMapping("/login")
-    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    public LoginResponse login(
+        @Valid @RequestBody LoginRequest loginRequest,
+        HttpServletRequest request,
+        HttpServletResponse response
+    ) {
+        return authService.login(loginRequest, request, response);
     }
 
     @PostMapping("/select-hospital")
     public HospitalSelectionResponse selectHospital(
-        @AuthenticationPrincipal Jwt jwt,
-        @Valid @RequestBody SelectHospitalRequest request
+        @AuthenticationPrincipal InventoryUserPrincipal principal,
+        @Valid @RequestBody SelectHospitalRequest selectHospitalRequest,
+        HttpServletRequest request,
+        HttpServletResponse response
     ) {
-        return authService.selectHospital(UUID.fromString(jwt.getSubject()), request.hospitalId());
-    }
-
-    @GetMapping("/me")
-    public MeResponse me(@AuthenticationPrincipal Jwt jwt) {
-        return authService.me(
-            UUID.fromString(jwt.getSubject()),
-            selectedHospitalId(jwt)
+        return authService.selectHospital(
+            principal,
+            selectHospitalRequest.hospitalId(),
+            request,
+            response
         );
     }
 
-    private UUID selectedHospitalId(Jwt jwt) {
-        String hospitalId = jwt.getClaimAsString("hospital_id");
-        return hospitalId == null ? null : UUID.fromString(hospitalId);
+    @GetMapping("/me")
+    public MeResponse me(
+        @AuthenticationPrincipal InventoryUserPrincipal principal,
+        HttpSession session
+    ) {
+        return authService.me(principal, session);
     }
 }

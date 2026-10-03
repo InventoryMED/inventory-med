@@ -10,7 +10,6 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly session = inject(AuthSessionStore);
 
-  readonly accessToken = this.session.accessToken;
   readonly user = this.session.user;
   readonly hospitals = this.session.hospitals;
   readonly selectedHospitalId = this.session.selectedHospitalId;
@@ -19,6 +18,7 @@ export class AuthService {
 
   async login(email: string, password: string): Promise<LoginResponse> {
     this.session.clear();
+    await this.ensureCsrfCookie();
     const response = await firstValueFrom(
       this.http.post<LoginResponse>(`${environment.apiBaseUrl}/auth/login`, {
         email: email.trim(),
@@ -30,6 +30,7 @@ export class AuthService {
   }
 
   async selectHospital(hospitalId: string): Promise<HospitalSelectionResponse> {
+    await this.ensureCsrfCookie();
     const response = await firstValueFrom(
       this.http.post<HospitalSelectionResponse>(`${environment.apiBaseUrl}/auth/select-hospital`, {
         hospitalId,
@@ -40,8 +41,6 @@ export class AuthService {
   }
 
   async validateSession(): Promise<boolean> {
-    if (!this.session.isAuthenticated()) return false;
-
     try {
       const response = await firstValueFrom(
         this.http.get<MeResponse>(`${environment.apiBaseUrl}/auth/me`),
@@ -54,7 +53,23 @@ export class AuthService {
     }
   }
 
-  logout(): void {
-    this.session.clear();
+  async logout(): Promise<void> {
+    if (!environment.useRealApi) {
+      this.session.clear();
+      return;
+    }
+
+    try {
+      await this.ensureCsrfCookie();
+      await firstValueFrom(this.http.post<void>(`${environment.apiBaseUrl}/auth/logout`, null));
+    } catch {
+      // O estado local deve ser encerrado mesmo se a sessão já tiver expirado.
+    } finally {
+      this.session.clear();
+    }
+  }
+
+  private async ensureCsrfCookie(): Promise<void> {
+    await firstValueFrom(this.http.get(`${environment.apiBaseUrl}/auth/csrf`));
   }
 }

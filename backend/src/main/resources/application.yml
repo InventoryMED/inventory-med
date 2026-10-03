@@ -18,14 +18,24 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:db/migration/core
+  session:
+    timeout: ${SESSION_TIMEOUT:30m}
+    jdbc:
+      initialize-schema: never
   jackson:
     default-property-inclusion: non_null
 
 server:
   port: ${SERVER_PORT:8080}
   servlet:
-    context-path: /api
+    context-path: /api/v1
+    session:
+      cookie:
+        name: INVENTORYMED_SESSION
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:true}
+        same-site: lax
   forward-headers-strategy: framework
   error:
     include-message: never
@@ -43,8 +53,4 @@ management:
 
 inventory:
   security:
-    jwt:
-      issuer: ${JWT_ISSUER:inventory-med-api}
-      secret: ${JWT_SECRET}
-      access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:PT15M}
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:4200,http://127.0.0.1:4200}

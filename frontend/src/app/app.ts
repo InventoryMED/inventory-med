@@ -403,14 +403,14 @@ export class App implements OnInit {
   );
   protected readonly professionalName = computed(() => {
     const name = this.auth.user()?.name ?? 'LUCAS GALANTE';
-    const role = this.auth.selectedHospital()?.role ?? this.auth.hospitals()[0]?.role ?? 'DOCTOR';
-    return role === 'DOCTOR' && !name.toLocaleUpperCase('pt-BR').startsWith('DR.')
+    const role = this.auth.selectedHospital()?.role ?? this.auth.hospitals()[0]?.role ?? 'MEDICO';
+    return role === 'MEDICO' && !name.toLocaleUpperCase('pt-BR').startsWith('DR.')
       ? `DR. ${name}`
       : name;
   });
   protected readonly professionalRole = computed(() =>
     this.roleLabel(
-      this.auth.selectedHospital()?.role ?? this.auth.hospitals()[0]?.role ?? 'DOCTOR',
+      this.auth.selectedHospital()?.role ?? this.auth.hospitals()[0]?.role ?? 'MEDICO',
     ),
   );
   protected readonly professionalInitials = computed(() =>
@@ -544,8 +544,8 @@ export class App implements OnInit {
     this.transferOpen.set(false);
   }
 
-  protected logout(): void {
-    this.auth.logout();
+  protected async logout(): Promise<void> {
+    await this.auth.logout();
     this.authError.set(null);
     this.screen.set('login');
     this.store.activeHospitalId.set(null);
@@ -948,8 +948,6 @@ export class App implements OnInit {
   }
 
   private async restoreAuthenticatedSession(): Promise<void> {
-    if (!this.auth.isAuthenticated()) return;
-
     this.authBusy.set(true);
     const valid = await this.auth.validateSession();
     this.authBusy.set(false);
@@ -1003,9 +1001,12 @@ export class App implements OnInit {
   private roleLabel(role: string): string {
     return (
       {
-        ADMIN: 'ADMINISTRADOR',
-        DOCTOR: 'MÉDICO',
-        NURSE: 'ENFERMEIRO(A)',
+        ADMIN_SISTEMA: 'ADMINISTRADOR DO SISTEMA',
+        ADMIN_HOSPITAL: 'ADMINISTRADOR HOSPITALAR',
+        RESPONSAVEL_CLINICO: 'RESPONSÁVEL CLÍNICO',
+        MEDICO: 'MÉDICO',
+        ENFERMAGEM: 'ENFERMAGEM',
+        RECEPCAO: 'RECEPÇÃO',
       }[role] ?? role
     );
   }
