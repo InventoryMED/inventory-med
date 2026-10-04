@@ -43,39 +43,3 @@ export interface UserCreatePayload {
     role: string;
   }>;
 }
-
-export type AdministrationBedStatus =
-  'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE' | 'BLOCKED';
-
-export interface AdministrationBed {
-  id: string;
-  roomId: string;
-  code: string;
-  status: AdministrationBedStatus;
-  displayOrder: number;
-  active: boolean;
-}
-
-export interface AdministrationRoom {
-  id: string;
-  careUnitId: string;
-  name: string;
-  code: string;
-  floorName: string | null;
-  displayOrder: number;
-  active: boolean;
-  beds: AdministrationBed[];
-}
-
-export interface AdministrationCareUnit {
-  id: string;
-  name: string;
-  code: string;
-  displayOrder: number;
-  active: boolean;
-  rooms: AdministrationRoom[];
-}
-
-export interface AdministrationStructure {
-  careUnits: AdministrationCareUnit[];
-}

@@ -35,6 +35,14 @@ export class DemoStore {
     }
   }
 
+  replaceHospital(hospital: Hospital): void {
+    this.hospitalsState.update((hospitals) => {
+      const remaining = hospitals.filter((item) => item.id !== hospital.id);
+      return [...remaining, hospital];
+    });
+    this.activeHospitalId.set(hospital.id);
+  }
+
   findRoom(roomId: string): Room | undefined {
     return this.activeHospital()?.rooms.find((room) => room.id === roomId);
   }

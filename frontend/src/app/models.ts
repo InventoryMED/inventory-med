@@ -3,7 +3,6 @@ export type AppScreen =
   | 'password-change'
   | 'hospital-select'
   | 'administration'
-  | 'medical'
   | 'rooms'
   | 'prescription'
   | 'evolution';
@@ -56,6 +55,7 @@ export interface Prescription {
 
 export interface Patient {
   id: string;
+  admissionId?: string;
   name: string;
   birthDate?: string;
   sex?: string;

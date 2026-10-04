@@ -5,20 +5,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../auth/auth.service';
 import { AdministrationHospital, AdministrationUser } from './administration.models';
 import { AdministrationService } from './administration.service';
-import { StructureAdministrationComponent } from './structure-administration.component';
-import { FormTemplateAdministrationComponent } from './form-template-administration.component';
 
-type AdministrationTab = 'HOSPITALS' | 'USERS' | 'STRUCTURE' | 'FORMS';
+type AdministrationTab = 'HOSPITALS' | 'USERS';
 type UserScope = 'SYSTEM' | 'HOSPITAL';
 
 @Component({
   selector: 'app-administration',
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    StructureAdministrationComponent,
-    FormTemplateAdministrationComponent,
-  ],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './administration.component.html',
   styleUrl: './administration.component.scss',
 })
@@ -190,8 +183,6 @@ export class AdministrationComponent implements OnInit {
     return {
       HOSPITALS: 'HOSPITAIS',
       USERS: 'USUÁRIOS E ACESSOS',
-      STRUCTURE: 'ESTRUTURA HOSPITALAR',
-      FORMS: 'FORMULÁRIOS CLÍNICOS',
     }[this.activeTab()];
   }
 
@@ -199,8 +190,6 @@ export class AdministrationComponent implements OnInit {
     return {
       HOSPITALS: 'CRIE E ACOMPANHE AS UNIDADES DA PLATAFORMA.',
       USERS: 'DEFINA QUEM ACESSA A PLATAFORMA E CADA HOSPITAL.',
-      STRUCTURE: 'CADASTRE, ORDENE E DESATIVE UNIDADES, QUARTOS E LEITOS.',
-      FORMS: 'CONTROLE CAMPOS E VERSÕES DE PRESCRIÇÕES E EVOLUÇÕES.',
     }[this.activeTab()];
   }
 

@@ -150,12 +150,6 @@
   }
 }
 
-@if (screen() === 'medical') {
-  @defer {
-    <app-medical-workspace (changeHospital)="backToHospitalSelection()" (exit)="logout()" />
-  }
-}
-
 @if (screen() === 'hospital-select') {
   <main class="selection-page">
     <header class="selection-header">

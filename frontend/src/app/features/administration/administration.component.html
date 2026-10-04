@@ -31,22 +31,6 @@
           <span class="nav-icon" aria-hidden="true">U</span>
           USUÁRIOS E PERFIS
         </button>
-        <button
-          type="button"
-          [class.is-active]="activeTab() === 'STRUCTURE'"
-          (click)="selectTab('STRUCTURE')"
-        >
-          <span class="nav-icon" aria-hidden="true">L</span>
-          QUARTOS E LEITOS
-        </button>
-        <button
-          type="button"
-          [class.is-active]="activeTab() === 'FORMS'"
-          (click)="selectTab('FORMS')"
-        >
-          <span class="nav-icon" aria-hidden="true">F</span>
-          FORMULÁRIOS CLÍNICOS
-        </button>
       </nav>
       <p>TODA ALTERAÇÃO ADMINISTRATIVA É VALIDADA PELO BACKEND E REGISTRADA NA AUDITORIA.</p>
     </aside>
@@ -165,7 +149,7 @@
             </form>
           </section>
         </div>
-      } @else if (activeTab() === 'USERS') {
+      } @else {
         <div class="admin-grid">
           <section class="admin-panel">
             <div class="panel-heading">
@@ -317,10 +301,6 @@
             </form>
           </section>
         </div>
-      } @else if (activeTab() === 'STRUCTURE') {
-        <app-structure-administration [hospitals]="hospitals()" />
-      } @else {
-        <app-form-template-administration [hospitals]="hospitals()" />
       }
     </main>
   </div>

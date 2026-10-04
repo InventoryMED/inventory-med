@@ -108,9 +108,10 @@ describe('App', () => {
     expect(app.printHours).toHaveLength(24);
   });
 
-  it('should admit a patient without opening the prescription automatically', () => {
+  it('should admit a patient without opening the prescription automatically', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance as any;
+    app.realApiEnabled = false;
     const store = app.store;
     store.resetDemo();
     store.selectHospital(INITIAL_HOSPITALS[0].id);
@@ -119,7 +120,7 @@ describe('App', () => {
 
     app.selectedBedId.set(bed.id);
     app.patientName = 'Paciente demonstração';
-    app.admitPatient();
+    await app.admitPatient();
 
     expect(openSpy).not.toHaveBeenCalled();
     expect(store.findBed(bed.id)).toMatchObject({

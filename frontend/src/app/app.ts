@@ -6,12 +6,14 @@ import { environment } from '../environments/environment';
 import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
 import { AdministrationComponent } from './features/administration/administration.component';
-import { MedicalWorkspaceComponent } from './features/medical/medical-workspace.component';
+import { ClinicalFormKind, ClinicalFormTemplate } from './features/medical/medical.models';
+import { MedicalService } from './features/medical/medical.service';
 import {
   AppScreen,
   Bed,
   BedStatus,
   DischargeReason,
+  Hospital,
   MedicationSectionDraft,
   MedicationSectionId,
   Patient,
@@ -198,7 +200,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
 ];
 
 @Component({
-  imports: [CommonModule, FormsModule, AdministrationComponent, MedicalWorkspaceComponent],
+  imports: [CommonModule, FormsModule, AdministrationComponent],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
@@ -206,6 +208,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
 export class App implements OnInit {
   protected readonly store = inject(DemoStore);
   protected readonly auth = inject(AuthService);
+  private readonly medical = inject(MedicalService);
   protected readonly realApiEnabled = environment.useRealApi;
   protected readonly screen = signal<AppScreen>('login');
   protected readonly expandedRooms = signal<Set<string>>(new Set());
@@ -537,7 +540,7 @@ export class App implements OnInit {
     this.authError.set(null);
     try {
       const response = await this.auth.selectHospital(hospitalId);
-      this.openRoomsForHospital(response.hospital.name);
+      await this.openRoomsForHospital(response.hospital.name);
     } catch (error) {
       this.authError.set(this.authErrorMessage(error));
     } finally {
@@ -550,7 +553,7 @@ export class App implements OnInit {
       this.authBusy.set(true);
       try {
         const response = await this.auth.selectHospital(hospitalId);
-        this.selectDemoHospitalByName(response.hospital.name);
+        await this.openRoomsForHospital(response.hospital.name);
       } catch (error) {
         this.showToast(this.authErrorMessage(error));
         return;
@@ -628,12 +631,33 @@ export class App implements OnInit {
     this.selectedBedId.set(null);
   }
 
-  protected confirmDischarge(): void {
+  protected async confirmDischarge(): Promise<void> {
     const bedId = this.selectedBedId();
     if (!bedId || !this.dischargeReason) {
       this.showToast('SELECIONE O MOTIVO DA ALTA.');
       return;
     }
+    const bed = this.store.findBed(bedId);
+    if (this.realApiEnabled) {
+      if (!bed?.patient?.admissionId) {
+        this.showToast('NÃO FOI POSSÍVEL IDENTIFICAR A INTERNAÇÃO.');
+        return;
+      }
+      const patientName = bed.patient.name;
+      const reason = this.dischargeReason;
+      try {
+        await this.medical.discharge(bed.patient.admissionId, this.dischargeReasonCode(reason));
+        await this.refreshRealWorkspace();
+        this.dischargeOpen.set(false);
+        this.dischargeReason = '';
+        this.selectedBedId.set(null);
+        this.showToast(`ALTA DE ${patientName} REGISTRADA: ${reason}.`);
+      } catch (error) {
+        this.showToast(this.clinicalErrorMessage(error));
+      }
+      return;
+    }
+
     const patientName = this.store.dischargePatient(bedId, this.dischargeReason);
     if (!patientName) {
       this.showToast('NÃO FOI POSSÍVEL CONCLUIR A ALTA.');
@@ -659,12 +683,31 @@ export class App implements OnInit {
     this.selectedBedId.set(null);
   }
 
-  protected confirmTransfer(): void {
+  protected async confirmTransfer(): Promise<void> {
     const sourceBedId = this.selectedBedId();
     if (!sourceBedId || !this.transferTargetBedId) {
       this.showToast('SELECIONE O LEITO DE DESTINO.');
       return;
     }
+    if (this.realApiEnabled) {
+      const admissionId = this.store.findBed(sourceBedId)?.patient?.admissionId;
+      if (!admissionId) {
+        this.showToast('NÃO FOI POSSÍVEL IDENTIFICAR A INTERNAÇÃO.');
+        return;
+      }
+      try {
+        await this.medical.transfer(admissionId, this.transferTargetBedId);
+        await this.refreshRealWorkspace();
+        this.transferOpen.set(false);
+        this.transferTargetBedId = '';
+        this.selectedBedId.set(null);
+        this.showToast('PACIENTE TRANSFERIDO PARA O NOVO LEITO.');
+      } catch (error) {
+        this.showToast(this.clinicalErrorMessage(error));
+      }
+      return;
+    }
+
     if (!this.store.transferPatient(sourceBedId, this.transferTargetBedId)) {
       this.showToast('NÃO FOI POSSÍVEL TRANSFERIR O PACIENTE.');
       return;
@@ -675,7 +718,7 @@ export class App implements OnInit {
     this.showToast('PACIENTE TRANSFERIDO PARA O NOVO LEITO.');
   }
 
-  protected admitPatient(): void {
+  protected async admitPatient(): Promise<void> {
     const bedId = this.selectedBedId();
     if (!bedId || !this.patientName.trim()) {
       this.showToast('Preencha o nome do paciente.');
@@ -683,6 +726,33 @@ export class App implements OnInit {
     }
     if (this.patientWeight !== null && this.patientWeight <= 0) {
       this.showToast('Informe um peso válido ou deixe o campo vazio.');
+      return;
+    }
+
+    if (this.realApiEnabled) {
+      const birthDate = this.parseBirthDate(this.patientBirthDate);
+      if (this.patientBirthDate.trim() && !birthDate) {
+        this.showToast('INFORME A DATA DE NASCIMENTO NO FORMATO DD/MM/AAAA.');
+        return;
+      }
+      try {
+        await this.medical.admit({
+          bedId,
+          fullName: this.patientName.trim(),
+          birthDate,
+          sex: this.patientSex === 'NÃO INFORMADO' ? 'NAO_INFORMADO' : this.patientSex,
+          weightKg: this.patientWeight,
+          diagnosis: this.prescriptionDiagnosis.trim() || null,
+          comorbidities: this.prescriptionComorbidities.trim() || null,
+          allergies: this.prescriptionAllergies.trim() || null,
+        });
+        await this.refreshRealWorkspace();
+        this.admissionOpen.set(false);
+        this.selectedBedId.set(null);
+        this.showToast('PACIENTE ADMITIDO. USE ABRIR PRESCRIÇÃO NO LEITO PARA CONTINUAR.');
+      } catch (error) {
+        this.showToast(this.clinicalErrorMessage(error));
+      }
       return;
     }
 
@@ -873,7 +943,7 @@ export class App implements OnInit {
     group.rows = group.rows.filter((_, rowIndex) => rowIndex !== index);
   }
 
-  protected savePrescription(): void {
+  protected async savePrescription(): Promise<void> {
     const bedId = this.selectedBedId();
     if (!this.persistPatientChanges(false)) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
@@ -900,6 +970,32 @@ export class App implements OnInit {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
     }
+    if (this.realApiEnabled) {
+      const admissionId = this.selectedBed()?.patient?.admissionId;
+      if (!admissionId) {
+        this.showToast('NÃO FOI POSSÍVEL IDENTIFICAR A INTERNAÇÃO.');
+        return;
+      }
+      try {
+        const template = await this.publishedTemplate('PRESCRIPTION');
+        await this.medical.createDocument(
+          admissionId,
+          template,
+          this.prescriptionDocumentValues(
+            validVitalSigns,
+            validHydrationRows,
+            validMedicationSections,
+            observations,
+            abnormalities,
+          ),
+          true,
+        );
+      } catch (error) {
+        this.showToast(this.clinicalErrorMessage(error));
+        return;
+      }
+    }
+
     this.store.addPrescription(
       bedId,
       this.prescriptionDiet.trim(),
@@ -988,7 +1084,7 @@ export class App implements OnInit {
 
     const selected = this.auth.selectedHospital();
     if (selected) {
-      this.openRoomsForHospital(selected.name);
+      await this.openRoomsForHospital(selected.name);
       return;
     }
     this.screen.set('hospital-select');
@@ -1005,16 +1101,25 @@ export class App implements OnInit {
     }
     const selected = this.auth.selectedHospital();
     if (selected) {
-      this.openRoomsForHospital(selected.name);
+      void this.openRoomsForHospital(selected.name);
       return;
     }
     this.screen.set('hospital-select');
   }
 
-  private openRoomsForHospital(hospitalName: string): void {
+  private async openRoomsForHospital(hospitalName: string): Promise<void> {
     if (this.realApiEnabled) {
-      this.authError.set(null);
-      this.screen.set('medical');
+      try {
+        await this.loadRealWorkspace(hospitalName);
+        this.authError.set(null);
+        if (!this.openRequestedView()) {
+          this.screen.set('rooms');
+          this.expandedRooms.set(new Set());
+        }
+      } catch (error) {
+        this.authError.set(this.clinicalErrorMessage(error));
+        this.screen.set('hospital-select');
+      }
       return;
     }
     if (!this.selectDemoHospitalByName(hospitalName)) {
@@ -1025,6 +1130,62 @@ export class App implements OnInit {
     this.authError.set(null);
     this.screen.set('rooms');
     this.expandedRooms.set(new Set());
+  }
+
+  private async loadRealWorkspace(hospitalName: string): Promise<void> {
+    const workspace = await this.medical.workspace();
+    const selectedHospital = this.auth.selectedHospital();
+    const hospital: Hospital = {
+      id: workspace.hospitalId,
+      name: hospitalName,
+      shortName: selectedHospital?.shortName ?? hospitalName.slice(0, 3),
+      city: selectedHospital?.city ?? '',
+      rooms: workspace.careUnits.flatMap((careUnit) =>
+        careUnit.rooms.map((room) => ({
+          id: room.id,
+          name: room.name,
+          floor: room.floorName ?? 'SEM ANDAR INFORMADO',
+          unit: careUnit.name,
+          beds: room.beds.map((bed) => ({
+            id: bed.id,
+            code: /^LEITO\b/i.test(bed.code) ? bed.code : `LEITO ${bed.code}`,
+            status: bed.status === 'BLOCKED' ? 'MAINTENANCE' : bed.status,
+            patient: bed.admission
+              ? {
+                  id: bed.admission.patient.id,
+                  admissionId: bed.admission.id,
+                  name: bed.admission.patient.fullName,
+                  birthDate: this.displayBirthDate(bed.admission.patient.birthDate),
+                  sex: this.displaySex(bed.admission.patient.sex),
+                  weightKg: bed.admission.patient.weightKg ?? undefined,
+                  diagnosis: bed.admission.patient.diagnosis ?? undefined,
+                  comorbidities: bed.admission.patient.comorbidities ?? undefined,
+                  allergies: bed.admission.patient.allergies ?? undefined,
+                  admissionAt: bed.admission.admittedAt,
+                  prescriptions: [],
+                }
+              : undefined,
+          })),
+        })),
+      ),
+    };
+    this.store.replaceHospital(hospital);
+  }
+
+  private async refreshRealWorkspace(): Promise<void> {
+    const selectedHospital = this.auth.selectedHospital();
+    if (!selectedHospital) throw new Error('Hospital não selecionado');
+    await this.loadRealWorkspace(selectedHospital.name);
+  }
+
+  private displayBirthDate(value: string | null): string | undefined {
+    if (!value) return undefined;
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value;
+  }
+
+  private displaySex(value: string): string {
+    return value === 'NAO_INFORMADO' ? 'NÃO INFORMADO' : value;
   }
 
   private selectDemoHospitalByName(hospitalName: string): boolean {
@@ -1055,6 +1216,97 @@ export class App implements OnInit {
       return error.error.message.toLocaleUpperCase('pt-BR');
     }
     return 'NÃO FOI POSSÍVEL CONCLUIR O ACESSO. TENTE NOVAMENTE.';
+  }
+
+  private clinicalErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse && typeof error.error?.message === 'string') {
+      return error.error.message.toLocaleUpperCase('pt-BR');
+    }
+    if (error instanceof HttpErrorResponse && error.status === 0) {
+      return 'NÃO FOI POSSÍVEL CONECTAR À API LOCAL.';
+    }
+    return 'NÃO FOI POSSÍVEL CONCLUIR A OPERAÇÃO.';
+  }
+
+  private dischargeReasonCode(reason: DischargeReason): string {
+    return {
+      ÓBITO: 'OBITO',
+      TRANSFERÊNCIA: 'TRANSFERENCIA',
+      'ALTA MELHORA': 'ALTA_MELHORA',
+    }[reason];
+  }
+
+  private parseBirthDate(value: string): string | null {
+    if (!value.trim()) return null;
+    const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value.trim());
+    return match ? `${match[3]}-${match[2]}-${match[1]}` : null;
+  }
+
+  private async publishedTemplate(kind: ClinicalFormKind): Promise<ClinicalFormTemplate> {
+    const templates = await this.medical.templates(kind);
+    const template = templates[0];
+    if (!template) throw new Error(`Modelo ${kind} não publicado`);
+    return template;
+  }
+
+  private prescriptionDocumentValues(
+    vitalSigns: VitalSignDraftRow[],
+    hydration: PrescriptionDraftRow[],
+    medicationSections: MedicationSectionDraft[],
+    observations: string[],
+    abnormalities: string[],
+  ): Record<string, unknown> {
+    const values: Record<string, unknown> = {};
+    if (this.prescriptionDiet.trim()) values['ORIENTACOES.DIETA'] = this.prescriptionDiet.trim();
+
+    const signals = vitalSigns.find((row) => row.description === 'SINAIS VITAIS');
+    if (signals) values['ORIENTACOES.SINAIS_VITAIS'] = [this.medicationDocumentRow(signals)];
+    const dxt = vitalSigns.find((row) => row.description === 'DXT');
+    if (dxt) {
+      values['ORIENTACOES.DXT'] = [
+        this.medicationDocumentRow({
+          ...dxt,
+          description: dxt.guidance ? `${dxt.description} — ${dxt.guidance}` : dxt.description,
+        }),
+      ];
+    }
+    if (hydration.length) {
+      values['MEDICAMENTOS.HIDRATACAO'] = hydration.map((row) => this.medicationDocumentRow(row));
+    }
+
+    const sectionKeys: Record<MedicationSectionId, string> = {
+      ANALGESIA: 'ANALGESIA',
+      SYMPTOMATICS: 'SINTOMATICOS',
+      PROPHYLAXIS: 'PROFILAXIA',
+      ANTIBIOTICS: 'ATB',
+      CONTINUOUS_USE: 'USO_CONTINUO',
+      OTHER_MEDICATIONS: 'DEMAIS_MEDICAMENTOS',
+    };
+    for (const section of medicationSections) {
+      values[`MEDICAMENTOS.${sectionKeys[section.id]}`] = section.items.map((row) =>
+        this.medicationDocumentRow(row),
+      );
+    }
+
+    const notes = [
+      ...observations,
+      ...(abnormalities.length
+        ? ['COMUNICAR ANORMALIDADES:', ...abnormalities.map((item) => `- ${item}`)]
+        : []),
+    ].join('\n');
+    if (notes) values['OBSERVACOES.OBSERVACOES'] = notes;
+    return values;
+  }
+
+  private medicationDocumentRow(
+    row: PrescriptionDraftRow | VitalSignDraftRow,
+  ): Record<string, string> {
+    return {
+      description: row.description,
+      route: 'route' in row ? row.route : '',
+      frequency: row.frequency,
+      scheduling: 'scheduling' in row ? row.scheduling : '',
+    };
   }
 
   private roleLabel(role: string): string {
