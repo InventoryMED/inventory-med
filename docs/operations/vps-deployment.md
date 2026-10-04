@@ -134,6 +134,22 @@ sudo bash infra/scripts/disable-bootstrap.sh
 Isso desativa a criação inicial, remove a senha inicial do arquivo de ambiente e
 reinicia a API.
 
+### Recuperar a ausência do primeiro administrador
+
+Se a configuração inicial não tiver criado nenhuma conta com o papel
+`ADMIN_SISTEMA`, use o procedimento versionado abaixo. Ele somente funciona quando não
+existe outro administrador geral, exige um e-mail ainda não cadastrado e não redefine
+senhas de usuários existentes.
+
+```bash
+sudo bash infra/scripts/recover-system-administrator.sh
+```
+
+O e-mail e a senha temporária são solicitados no terminal. A senha não aparece na tela,
+é removida de `/etc/inventory-med/api.env` depois da criação e deve ser substituída no
+primeiro login. Não execute novamente `configure-vps-environment.sh`, pois esse script
+é destinado à preparação inicial completa do banco e das credenciais técnicas.
+
 ## Diagnóstico
 
 ```bash
