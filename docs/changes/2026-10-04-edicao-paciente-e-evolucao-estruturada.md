@@ -2,7 +2,7 @@
 
 **Data:** 2026-10-04  
 **Responsável:** equipe Inventory MED  
-**Status:** concluída no ambiente local; aguardando aprovação visual para produção
+**Status:** concluída e publicada na VPS em homologação pública
 
 ## Resumo
 
@@ -65,12 +65,44 @@ isolamento hospitalar e finalização do documento.
 
 ## VPS
 
-Nenhum comando foi executado na VPS e nenhuma versão foi publicada. A alteração está
-somente no computador de desenvolvimento.
+Versão publicada: `5befd995ad1a`.
+
+O pacote `inventory-med-5befd995ad1a.tar.gz` foi gerado pelo fluxo oficial, enviado
+para `/home/gabriel/inventory-med-upload/` e conferido antes da instalação. O SHA-256
+local e remoto foi:
+
+```text
+8e87b9a98977eb692c7e46d49572f4cc98c5b65f831ab07c681bf58f86295411
+```
+
+Comandos executados no computador de desenvolvimento:
+
+```powershell
+git push -u origin codex/medical-admin-configuration
+.\infra\scripts\build-release.ps1
+.\infra\scripts\upload-release.ps1 `
+  -ArchivePath '.\artifacts\releases\inventory-med-5befd995ad1a.tar.gz'
+```
+
+Comandos executados na VPS, sem valores secretos:
+
+```bash
+cd /home/gabriel/inventory-med-upload
+tar -xzf inventory-med-5befd995ad1a.tar.gz
+cd 5befd995ad1a
+sudo bash infra/scripts/install-release.sh "$PWD" 5befd995ad1a
+```
+
+O instalador atualizou os links do JAR e do frontend, reiniciou a API, validou o Nginx
+e confirmou a saúde antes de concluir. A versão anterior permaneceu disponível para
+recuperação.
 
 ## Serviços afetados
 
 - API local reconstruída e reiniciada no Docker Compose;
+- `inventory-med-api` reiniciado na VPS;
+- `nginx` recarregado na VPS;
+- `mssql-server` não foi reiniciado nem publicado na internet;
 - SQL Server local mantido em `127.0.0.1:14330`;
 - frontend local mantido em `http://127.0.0.1:4200`.
 
@@ -90,6 +122,19 @@ Nenhuma variável de ambiente ou segredo foi criado ou alterado.
 - o build mantém apenas os avisos já conhecidos de orçamento do pacote inicial e do
   arquivo SCSS, sem erro de compilação;
 - API local reconstruída e iniciada com sucesso.
+- pacote remoto com SHA-256 idêntico ao arquivo local;
+- instalador informou `Versão 5befd995ad1a instalada e saudável`;
+- `inventory-med-api`, `nginx` e `mssql-server` ativos na VPS;
+- frontend público em `http://179.236.237.36/` respondeu HTTP 200 e foi inspecionado
+  visualmente com o texto institucional atualizado;
+- saúde pública respondeu `UP`;
+- `/api/v1/auth/me` respondeu HTTP 401 sem uma sessão autenticada;
+- cabeçalhos CSP, `X-Frame-Options: DENY` e `X-Content-Type-Options: nosniff`
+  presentes;
+- portas públicas 8080 e 1433 permaneceram fechadas;
+- listeners internos confirmados em `127.0.0.1:8080` e `127.0.0.1:1433`;
+- a migração hospitalar V4 será aplicada pelo Flyway ao banco de cada unidade quando
+  a API abrir o contexto clínico daquela unidade.
 
 ## Recuperação
 
@@ -101,6 +146,10 @@ versão do modelo, preservando os documentos já finalizados.
 ## Pendências
 
 - definir o comportamento clínico e administrativo do botão AIH;
+- validar com uma sessão médica a abertura da unidade e a aplicação da V4 no banco
+  hospitalar da VPS;
 - realizar a aprovação visual do formulário e do PDF pelo responsável;
-- implantar somente após a aprovação explícita;
-- tratar em etapa própria os avisos de orçamento de tamanho do frontend.
+- tratar em etapa própria os avisos de orçamento de tamanho do frontend;
+- configurar domínio, HTTPS, backup externo e teste de restauração antes de usar dados
+  reais; enquanto o acesso permanecer por HTTP no IP, o ambiente continua classificado
+  como homologação pública pela arquitetura oficial.
