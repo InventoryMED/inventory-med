@@ -27,6 +27,16 @@ public final class ClinicalRequests {
         @Size(max = 2000) String allergies
     ) {}
 
+    public record UpdatePatient(
+        @NotBlank @Size(max = 180) String fullName,
+        LocalDate birthDate,
+        @NotBlank @Pattern(regexp = "FEMININO|MASCULINO|OUTRO|NAO_INFORMADO") String sex,
+        @DecimalMin("0.10") @DecimalMax("500.00") BigDecimal weightKg,
+        @Size(max = 1000) String diagnosis,
+        @Size(max = 2000) String comorbidities,
+        @Size(max = 2000) String allergies
+    ) {}
+
     public record Transfer(@NotNull UUID targetBedId) {}
 
     public record Discharge(

@@ -63,6 +63,15 @@ interface EvolutionExamRow {
   values: string[];
 }
 
+interface InfusionMedication {
+  id: string;
+  label: string;
+  selected: boolean;
+  rateMlHour: string;
+}
+
+type RespiratoryTab = 'PATTERN' | 'SUPPORT';
+
 interface HospitalOption {
   id: string;
   name: string;
@@ -214,6 +223,7 @@ export class App implements OnInit {
   protected readonly expandedRooms = signal<Set<string>>(new Set());
   protected readonly selectedBedId = signal<string | null>(null);
   protected readonly admissionOpen = signal(false);
+  protected readonly patientEditOpen = signal(false);
   protected readonly dischargeOpen = signal(false);
   protected readonly transferOpen = signal(false);
   protected readonly prescriptionReady = signal(false);
@@ -242,14 +252,24 @@ export class App implements OnInit {
   protected evolutionText = '';
   protected evolutionPosition = '';
   protected evolutionAccompaniment = '';
+  protected evolutionHygiene = '';
   protected evolutionConsciousness = '';
   protected evolutionOrientation = '';
-  protected evolutionChiefComplaints: string[] = [];
-  protected evolutionPainLocation = '';
-  protected evolutionPainIntensity = '';
-  protected evolutionShiftEvents: string[] = [];
+  protected evolutionInteraction = '';
+  protected evolutionSedationStatus = '';
+  protected evolutionSedatives: InfusionMedication[] = this.createSedativeMedications();
+  protected evolutionRespiratoryTab: RespiratoryTab = 'PATTERN';
+  protected evolutionRespiratoryPatterns: string[] = [];
+  protected evolutionVentilatorySupport = '';
+  protected evolutionHemodynamicStability = '';
+  protected evolutionPressureProfile = '';
+  protected evolutionPamWithinTarget = false;
+  protected evolutionNoVasoactiveDrugs = false;
+  protected evolutionVasoactiveMedications: InfusionMedication[] =
+    this.createVasoactiveMedications();
   protected evolutionFoodAcceptance = '';
   protected evolutionUrinaryElimination = '';
+  protected evolutionUrinaryVolume24h = '';
   protected evolutionUrineAppearance = '';
   protected evolutionIntestinalElimination = '';
   protected evolutionNoBowelMovementDays = '';
@@ -311,21 +331,44 @@ export class App implements OnInit {
     'DESORIENTADO NO ESPAÇO',
     'GLOBALMENTE DESORIENTADO',
   ];
-  protected readonly evolutionChiefComplaintOptions = [
-    'NEGA NOVAS QUEIXAS ATIVAS',
-    'DOR',
-    'FALTA DE AR / DISPNEIA',
-    'NÁUSEAS / ENJOO',
-    'TONTURA / MAL-ESTAR',
+  protected readonly evolutionHygieneOptions = ['BOA HIGIENE', 'MÁ HIGIENE'];
+  protected readonly evolutionInteractionOptions = [
+    'CONTACTUANTE E COOPERATIVO',
+    'CONTACTUANTE NÃO-VERBAL (INTERAGE POR GESTOS / OLHAR)',
+    'POUCO CONTACTUANTE / APÁTICO',
+    'NÃO CONTACTUANTE',
+    'INCONTACTÁVEL POR SEDAÇÃO CONTÍNUA',
   ];
-  protected readonly evolutionShiftEventOptions = [
-    'SEM INTERCORRÊNCIAS RELATADAS',
-    'PICO FEBRIL',
-    'EPISÓDIO DE HIPOTENSÃO',
-    'AGITAÇÃO PSICOMOTORA',
-    'QUEDA DA SATURAÇÃO / NECESSIDADE DE O₂',
-    'EPISÓDIO DE VÔMITO / DIARREIA',
+  protected readonly evolutionSedationStatusOptions = [
+    'MANUTENÇÃO EM DOSE ESTÁVEL',
+    'EM PROCESSO DE DESMAME / REDUÇÃO GRADUAL DE DOSE',
+    'EM ESCALONAMENTO / AUMENTO DE DOSE (POR AGITAÇÃO OU ASSINCRONIA COM O VENTILADOR)',
+    'PAUSA PROGRAMADA DA SEDAÇÃO (TESTE DO DESPERTAR DIÁRIO)',
+    'SEDAÇÃO SUSPENSA NAS ÚLTIMAS 24H',
   ];
+  protected readonly evolutionRespiratoryPatternOptions = [
+    'SEM SINAIS DE ESFORÇO RESPIRATÓRIO (EXPANSIBILIDADE PRESERVADA E SIMÉTRICA)',
+    'USO DE MUSCULATURA ACESSÓRIA (TIRAGEM INTERCOSTAL, SUBCOSTAL OU SUPRACLAVICULAR)',
+    'BATIMENTO DE ASAS DO NARIZ (BAN)',
+    'DISSOCIAÇÃO TORACOABDOMINAL',
+    'GEMIDO EXPIRATÓRIO',
+  ];
+  protected readonly evolutionVentilatorySupportOptions = [
+    'AR AMBIENTE (AA)',
+    'CATETER NASAL DE O₂',
+    'MÁSCARA SIMPLES DE O₂',
+    'MÁSCARA DE VENTURI',
+    'VENTILAÇÃO NÃO INVASIVA (VNI / CPAP / BIPAP)',
+    'VENTILAÇÃO MECÂNICA INVASIVA (VMI)',
+    'TRAQUEOSTOMIA EM AR AMBIENTE / EM MÁSCARA DE TQT / TUBO EM T',
+  ];
+  protected readonly evolutionHemodynamicStabilityOptions = [
+    'HEMODINAMICAMENTE ESTÁVEL',
+    'HEMODINAMICAMENTE ESTÁVEL SOB MEDICAÇÃO',
+    'HEMODINAMICAMENTE LIMÍTROFE',
+    'HEMODINAMICAMENTE INSTÁVEL',
+  ];
+  protected readonly evolutionPressureProfileOptions = ['NORMOTENSO', 'HIPOTENSO', 'HIPERTENSO'];
   protected readonly evolutionFoodAcceptanceOptions = [
     'BOA (>75% DA REFEIÇÃO)',
     'PARCIAL / REGULAR (~50%)',
@@ -566,6 +609,7 @@ export class App implements OnInit {
     this.expandedRooms.set(new Set());
     this.selectedBedId.set(null);
     this.admissionOpen.set(false);
+    this.patientEditOpen.set(false);
     this.dischargeOpen.set(false);
     this.transferOpen.set(false);
   }
@@ -577,6 +621,7 @@ export class App implements OnInit {
     this.store.activeHospitalId.set(null);
     this.expandedRooms.set(new Set());
     this.admissionOpen.set(false);
+    this.patientEditOpen.set(false);
     this.dischargeOpen.set(false);
     this.transferOpen.set(false);
   }
@@ -607,6 +652,34 @@ export class App implements OnInit {
     this.selectedBedId.set(bed.id);
     this.resetPatientForm();
     this.admissionOpen.set(true);
+  }
+
+  protected openPatientEditor(bed: Bed): void {
+    if (bed.status !== 'OCCUPIED' || !bed.patient) return;
+    this.selectedBedId.set(bed.id);
+    this.preparePatientForm(bed.patient);
+    this.patientEditOpen.set(true);
+  }
+
+  protected closePatientEditor(): void {
+    this.patientEditOpen.set(false);
+    this.selectedBedId.set(null);
+  }
+
+  protected closePatientModal(): void {
+    if (this.patientEditOpen()) {
+      this.closePatientEditor();
+      return;
+    }
+    this.closeAdmission();
+  }
+
+  protected submitPatientForm(): void {
+    if (this.patientEditOpen()) {
+      void this.updatePatient();
+      return;
+    }
+    void this.admitPatient();
   }
 
   protected openPrescription(bed: Bed): void {
@@ -770,6 +843,13 @@ export class App implements OnInit {
     this.showToast('PACIENTE ADMITIDO. USE ABRIR PRESCRIÇÃO NO LEITO PARA CONTINUAR.');
   }
 
+  protected async updatePatient(): Promise<void> {
+    if (!(await this.persistPatientChanges(false))) return;
+    this.patientEditOpen.set(false);
+    this.selectedBedId.set(null);
+    this.showToast('CADASTRO DO PACIENTE ATUALIZADO E REGISTRADO NA AUDITORIA.');
+  }
+
   protected closeAdmission(): void {
     this.admissionOpen.set(false);
     this.selectedBedId.set(null);
@@ -808,16 +888,59 @@ export class App implements OnInit {
     return selection.includes(option);
   }
 
-  protected formattedEvolutionChiefComplaints(): string {
-    if (!this.evolutionChiefComplaints.length) return 'NÃO INFORMADO';
-    return this.evolutionChiefComplaints
-      .map((complaint) => {
-        if (complaint !== 'DOR') return complaint;
-        const location = this.evolutionPainLocation.trim() || 'LOCAL NÃO INFORMADO';
-        const intensity = this.evolutionPainIntensity.trim();
-        return `DOR EM ${location}${intensity ? ` (INTENSIDADE ${intensity}/10)` : ''}`;
-      })
-      .join('; ');
+  protected setRespiratoryTab(tab: RespiratoryTab): void {
+    this.evolutionRespiratoryTab = tab;
+  }
+
+  protected toggleInfusionMedication(medication: InfusionMedication, checked: boolean): void {
+    medication.selected = checked;
+    if (!checked) medication.rateMlHour = '';
+  }
+
+  protected toggleVasoactiveMedication(medication: InfusionMedication, checked: boolean): void {
+    this.toggleInfusionMedication(medication, checked);
+    if (checked) this.evolutionNoVasoactiveDrugs = false;
+  }
+
+  protected toggleNoVasoactiveDrugs(checked: boolean): void {
+    this.evolutionNoVasoactiveDrugs = checked;
+    if (!checked) return;
+    this.evolutionVasoactiveMedications.forEach((medication) => {
+      medication.selected = false;
+      medication.rateMlHour = '';
+    });
+  }
+
+  protected formattedInfusionMedications(medications: InfusionMedication[]): string {
+    return (
+      medications
+        .filter((medication) => medication.selected)
+        .map(
+          (medication) =>
+            `${medication.label}${
+              medication.rateMlHour.trim()
+                ? ` — VAZÃO ${medication.rateMlHour.trim()} ML/H`
+                : ' — VAZÃO NÃO INFORMADA'
+            }`,
+        )
+        .join('; ') || 'NÃO INFORMADO'
+    );
+  }
+
+  protected formattedVasoactiveSupport(): string {
+    if (this.evolutionNoVasoactiveDrugs) return 'SEM USO DE DROGAS VASOATIVAS';
+    return this.formattedInfusionMedications(this.evolutionVasoactiveMedications);
+  }
+
+  protected formattedUrinaryElimination(): string {
+    if (!this.evolutionUrinaryElimination) return 'NÃO INFORMADO';
+    if (
+      this.evolutionUrinaryElimination !== 'POR SONDA VESICAL DE DEMORA (SVD)' ||
+      !this.evolutionUrinaryVolume24h.trim()
+    ) {
+      return this.evolutionUrinaryElimination;
+    }
+    return `${this.evolutionUrinaryElimination} — ${this.evolutionUrinaryVolume24h.trim()} ML/24H`;
   }
 
   protected formattedEvolutionIntestinalElimination(): string {
@@ -842,6 +965,43 @@ export class App implements OnInit {
       return;
     }
     this.evolutionExamRows = this.evolutionExamRows.filter((_, rowIndex) => rowIndex !== index);
+  }
+
+  protected async saveEvolution(): Promise<void> {
+    const admissionId = this.selectedBed()?.patient?.admissionId;
+    if (!admissionId) {
+      this.showToast('NÃO FOI POSSÍVEL IDENTIFICAR A INTERNAÇÃO.');
+      return;
+    }
+    if (!this.hasEvolutionContent()) {
+      this.showToast('PREENCHA AO MENOS UM CAMPO DA EVOLUÇÃO.');
+      return;
+    }
+    if (
+      [...this.evolutionSedatives, ...this.evolutionVasoactiveMedications].some(
+        (medication) => medication.selected && !medication.rateMlHour.trim(),
+      )
+    ) {
+      this.showToast('INFORME A VAZÃO EM ML/H DE CADA MEDICAMENTO SELECIONADO.');
+      return;
+    }
+    if (!this.realApiEnabled) {
+      this.showToast('EVOLUÇÃO PREPARADA. O REGISTRO DEFINITIVO REQUER A API LOCAL.');
+      return;
+    }
+
+    try {
+      const template = await this.publishedTemplate('EVOLUTION');
+      await this.medical.createDocument(
+        admissionId,
+        template,
+        this.evolutionDocumentValues(template),
+        true,
+      );
+      this.showToast('EVOLUÇÃO CRIADA E FINALIZADA COM SUCESSO.');
+    } catch (error) {
+      this.showToast(this.clinicalErrorMessage(error));
+    }
   }
 
   protected hasMedicationItems(group: MedicationOrderGroup): boolean {
@@ -945,7 +1105,7 @@ export class App implements OnInit {
 
   protected async savePrescription(): Promise<void> {
     const bedId = this.selectedBedId();
-    if (!this.persistPatientChanges(false)) return;
+    if (!(await this.persistPatientChanges(false))) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
     const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
     const validVitalSigns = this.vitalSignRows.filter(
@@ -1028,8 +1188,8 @@ export class App implements OnInit {
     this.showToast(`MODELO ${template.name} CARREGADO.`);
   }
 
-  protected savePatientChanges(): void {
-    this.persistPatientChanges(true);
+  protected async savePatientChanges(): Promise<void> {
+    await this.persistPatientChanges(true);
   }
 
   protected selectDiet(diet: string): void {
@@ -1242,6 +1402,18 @@ export class App implements OnInit {
     return match ? `${match[3]}-${match[2]}-${match[1]}` : null;
   }
 
+  private validatePatientForm(): boolean {
+    if (!this.patientName.trim()) {
+      this.showToast('PREENCHA O NOME DO PACIENTE.');
+      return false;
+    }
+    if (this.patientWeight !== null && this.patientWeight <= 0) {
+      this.showToast('INFORME UM PESO VÁLIDO OU DEIXE O CAMPO VAZIO.');
+      return false;
+    }
+    return true;
+  }
+
   private async publishedTemplate(kind: ClinicalFormKind): Promise<ClinicalFormTemplate> {
     const templates = await this.medical.templates(kind);
     const template = templates[0];
@@ -1349,14 +1521,23 @@ export class App implements OnInit {
     this.evolutionText = '';
     this.evolutionPosition = '';
     this.evolutionAccompaniment = '';
+    this.evolutionHygiene = '';
     this.evolutionConsciousness = '';
     this.evolutionOrientation = '';
-    this.evolutionChiefComplaints = [];
-    this.evolutionPainLocation = '';
-    this.evolutionPainIntensity = '';
-    this.evolutionShiftEvents = [];
+    this.evolutionInteraction = '';
+    this.evolutionSedationStatus = '';
+    this.evolutionSedatives = this.createSedativeMedications();
+    this.evolutionRespiratoryTab = 'PATTERN';
+    this.evolutionRespiratoryPatterns = [];
+    this.evolutionVentilatorySupport = '';
+    this.evolutionHemodynamicStability = '';
+    this.evolutionPressureProfile = '';
+    this.evolutionPamWithinTarget = false;
+    this.evolutionNoVasoactiveDrugs = false;
+    this.evolutionVasoactiveMedications = this.createVasoactiveMedications();
     this.evolutionFoodAcceptance = '';
     this.evolutionUrinaryElimination = '';
+    this.evolutionUrinaryVolume24h = '';
     this.evolutionUrineAppearance = '';
     this.evolutionIntestinalElimination = '';
     this.evolutionNoBowelMovementDays = '';
@@ -1389,11 +1570,245 @@ export class App implements OnInit {
     this.evolutionExamRows = this.createEvolutionExamRows();
   }
 
+  private createSedativeMedications(): InfusionMedication[] {
+    return [
+      { id: 'PROPOFOL', label: 'PROPOFOL (10 MG/ML)', selected: false, rateMlHour: '' },
+      {
+        id: 'MIDAZOLAM',
+        label: 'MIDAZOLAM (DORMONID)',
+        selected: false,
+        rateMlHour: '',
+      },
+      { id: 'FENTANIL', label: 'FENTANIL', selected: false, rateMlHour: '' },
+      {
+        id: 'DEXMEDETOMIDINA',
+        label: 'DEXMEDETOMIDINA (PRECEDEX)',
+        selected: false,
+        rateMlHour: '',
+      },
+      { id: 'KETAMINA', label: 'KETAMINA (CETAMINA)', selected: false, rateMlHour: '' },
+    ];
+  }
+
+  private createVasoactiveMedications(): InfusionMedication[] {
+    return [
+      { id: 'NORADRENALINA', label: 'NORADRENALINA', selected: false, rateMlHour: '' },
+      { id: 'VASOPRESSINA', label: 'VASOPRESSINA', selected: false, rateMlHour: '' },
+      { id: 'DOBUTAMINA', label: 'DOBUTAMINA', selected: false, rateMlHour: '' },
+    ];
+  }
+
   private createEvolutionExamRows(count = 8): EvolutionExamRow[] {
     return Array.from({ length: count }, () => ({
       name: '',
       values: ['', '', '', ''],
     }));
+  }
+
+  private hasEvolutionContent(): boolean {
+    const textValues = [
+      this.evolutionAdmission,
+      this.evolutionText,
+      this.evolutionPosition,
+      this.evolutionAccompaniment,
+      this.evolutionHygiene,
+      this.evolutionConsciousness,
+      this.evolutionOrientation,
+      this.evolutionInteraction,
+      this.evolutionSedationStatus,
+      this.evolutionFoodAcceptance,
+      this.evolutionUrinaryElimination,
+      this.evolutionUrinaryVolume24h,
+      this.evolutionUrineAppearance,
+      this.evolutionIntestinalElimination,
+      this.evolutionNoBowelMovementDays,
+      this.evolutionStoolAppearance,
+      this.evolutionSleepPattern,
+      this.evolutionVentilatorySupport,
+      this.evolutionHemodynamicStability,
+      this.evolutionPressureProfile,
+      this.evolutionNeurological,
+      this.evolutionRespiratoryExam,
+      this.evolutionCardiovascularExam,
+      this.evolutionAbdomen,
+      this.evolutionLowerLimbs,
+      this.evolutionComplementaryNotes,
+      this.evolutionConduct,
+      this.evolutionAntibioticCurrent,
+      this.evolutionAntibioticPrevious,
+    ];
+    return (
+      textValues.some((value) => value.trim()) ||
+      this.evolutionRespiratoryPatterns.length > 0 ||
+      this.evolutionPamWithinTarget ||
+      this.evolutionNoVasoactiveDrugs ||
+      this.evolutionSedatives.some((item) => item.selected) ||
+      this.evolutionVasoactiveMedications.some((item) => item.selected) ||
+      this.evolutionExamRows.some(
+        (row) => row.name.trim() || row.values.some((value) => value.trim()),
+      )
+    );
+  }
+
+  private evolutionDocumentValues(template: ClinicalFormTemplate): Record<string, unknown> {
+    const values: Record<string, unknown> = {};
+    const put = (path: string, value: unknown): void => {
+      if (this.templateField(template, path) && this.documentValuePresent(value))
+        values[path] = value;
+    };
+    const putSelection = (path: string, label: string): void => {
+      if (!label) return;
+      const option = this.templateOptionValue(template, path, label);
+      if (option) put(path, option);
+    };
+    const putSelections = (path: string, labels: string[]): void => {
+      const options = labels
+        .map((label) => this.templateOptionValue(template, path, label))
+        .filter((value): value is string => Boolean(value));
+      put(path, options);
+    };
+
+    putSelection('ACOMPANHAMENTO.POSICAO', this.evolutionPosition);
+    putSelection('ACOMPANHAMENTO.ACOMPANHAMENTO', this.evolutionAccompaniment);
+    putSelection('ACOMPANHAMENTO.HIGIENE', this.evolutionHygiene);
+    put('FISIOLOGICO.ADMISSAO', this.evolutionAdmission.trim());
+    putSelection('FISIOLOGICO.ACEITACAO_ALIMENTAR', this.evolutionFoodAcceptance);
+    putSelection('FISIOLOGICO.ELIMINACAO_URINARIA', this.evolutionUrinaryElimination);
+    put('FISIOLOGICO.VOLUME_URINARIO', this.optionalNumber(this.evolutionUrinaryVolume24h));
+    putSelection('FISIOLOGICO.ASPECTO_URINA', this.evolutionUrineAppearance);
+    putSelection('FISIOLOGICO.ELIMINACAO_INTESTINAL', this.evolutionIntestinalElimination);
+    put('FISIOLOGICO.DIAS_SEM_EVACUAR', this.optionalNumber(this.evolutionNoBowelMovementDays));
+    putSelection('FISIOLOGICO.ASPECTO_FEZES', this.evolutionStoolAppearance);
+    putSelection('FISIOLOGICO.PADRAO_SONO', this.evolutionSleepPattern);
+    put('FISIOLOGICO.ATB_ATUAL', this.evolutionAntibioticCurrent.trim());
+    put('FISIOLOGICO.ATB_PREVIA', this.evolutionAntibioticPrevious.trim());
+    putSelection('NEUROLOGICO.CONSCIENCIA', this.evolutionConsciousness);
+    putSelection('NEUROLOGICO.ORIENTACAO', this.evolutionOrientation);
+    putSelection('NEUROLOGICO.INTERACAO', this.evolutionInteraction);
+    put('NEUROLOGICO.OBSERVACOES', this.evolutionNeurological.trim());
+    put('SEDACAO.MEDICAMENTOS', this.infusionDocumentRows(this.evolutionSedatives));
+    putSelection('SEDACAO.DINAMICA', this.evolutionSedationStatus);
+    putSelections('RESPIRATORIO.PADRAO', this.evolutionRespiratoryPatterns);
+    putSelection('RESPIRATORIO.SUPORTE', this.evolutionVentilatorySupport);
+    put('RESPIRATORIO.OBSERVACOES', this.evolutionRespiratoryExam.trim());
+    putSelection('CARDIOVASCULAR.ESTABILIDADE', this.evolutionHemodynamicStability);
+    putSelection('CARDIOVASCULAR.PERFIL_PRESSORICO', this.evolutionPressureProfile);
+    if (this.evolutionPamWithinTarget) put('CARDIOVASCULAR.PAM_ALVO', true);
+    put(
+      'CARDIOVASCULAR.DROGAS_VASOATIVAS',
+      this.evolutionNoVasoactiveDrugs
+        ? [this.medicationDocumentRowFromValues('SEM USO DE DROGAS VASOATIVAS', '')]
+        : this.infusionDocumentRows(this.evolutionVasoactiveMedications),
+    );
+    put('CARDIOVASCULAR.OBSERVACOES', this.evolutionCardiovascularExam.trim());
+    put('FISIOLOGICO.EVOLUCAO', this.evolutionText.trim());
+    put('EXAME_FISICO.SSVV', this.evolutionVitalSignsText());
+    put('EXAME_FISICO.ECTOSCOPIA', this.evolutionEctoscopyText());
+    put('EXAME_FISICO.ABDOME', this.evolutionAbdomen.trim());
+    put('EXAME_FISICO.MMII', this.evolutionLowerLimbs.trim());
+    put('EXAME_FISICO.PERFUSAO', this.evolutionPerfusionText());
+    put('EXAMES.TABELA_EXAMES', this.evolutionExamDocumentRows());
+    put('EXAMES.OUTROS_EXAMES', this.evolutionComplementaryNotes.trim());
+    put('CONDUTA.CONDUTA', this.formatEvolutionConduct(this.evolutionConduct));
+    return values;
+  }
+
+  private templateField(template: ClinicalFormTemplate, path: string) {
+    const [sectionKey, fieldKey] = path.split('.');
+    return template.sections
+      .find((section) => section.key === sectionKey)
+      ?.fields.find((field) => field.key === fieldKey);
+  }
+
+  private templateOptionValue(
+    template: ClinicalFormTemplate,
+    path: string,
+    label: string,
+  ): string | undefined {
+    return this.templateField(template, path)?.options.find((option) => option.label === label)
+      ?.value;
+  }
+
+  private documentValuePresent(value: unknown): boolean {
+    if (value === null || value === undefined || value === '') return false;
+    if (Array.isArray(value)) return value.length > 0;
+    return true;
+  }
+
+  private optionalNumber(value: string): number | null {
+    const normalized = value.trim().replace(',', '.');
+    if (!normalized) return null;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private infusionDocumentRows(medications: InfusionMedication[]): Record<string, string>[] {
+    return medications
+      .filter((medication) => medication.selected)
+      .map((medication) =>
+        this.medicationDocumentRowFromValues(medication.label, medication.rateMlHour.trim()),
+      );
+  }
+
+  private medicationDocumentRowFromValues(
+    description: string,
+    rateMlHour: string,
+  ): Record<string, string> {
+    return {
+      description,
+      route: 'EV',
+      frequency: rateMlHour ? `${rateMlHour} ML/H` : '',
+      scheduling: 'CONTÍNUO',
+    };
+  }
+
+  private evolutionVitalSignsText(): string {
+    const values = [
+      this.evolutionVitalSaturation && `SATO₂ ${this.evolutionVitalSaturation}%`,
+      this.evolutionHeartRate && `FC ${this.evolutionHeartRate} BPM`,
+      this.evolutionRespiratoryRate && `FR ${this.evolutionRespiratoryRate} IRPM`,
+      (this.evolutionBloodPressureSystolic || this.evolutionBloodPressureDiastolic) &&
+        `PA ${this.evolutionBloodPressureSystolic || '___'} × ${this.evolutionBloodPressureDiastolic || '___'} MMHG`,
+      this.evolutionTemperature && `TAX ${this.evolutionTemperature} °C`,
+    ].filter(Boolean);
+    return values.join('; ');
+  }
+
+  private evolutionEctoscopyText(): string {
+    return [
+      this.evolutionGeneralState,
+      this.evolutionCyanosis,
+      this.evolutionJaundice,
+      this.evolutionFever,
+      this.evolutionColoring,
+      this.evolutionHydration,
+    ]
+      .filter(Boolean)
+      .join('; ');
+  }
+
+  private evolutionPerfusionText(): string {
+    const values = [
+      this.evolutionUpperLimbPerfusion && `MMSS: ${this.evolutionUpperLimbPerfusion}`,
+      this.evolutionLowerLimbPerfusion && `MMII: ${this.evolutionLowerLimbPerfusion}`,
+    ].filter(Boolean);
+    return values.join('; ');
+  }
+
+  private evolutionExamDocumentRows(): Record<string, string>[] {
+    return this.evolutionExamRows
+      .filter((row) => row.name.trim() || row.values.some((value) => value.trim()))
+      .map((row) => ({
+        exam: row.name.trim(),
+        date1: this.evolutionExamDates[0] || '',
+        result1: row.values[0] || '',
+        date2: this.evolutionExamDates[1] || '',
+        result2: row.values[1] || '',
+        date3: this.evolutionExamDates[2] || '',
+        result3: row.values[2] || '',
+        date4: this.evolutionExamDates[3] || '',
+        result4: row.values[3] || '',
+      }));
   }
 
   private emptyHydrationRow(): PrescriptionDraftRow {
@@ -1564,18 +1979,17 @@ export class App implements OnInit {
     this.prescriptionAllergies = patient.allergies || '';
   }
 
-  private persistPatientChanges(showFeedback: boolean): boolean {
-    const bedId = this.selectedBedId();
-    if (!bedId || !this.patientName.trim()) {
-      this.showToast('Preencha o nome do paciente.');
-      return false;
-    }
-    if (this.patientWeight !== null && this.patientWeight <= 0) {
-      this.showToast('Informe um peso válido ou deixe o campo vazio.');
+  private async persistPatientChanges(showFeedback: boolean): Promise<boolean> {
+    const bed = this.selectedBed();
+    if (!bed?.patient || !this.validatePatientForm()) return false;
+
+    const birthDate = this.parseBirthDate(this.patientBirthDate);
+    if (this.patientBirthDate.trim() && !birthDate) {
+      this.showToast('INFORME A DATA DE NASCIMENTO NO FORMATO DD/MM/AAAA.');
       return false;
     }
 
-    this.store.updatePatient(bedId, {
+    const patientData = {
       name: this.patientName.trim(),
       birthDate: this.patientBirthDate.trim() || undefined,
       sex: this.patientSex,
@@ -1583,8 +1997,32 @@ export class App implements OnInit {
       diagnosis: this.prescriptionDiagnosis.trim() || undefined,
       comorbidities: this.prescriptionComorbidities.trim() || undefined,
       allergies: this.prescriptionAllergies.trim() || undefined,
-    });
-    if (showFeedback) this.showToast('Dados do paciente atualizados.');
-    return true;
+    };
+
+    try {
+      if (this.realApiEnabled) {
+        if (!bed.patient.admissionId) {
+          this.showToast('NÃO FOI POSSÍVEL IDENTIFICAR A INTERNAÇÃO.');
+          return false;
+        }
+        await this.medical.updatePatient(bed.patient.admissionId, {
+          fullName: patientData.name,
+          birthDate,
+          sex: patientData.sex === 'NÃO INFORMADO' ? 'NAO_INFORMADO' : patientData.sex,
+          weightKg: this.patientWeight,
+          diagnosis: patientData.diagnosis ?? null,
+          comorbidities: patientData.comorbidities ?? null,
+          allergies: patientData.allergies ?? null,
+        });
+        await this.refreshRealWorkspace();
+      } else {
+        this.store.updatePatient(bed.id, patientData);
+      }
+      if (showFeedback) this.showToast('DADOS DO PACIENTE ATUALIZADOS E REGISTRADOS NA AUDITORIA.');
+      return true;
+    } catch (error) {
+      this.showToast(this.clinicalErrorMessage(error));
+      return false;
+    }
   }
 }

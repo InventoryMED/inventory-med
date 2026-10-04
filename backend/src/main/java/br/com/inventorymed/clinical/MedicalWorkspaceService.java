@@ -145,6 +145,51 @@ public class MedicalWorkspaceService {
         return requiredAdmission(hospitalId, admissionId);
     }
 
+    public MedicalWorkspaceResponse.Admission updatePatient(
+        UUID hospitalId,
+        UUID actorId,
+        UUID admissionId,
+        ClinicalRequests.UpdatePatient request,
+        String sourceIp
+    ) {
+        tenantJdbc.write(hospitalId, jdbc -> {
+            UUID patientId = requiredActivePatient(jdbc, admissionId);
+            int updated = jdbc.update(
+                "UPDATE dbo.patient SET full_name = ?, birth_date = ?, sex = ?, weight_kg = ?, " +
+                "diagnosis = ?, comorbidities = ?, allergies = ?, updated_at = SYSUTCDATETIME(), " +
+                "row_version = row_version + 1 WHERE id = ?",
+                normalizeName(request.fullName()),
+                request.birthDate() == null ? null : Date.valueOf(request.birthDate()),
+                request.sex(),
+                request.weightKg(),
+                normalizeNullable(request.diagnosis()),
+                normalizeNullable(request.comorbidities()),
+                normalizeNullable(request.allergies()),
+                patientId
+            );
+            if (updated == 0) {
+                throw new BusinessValidationException("Paciente não encontrado");
+            }
+            jdbc.update(
+                "UPDATE dbo.admission SET updated_by = ?, updated_at = SYSUTCDATETIME(), " +
+                "row_version = row_version + 1 WHERE id = ? AND status = 'ACTIVE'",
+                actorId,
+                admissionId
+            );
+            auditWriter.success(
+                jdbc,
+                actorId,
+                "PATIENT_REGISTRATION_UPDATED",
+                "PATIENT",
+                patientId,
+                sourceIp,
+                Map.of("admissionId", admissionId)
+            );
+            return null;
+        });
+        return requiredAdmission(hospitalId, admissionId);
+    }
+
     public void discharge(
         UUID hospitalId,
         UUID actorId,
@@ -286,6 +331,18 @@ public class MedicalWorkspaceService {
             throw new BusinessValidationException("Internação ativa não encontrada");
         }
         return beds.getFirst();
+    }
+
+    private UUID requiredActivePatient(JdbcTemplate jdbc, UUID admissionId) {
+        List<UUID> patients = jdbc.query(
+            "SELECT patient_id FROM dbo.admission WHERE id = ? AND status = 'ACTIVE'",
+            (row, number) -> row.getObject("patient_id", UUID.class),
+            admissionId
+        );
+        if (patients.isEmpty()) {
+            throw new BusinessValidationException("Internação ativa não encontrada");
+        }
+        return patients.getFirst();
     }
 
     private String normalizeName(String value) {

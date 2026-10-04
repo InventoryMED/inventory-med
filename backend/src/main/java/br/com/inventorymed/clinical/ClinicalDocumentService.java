@@ -210,7 +210,32 @@ public class ClinicalDocumentService {
                 normalized.put(key, value);
             }
         });
+        requireContinuousInfusionRates(normalized, "SEDACAO.MEDICAMENTOS", false);
+        requireContinuousInfusionRates(normalized, "CARDIOVASCULAR.DROGAS_VASOATIVAS", true);
         return normalized;
+    }
+
+    private void requireContinuousInfusionRates(
+        Map<String, Object> values,
+        String fieldPath,
+        boolean allowsNoMedicationStatement
+    ) {
+        Object value = values.get(fieldPath);
+        if (!(value instanceof List<?> rows)) return;
+
+        for (Object rowValue : rows) {
+            if (!(rowValue instanceof Map<?, ?> row)) continue;
+            String description = row.get("description") instanceof String text ? text.trim() : "";
+            if (allowsNoMedicationStatement && description.equals("SEM USO DE DROGAS VASOATIVAS")) {
+                continue;
+            }
+            String frequency = row.get("frequency") instanceof String text ? text.trim() : "";
+            if (description.isBlank() || frequency.isBlank()) {
+                throw new BusinessValidationException(
+                    "Informe o medicamento e a vazão em ML/H para cada infusão selecionada"
+                );
+            }
+        }
     }
 
     private void validateType(FormTemplateDefinition.Field field, Object value) {

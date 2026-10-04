@@ -82,6 +82,20 @@ public class MedicalWorkspaceController {
         );
     }
 
+    @PutMapping("/admissions/{admissionId}/patient")
+    public MedicalWorkspaceResponse.Admission updatePatient(
+        @AuthenticationPrincipal InventoryUserPrincipal principal,
+        HttpSession session,
+        @PathVariable UUID admissionId,
+        @Valid @RequestBody ClinicalRequests.UpdatePatient body,
+        HttpServletRequest request
+    ) {
+        HospitalSessionContext.Actor actor = sessionContext.requireActor(principal, session, MEDICAL_ROLES);
+        return workspaceService.updatePatient(
+            actor.hospitalId(), actor.userId(), admissionId, body, request.getRemoteAddr()
+        );
+    }
+
     @PostMapping("/admissions/{admissionId}/discharge")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void discharge(

@@ -148,6 +148,11 @@ svg {
   letter-spacing: -0.05em;
   line-height: 1.02;
 }
+.login-brand .login-main-title {
+  max-width: 610px;
+  font-size: clamp(38px, 4vw, 58px);
+  line-height: 1.04;
+}
 .brand-copy {
   max-width: 520px;
   margin-bottom: 0;
@@ -841,8 +846,38 @@ svg {
   font-size: 16px;
 }
 .patient-name {
-  margin-bottom: 4px;
   font-weight: 700;
+}
+.patient-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.patient-edit-button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #cfd6df;
+  border-radius: 50%;
+  background: white;
+  color: var(--navy-700);
+  cursor: pointer;
+}
+.patient-edit-button:hover {
+  border-color: var(--navy-700);
+  background: var(--navy-100);
+}
+.patient-edit-button svg {
+  width: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .bed-card small,
 .empty-label {
@@ -918,6 +953,13 @@ svg {
 .bed-action-button--danger:hover {
   border-color: var(--maintenance-red);
   background: var(--maintenance-red-soft);
+}
+.bed-action-button--placeholder:disabled {
+  border-style: dashed;
+  background: #f4f6f8;
+  color: #667085;
+  cursor: not-allowed;
+  opacity: 1;
 }
 .empty-state {
   padding: 42px;
@@ -1833,6 +1875,12 @@ svg {
   font-weight: 800;
   letter-spacing: 0.06em;
 }
+.evolution-field--featured {
+  padding: 18px;
+  border: 1px solid #9fb4ca;
+  border-radius: 10px;
+  background: #f4f8fc;
+}
 .evolution-physical-exam {
   margin-top: 20px;
   padding: 18px;
@@ -2029,6 +2077,143 @@ svg {
   box-shadow: 0 0 0 3px rgba(18, 61, 104, 0.08);
   outline: 0;
 }
+.evolution-block-notes,
+.evolution-full-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+}
+.evolution-block-notes > span,
+.evolution-full-select > span,
+.evolution-rate-field > span {
+  color: var(--navy-900);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.evolution-block-notes textarea,
+.evolution-full-select select {
+  width: 100%;
+  border: 1px solid #c3ccd7;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+}
+.evolution-block-notes textarea {
+  padding: 10px 11px;
+  resize: vertical;
+  line-height: 1.45;
+}
+.evolution-full-select select {
+  min-height: 41px;
+  padding: 0 10px;
+}
+.evolution-block-notes textarea:focus,
+.evolution-full-select select:focus {
+  border-color: var(--navy-700);
+  box-shadow: 0 0 0 3px rgba(18, 61, 104, 0.08);
+  outline: 0;
+}
+.evolution-infusion-list {
+  display: grid;
+  gap: 9px;
+}
+.evolution-infusion-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  padding: 9px 12px;
+  border: 1px solid #d5dce5;
+  border-radius: 8px;
+  background: white;
+}
+.evolution-infusion-row.is-selected {
+  border-color: #9fb4ca;
+  background: #f4f8fc;
+}
+.evolution-infusion-choice,
+.evolution-standalone-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.evolution-infusion-choice input,
+.evolution-standalone-check input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  accent-color: var(--navy-700);
+}
+.evolution-rate-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.evolution-rate-field .input-with-suffix {
+  min-height: 38px;
+}
+.evolution-rate-field input {
+  min-width: 0;
+}
+.evolution-section-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 4px;
+  border-radius: 9px;
+  background: #e8edf3;
+}
+.evolution-section-tabs button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.evolution-section-tabs button.is-active {
+  background: white;
+  color: var(--navy-900);
+  box-shadow: 0 2px 7px rgba(16, 24, 40, 0.1);
+}
+.evolution-check-group--compact {
+  margin-top: 14px;
+}
+.evolution-standalone-check {
+  margin-top: 14px;
+  padding: 11px 12px;
+  border: 1px solid #d5dce5;
+  border-radius: 8px;
+  background: white;
+}
+.evolution-vasoactive-group {
+  margin: 14px 0 0;
+  padding: 13px;
+  border: 1px solid #c5cdd6;
+  border-radius: 8px;
+  background: white;
+}
+.evolution-vasoactive-group legend {
+  padding: 0 6px;
+  color: var(--navy-900);
+  font-size: 10px;
+  font-weight: 800;
+}
+.evolution-vasoactive-group .evolution-standalone-check {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
 .evolution-check-group {
   margin: 16px 0 0;
   padding: 13px;
@@ -2163,6 +2348,10 @@ svg {
 .evolution-actions span {
   color: var(--muted);
   font-size: 10px;
+}
+.evolution-actions > div {
+  display: flex;
+  gap: 10px;
 }
 .evolution-print-sheet,
 .print-sheet {
@@ -2353,7 +2542,9 @@ svg {
   .evolution-select-grid--two,
   .evolution-system-grid,
   .evolution-context-grid,
-  .evolution-inline-details {
+  .evolution-inline-details,
+  .evolution-infusion-row,
+  .evolution-section-tabs {
     grid-template-columns: 1fr;
   }
   .evolution-summary-wide {
@@ -2370,6 +2561,11 @@ svg {
   }
   .evolution-check-group > div:first-of-type {
     grid-template-columns: 1fr;
+  }
+  .evolution-actions,
+  .evolution-actions > div {
+    align-items: stretch;
+    flex-direction: column;
   }
   .prescription-sheet {
     padding: 18px;

@@ -626,6 +626,84 @@ class CoreSecurityIntegrationTests {
             .andReturn();
         UUID admissionId = firstUuid(admitted.getResponse().getContentAsString(), "id");
 
+        mockMvc
+            .perform(
+                put("/clinical/admissions/" + admissionId + "/patient")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "fullName":"Paciente Atualizado",
+                          "birthDate":"1990-04-20",
+                          "sex":"FEMININO",
+                          "weightKg":62.5,
+                          "diagnosis":"Diagnóstico atualizado",
+                          "comorbidities":null,
+                          "allergies":"Nega"
+                        }
+                        """
+                    )
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.patient.fullName").value("PACIENTE ATUALIZADO"))
+            .andExpect(jsonPath("$.patient.weightKg").value(62.5));
+
+        Integer patientUpdateAudit = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_audit_event " +
+                "WHERE event_type = 'PATIENT_REGISTRATION_UPDATED' AND actor_user_id = ?",
+                Integer.class,
+                doctor.getId()
+            )
+        );
+        assertThat(patientUpdateAudit).isEqualTo(1);
+
+        AppUser receptionist = userRepository.save(
+            new AppUser(
+                "RECEPÇÃO ISOLAMENTO",
+                "isolation.reception@example.test",
+                passwordEncoder.encode("Secret@12345")
+            )
+        );
+        membershipRepository.save(
+            new HospitalMembership(firstHospital, receptionist, HospitalRole.RECEPCAO)
+        );
+        MvcResult receptionLogin = login("isolation.reception@example.test", "Secret@12345");
+        Cookie receptionSession = latestCookie(receptionLogin, "INVENTORYMED_SESSION");
+        Cookie receptionCsrf = latestCookie(receptionLogin, "XSRF-TOKEN");
+        mockMvc
+            .perform(
+                put("/clinical/admissions/" + admissionId + "/patient")
+                    .cookie(receptionSession, receptionCsrf)
+                    .header("X-XSRF-TOKEN", receptionCsrf.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "fullName":"Alteração Indevida",
+                          "birthDate":null,
+                          "sex":"NAO_INFORMADO",
+                          "weightKg":null,
+                          "diagnosis":null,
+                          "comorbidities":null,
+                          "allergies":null
+                        }
+                        """
+                    )
+            )
+            .andExpect(status().isForbidden());
+        String patientNameAfterForbiddenUpdate = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT p.full_name FROM dbo.patient p JOIN dbo.admission a ON a.patient_id = p.id " +
+                "WHERE a.id = ?",
+                String.class,
+                admissionId
+            )
+        );
+        assertThat(patientNameAfterForbiddenUpdate).isEqualTo("PACIENTE ATUALIZADO");
+
         UUID templateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
             jdbc.queryForObject(
                 "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
@@ -655,6 +733,80 @@ class CoreSecurityIntegrationTests {
             .andExpect(jsonPath("$.status").value("FINALIZED"))
             .andReturn();
         UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");
+
+        UUID evolutionTemplateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
+                "JOIN dbo.form_template t ON t.id = v.template_id " +
+                "WHERE t.kind = 'EVOLUTION' AND v.status = 'PUBLISHED'",
+                UUID.class
+            )
+        );
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"EVOLUTION",
+                          "values":{
+                            "ACOMPANHAMENTO.HIGIENE":"BOA",
+                            "FISIOLOGICO.VOLUME_URINARIO":1200.5,
+                            "FISIOLOGICO.DIAS_SEM_EVACUAR":2,
+                            "FISIOLOGICO.EVOLUCAO":"PACIENTE ESTÁVEL",
+                            "NEUROLOGICO.INTERACAO":"COOPERATIVO",
+                            "SEDACAO.MEDICAMENTOS":[{
+                              "description":"PROPOFOL (10 MG/ML)",
+                              "route":"EV",
+                              "frequency":"12 ML/H",
+                              "scheduling":"CONTÍNUO"
+                            }],
+                            "RESPIRATORIO.PADRAO":["SEM_ESFORCO"],
+                            "CARDIOVASCULAR.PAM_ALVO":true
+                          },
+                          "finalizeDocument":true
+                        }
+                        """.formatted(evolutionTemplateVersionId)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value("FINALIZED"))
+            .andExpect(jsonPath("$.kind").value("EVOLUTION"))
+            .andExpect(jsonPath("$.values['NEUROLOGICO.INTERACAO']").value("COOPERATIVO"));
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"EVOLUTION",
+                          "values":{
+                            "SEDACAO.MEDICAMENTOS":[{
+                              "description":"FENTANIL",
+                              "route":"EV",
+                              "frequency":"",
+                              "scheduling":"CONTÍNUO"
+                            }]
+                          },
+                          "finalizeDocument":true
+                        }
+                        """.formatted(evolutionTemplateVersionId)
+                    )
+            )
+            .andExpect(status().isBadRequest())
+            .andExpect(
+                jsonPath("$.message")
+                    .value("Informe o medicamento e a vazão em ML/H para cada infusão selecionada")
+            );
 
         mockMvc
             .perform(

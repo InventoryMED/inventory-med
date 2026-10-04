@@ -30,6 +30,12 @@ export class MedicalService {
     );
   }
 
+  updatePatient(admissionId: string, payload: Record<string, unknown>): Promise<MedicalAdmission> {
+    return firstValueFrom(
+      this.http.put<MedicalAdmission>(`${this.baseUrl}/admissions/${admissionId}/patient`, payload),
+    );
+  }
+
   discharge(admissionId: string, reason: string): Promise<void> {
     return firstValueFrom(
       this.http.post<void>(`${this.baseUrl}/admissions/${admissionId}/discharge`, { reason }),

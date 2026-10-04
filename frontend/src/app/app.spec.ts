@@ -45,7 +45,7 @@ describe('App', () => {
     expect(compiled.querySelector('.brand-logo img')?.getAttribute('src')).toBe(
       'inventory-med-logo.png',
     );
-    expect(compiled.querySelector('h1')?.textContent).toContain('Leitos organizados');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Sua gestão hospitalar');
     expect(compiled.querySelector('button[type="submit"]')?.textContent).toContain('ENTRAR');
   });
 
@@ -130,6 +130,28 @@ describe('App', () => {
     openSpy.mockRestore();
   });
 
+  it('should edit the patient registration from an occupied bed', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    app.realApiEnabled = false;
+    const store = app.store;
+    store.resetDemo();
+    store.selectHospital(INITIAL_HOSPITALS[0].id);
+    const bed = store.activeHospital().rooms[0].beds[0];
+    store.admitPatient(bed.id, { name: 'Paciente inicial', diagnosis: 'Diagnóstico inicial' });
+
+    app.openPatientEditor(store.findBed(bed.id));
+    app.patientName = 'Paciente corrigido';
+    app.prescriptionDiagnosis = 'Diagnóstico corrigido';
+    await app.updatePatient();
+
+    expect(store.findBed(bed.id).patient).toMatchObject({
+      name: 'PACIENTE CORRIGIDO',
+      diagnosis: 'DIAGNÓSTICO CORRIGIDO',
+    });
+    expect(app.patientEditOpen()).toBe(false);
+  });
+
   it('should transfer and discharge an admitted patient', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance as any;
@@ -176,7 +198,11 @@ describe('App', () => {
     expect(app.evolutionAdmission).toBe('');
     expect(app.evolutionText).toBe('');
     expect(app.evolutionPosition).toBe('');
-    expect(app.evolutionChiefComplaints).toEqual([]);
+    expect(app.evolutionHygiene).toBe('');
+    expect(app.evolutionInteraction).toBe('');
+    expect(app.evolutionSedatives).toHaveLength(5);
+    expect(app.evolutionRespiratoryPatterns).toEqual([]);
+    expect(app.evolutionVasoactiveMedications).toHaveLength(3);
     expect(app.evolutionFoodAcceptance).toBe('');
     expect(app.evolutionSleepPattern).toBe('');
     expect(app.evolutionVitalSaturation).toBe('');
@@ -192,10 +218,15 @@ describe('App', () => {
     expect(app.formatEvolutionConduct('MANTER HIDRATAÇÃO\n- SOLICITAR EXAMES')).toBe(
       '- MANTER HIDRATAÇÃO\n- SOLICITAR EXAMES',
     );
-    app.toggleEvolutionSelection(app.evolutionChiefComplaints, 'DOR', true);
-    app.evolutionPainLocation = 'ABDOME';
-    app.evolutionPainIntensity = '7';
-    expect(app.formattedEvolutionChiefComplaints()).toBe('DOR EM ABDOME (INTENSIDADE 7/10)');
+    app.toggleEvolutionSelection(
+      app.evolutionRespiratoryPatterns,
+      'SEM SINAIS DE ESFORÇO RESPIRATÓRIO',
+      true,
+    );
+    expect(app.evolutionRespiratoryPatterns).toContain('SEM SINAIS DE ESFORÇO RESPIRATÓRIO');
+    app.toggleInfusionMedication(app.evolutionSedatives[0], true);
+    app.evolutionSedatives[0].rateMlHour = '12';
+    expect(app.formattedInfusionMedications(app.evolutionSedatives)).toContain('12 ML/H');
 
     app.selectedBedId.set(occupiedBed.id);
     app.screen.set('evolution');
@@ -206,5 +237,61 @@ describe('App', () => {
     );
     expect(compiled.querySelector('.evolution-print-sheet')).toBeTruthy();
     openSpy.mockRestore();
+  });
+
+  it('should convert evolution choices into the published template contract', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    const field = (key: string, options: Array<{ value: string; label: string }> = []) => ({
+      key,
+      active: true,
+      options: options.map((option, index) => ({ ...option, id: `${key}-${index}` })),
+    });
+    const template = {
+      sections: [
+        {
+          key: 'ACOMPANHAMENTO',
+          fields: [field('HIGIENE', [{ value: 'BOA', label: 'BOA HIGIENE' }])],
+        },
+        {
+          key: 'NEUROLOGICO',
+          fields: [
+            field('INTERACAO', [{ value: 'COOPERATIVO', label: 'CONTACTUANTE E COOPERATIVO' }]),
+          ],
+        },
+        {
+          key: 'RESPIRATORIO',
+          fields: [
+            field('PADRAO', [
+              {
+                value: 'SEM_ESFORCO',
+                label:
+                  'SEM SINAIS DE ESFORÇO RESPIRATÓRIO (EXPANSIBILIDADE PRESERVADA E SIMÉTRICA)',
+              },
+            ]),
+          ],
+        },
+        { key: 'SEDACAO', fields: [field('MEDICAMENTOS')] },
+        { key: 'FISIOLOGICO', fields: [field('VOLUME_URINARIO')] },
+      ],
+    };
+    app.evolutionHygiene = 'BOA HIGIENE';
+    app.evolutionInteraction = 'CONTACTUANTE E COOPERATIVO';
+    app.evolutionRespiratoryPatterns = [
+      'SEM SINAIS DE ESFORÇO RESPIRATÓRIO (EXPANSIBILIDADE PRESERVADA E SIMÉTRICA)',
+    ];
+    app.evolutionUrinaryVolume24h = '1250,5';
+    app.toggleInfusionMedication(app.evolutionSedatives[0], true);
+    app.evolutionSedatives[0].rateMlHour = '10';
+
+    expect(app.evolutionDocumentValues(template)).toMatchObject({
+      'ACOMPANHAMENTO.HIGIENE': 'BOA',
+      'NEUROLOGICO.INTERACAO': 'COOPERATIVO',
+      'RESPIRATORIO.PADRAO': ['SEM_ESFORCO'],
+      'FISIOLOGICO.VOLUME_URINARIO': 1250.5,
+      'SEDACAO.MEDICAMENTOS': [
+        expect.objectContaining({ description: 'PROPOFOL (10 MG/ML)', frequency: '10 ML/H' }),
+      ],
+    });
   });
 });

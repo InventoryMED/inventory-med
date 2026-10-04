@@ -8,11 +8,10 @@
         />
       </div>
       <div>
-        <p class="eyebrow">Gestão hospitalar</p>
-        <h1>Leitos organizados.<br />Prescrições mais simples.</h1>
-        <p class="brand-copy">
-          Uma visão clara da ocupação hospitalar para apoiar a rotina da equipe médica.
-        </p>
+        <p class="eyebrow">Seu ecossistema hospitalar</p>
+        <h1 class="login-main-title">
+          Sua gestão hospitalar<br />de uma maneira completa e eficiente.
+        </h1>
       </div>
       <div class="brand-footnote">ACESSO SEGURO • INVENTORY MED</div>
     </section>
@@ -338,8 +337,21 @@
                       >
                       <strong>{{ bed.code }}</strong>
                       @if (bed.patient) {
-                        <span class="patient-name">{{ bed.patient.name }}</span
-                        ><small
+                        <div class="patient-name-row">
+                          <span class="patient-name">{{ bed.patient.name }}</span>
+                          <button
+                            type="button"
+                            class="patient-edit-button"
+                            (click)="openPatientEditor(bed)"
+                            aria-label="Editar cadastro do paciente"
+                            title="Editar cadastro do paciente"
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" />
+                            </svg>
+                          </button>
+                        </div>
+                        <small
                           >Internado em
                           {{ bed.patient.admissionAt | date: 'dd/MM às HH:mm' }}</small
                         >
@@ -371,6 +383,14 @@
                             (click)="openTransfer(bed)"
                           >
                             Transferir paciente
+                          </button>
+                          <button
+                            type="button"
+                            class="bed-action-button bed-action-button--placeholder"
+                            disabled
+                            title="Funcionalidade em definição"
+                          >
+                            AIH
                           </button>
                         </div>
                       } @else if (bed.status === 'AVAILABLE') {
@@ -1218,15 +1238,6 @@
                   placeholder="Descreva a admissão do paciente"
                 ></textarea>
               </label>
-              <label class="evolution-field">
-                <span>Evolução</span>
-                <textarea
-                  [(ngModel)]="evolutionText"
-                  rows="6"
-                  placeholder="Registre a evolução clínica"
-                ></textarea>
-              </label>
-
               <section class="evolution-context-card" aria-labelledby="follow-up-title">
                 <header>
                   <p class="eyebrow">Identificação e acompanhamento</p>
@@ -1252,19 +1263,10 @@
                     </select>
                   </label>
                   <label>
-                    <span>Nível de consciência</span>
-                    <select [(ngModel)]="evolutionConsciousness">
+                    <span>Higiene pessoal</span>
+                    <select [(ngModel)]="evolutionHygiene">
                       <option value="">Selecione</option>
-                      @for (option of evolutionConsciousnessOptions; track option) {
-                        <option [value]="option">{{ option }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label>
-                    <span>Orientação temporoespacial</span>
-                    <select [(ngModel)]="evolutionOrientation">
-                      <option value="">Selecione</option>
-                      @for (option of evolutionOrientationOptions; track option) {
+                      @for (option of evolutionHygieneOptions; track option) {
                         <option [value]="option">{{ option }}</option>
                       }
                     </select>
@@ -1274,71 +1276,9 @@
 
               <section class="evolution-context-card" aria-labelledby="subjective-title">
                 <header>
-                  <p class="eyebrow">Subjetivo</p>
-                  <h2 id="subjective-title">Queixas e funções fisiológicas</h2>
+                  <p class="eyebrow">Avaliação geral</p>
+                  <h2 id="subjective-title">Funções fisiológicas</h2>
                 </header>
-
-                <fieldset class="evolution-check-group">
-                  <legend>Queixa principal atual</legend>
-                  <div>
-                    @for (option of evolutionChiefComplaintOptions; track option) {
-                      <label>
-                        <input
-                          type="checkbox"
-                          [checked]="hasEvolutionSelection(evolutionChiefComplaints, option)"
-                          (change)="
-                            toggleEvolutionSelection(
-                              evolutionChiefComplaints,
-                              option,
-                              $any($event.target).checked
-                            )
-                          "
-                        />
-                        <span>{{ option }}</span>
-                      </label>
-                    }
-                  </div>
-                  @if (hasEvolutionSelection(evolutionChiefComplaints, 'DOR')) {
-                    <div class="evolution-inline-details">
-                      <label>
-                        <span>Local da dor</span>
-                        <input [(ngModel)]="evolutionPainLocation" placeholder="Informe o local" />
-                      </label>
-                      <label>
-                        <span>Intensidade</span>
-                        <input
-                          [(ngModel)]="evolutionPainIntensity"
-                          inputmode="numeric"
-                          maxlength="2"
-                          placeholder="0 a 10"
-                        />
-                      </label>
-                    </div>
-                  }
-                </fieldset>
-
-                <fieldset class="evolution-check-group">
-                  <legend>Intercorrências no plantão (24h)</legend>
-                  <div>
-                    @for (option of evolutionShiftEventOptions; track option) {
-                      <label>
-                        <input
-                          type="checkbox"
-                          [checked]="hasEvolutionSelection(evolutionShiftEvents, option)"
-                          (change)="
-                            toggleEvolutionSelection(
-                              evolutionShiftEvents,
-                              option,
-                              $any($event.target).checked
-                            )
-                          "
-                        />
-                        <span>{{ option }}</span>
-                      </label>
-                    }
-                  </div>
-                </fieldset>
-
                 <div class="evolution-context-grid evolution-context-grid--three">
                   <label>
                     <span>Aceitação alimentar</span>
@@ -1367,6 +1307,19 @@
                       }
                     </select>
                   </label>
+                  @if (evolutionUrinaryElimination === 'POR SONDA VESICAL DE DEMORA (SVD)') {
+                    <label>
+                      <span>Quantidade da diurese</span>
+                      <div class="input-with-suffix">
+                        <input
+                          [(ngModel)]="evolutionUrinaryVolume24h"
+                          inputmode="decimal"
+                          placeholder="0"
+                        />
+                        <span>ML/24H</span>
+                      </div>
+                    </label>
+                  }
                   <label>
                     <span>Eliminação intestinal</span>
                     <select [(ngModel)]="evolutionIntestinalElimination">
@@ -1406,6 +1359,259 @@
                   </label>
                 </div>
               </section>
+
+              <section class="evolution-context-card" aria-labelledby="neurological-title">
+                <header>
+                  <p class="eyebrow">Avaliação neurológica</p>
+                  <h2 id="neurological-title">Neurológico</h2>
+                </header>
+                <div class="evolution-context-grid evolution-context-grid--three">
+                  <label>
+                    <span>Nível de consciência</span>
+                    <select [(ngModel)]="evolutionConsciousness">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionConsciousnessOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Orientação temporoespacial</span>
+                    <select [(ngModel)]="evolutionOrientation">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionOrientationOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Interação / contactuante</span>
+                    <select [(ngModel)]="evolutionInteraction">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionInteractionOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+                <label class="evolution-block-notes">
+                  <span>Observações neurológicas</span>
+                  <textarea
+                    [(ngModel)]="evolutionNeurological"
+                    rows="3"
+                    placeholder="Preenchimento livre"
+                  ></textarea>
+                </label>
+              </section>
+
+              <section class="evolution-context-card" aria-labelledby="sedatives-title">
+                <header>
+                  <p class="eyebrow">Terapia contínua</p>
+                  <h2 id="sedatives-title">Medicamentos sedativos</h2>
+                </header>
+                <div class="evolution-infusion-list">
+                  @for (medication of evolutionSedatives; track medication.id) {
+                    <div class="evolution-infusion-row" [class.is-selected]="medication.selected">
+                      <label class="evolution-infusion-choice">
+                        <input
+                          type="checkbox"
+                          [checked]="medication.selected"
+                          (change)="
+                            toggleInfusionMedication(medication, $any($event.target).checked)
+                          "
+                        />
+                        <span>{{ medication.label }}</span>
+                      </label>
+                      @if (medication.selected) {
+                        <label class="evolution-rate-field">
+                          <span>Vazão</span>
+                          <div class="input-with-suffix">
+                            <input
+                              [(ngModel)]="medication.rateMlHour"
+                              inputmode="decimal"
+                              placeholder="0"
+                            />
+                            <span>ML/H</span>
+                          </div>
+                        </label>
+                      }
+                    </div>
+                  }
+                </div>
+              </section>
+
+              <section class="evolution-context-card" aria-labelledby="sedation-status-title">
+                <header>
+                  <p class="eyebrow">Acompanhamento da sedação</p>
+                  <h2 id="sedation-status-title">Status e dinâmica da sedação</h2>
+                </header>
+                <label class="evolution-full-select">
+                  <span>Situação atual</span>
+                  <select [(ngModel)]="evolutionSedationStatus">
+                    <option value="">Selecione</option>
+                    @for (option of evolutionSedationStatusOptions; track option) {
+                      <option [value]="option">{{ option }}</option>
+                    }
+                  </select>
+                </label>
+              </section>
+
+              <section class="evolution-context-card" aria-labelledby="respiratory-title">
+                <header>
+                  <p class="eyebrow">Avaliação respiratória</p>
+                  <h2 id="respiratory-title">Respiratório</h2>
+                </header>
+                <div class="evolution-section-tabs" role="tablist" aria-label="Itens respiratórios">
+                  <button
+                    type="button"
+                    role="tab"
+                    [class.is-active]="evolutionRespiratoryTab === 'PATTERN'"
+                    [attr.aria-selected]="evolutionRespiratoryTab === 'PATTERN'"
+                    (click)="setRespiratoryTab('PATTERN')"
+                  >
+                    Padrão respiratório
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    [class.is-active]="evolutionRespiratoryTab === 'SUPPORT'"
+                    [attr.aria-selected]="evolutionRespiratoryTab === 'SUPPORT'"
+                    (click)="setRespiratoryTab('SUPPORT')"
+                  >
+                    Via aérea e suporte ventilatório
+                  </button>
+                </div>
+                @if (evolutionRespiratoryTab === 'PATTERN') {
+                  <fieldset class="evolution-check-group evolution-check-group--compact">
+                    <legend>Padrão respiratório</legend>
+                    <div>
+                      @for (option of evolutionRespiratoryPatternOptions; track option) {
+                        <label>
+                          <input
+                            type="checkbox"
+                            [checked]="hasEvolutionSelection(evolutionRespiratoryPatterns, option)"
+                            (change)="
+                              toggleEvolutionSelection(
+                                evolutionRespiratoryPatterns,
+                                option,
+                                $any($event.target).checked
+                              )
+                            "
+                          />
+                          <span>{{ option }}</span>
+                        </label>
+                      }
+                    </div>
+                  </fieldset>
+                } @else {
+                  <label class="evolution-full-select">
+                    <span>Via aérea e suporte ventilatório</span>
+                    <select [(ngModel)]="evolutionVentilatorySupport">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionVentilatorySupportOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                }
+                <label class="evolution-block-notes">
+                  <span>Observações respiratórias</span>
+                  <textarea
+                    [(ngModel)]="evolutionRespiratoryExam"
+                    rows="3"
+                    placeholder="Preenchimento livre"
+                  ></textarea>
+                </label>
+              </section>
+
+              <section class="evolution-context-card" aria-labelledby="cardiovascular-title">
+                <header>
+                  <p class="eyebrow">Avaliação cardiovascular</p>
+                  <h2 id="cardiovascular-title">Status hemodinâmico e cardiovascular</h2>
+                </header>
+                <div class="evolution-context-grid evolution-context-grid--two">
+                  <label>
+                    <span>Estabilidade hemodinâmica geral</span>
+                    <select [(ngModel)]="evolutionHemodynamicStability">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionHemodynamicStabilityOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    <span>Perfil pressórico</span>
+                    <select [(ngModel)]="evolutionPressureProfile">
+                      <option value="">Selecione</option>
+                      @for (option of evolutionPressureProfileOptions; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+                <label class="evolution-standalone-check">
+                  <input type="checkbox" [(ngModel)]="evolutionPamWithinTarget" />
+                  <span>Pressão Arterial Média (PAM) dentro do alvo (PAM ≥ 65 MMHG)</span>
+                </label>
+
+                <fieldset class="evolution-vasoactive-group">
+                  <legend>Suporte vasoativo / inotrópico (DVA)</legend>
+                  <label class="evolution-standalone-check">
+                    <input
+                      type="checkbox"
+                      [checked]="evolutionNoVasoactiveDrugs"
+                      (change)="toggleNoVasoactiveDrugs($any($event.target).checked)"
+                    />
+                    <span>Sem uso de drogas vasoativas</span>
+                  </label>
+                  <div class="evolution-infusion-list">
+                    @for (medication of evolutionVasoactiveMedications; track medication.id) {
+                      <div class="evolution-infusion-row" [class.is-selected]="medication.selected">
+                        <label class="evolution-infusion-choice">
+                          <input
+                            type="checkbox"
+                            [checked]="medication.selected"
+                            (change)="
+                              toggleVasoactiveMedication(medication, $any($event.target).checked)
+                            "
+                          />
+                          <span>{{ medication.label }}</span>
+                        </label>
+                        @if (medication.selected) {
+                          <label class="evolution-rate-field">
+                            <span>Vazão</span>
+                            <div class="input-with-suffix">
+                              <input
+                                [(ngModel)]="medication.rateMlHour"
+                                inputmode="decimal"
+                                placeholder="0"
+                              />
+                              <span>ML/H</span>
+                            </div>
+                          </label>
+                        }
+                      </div>
+                    }
+                  </div>
+                </fieldset>
+                <label class="evolution-block-notes">
+                  <span>Observações cardiovasculares</span>
+                  <textarea
+                    [(ngModel)]="evolutionCardiovascularExam"
+                    rows="3"
+                    placeholder="Preenchimento livre"
+                  ></textarea>
+                </label>
+              </section>
+
+              <label class="evolution-field evolution-field--featured">
+                <span>Evolução</span>
+                <textarea
+                  [(ngModel)]="evolutionText"
+                  rows="6"
+                  placeholder="Registre a evolução clínica"
+                ></textarea>
+              </label>
 
               <section class="evolution-physical-exam" aria-labelledby="physical-exam-title">
                 <header>
@@ -1531,30 +1737,6 @@
                 </div>
 
                 <div class="evolution-system-grid">
-                  <label>
-                    <span>Neurológico</span>
-                    <textarea
-                      [(ngModel)]="evolutionNeurological"
-                      rows="3"
-                      placeholder="Preencha o exame neurológico"
-                    ></textarea>
-                  </label>
-                  <label>
-                    <span>AR</span>
-                    <textarea
-                      [(ngModel)]="evolutionRespiratoryExam"
-                      rows="3"
-                      placeholder="Preencha o aparelho respiratório"
-                    ></textarea>
-                  </label>
-                  <label>
-                    <span>ACV</span>
-                    <textarea
-                      [(ngModel)]="evolutionCardiovascularExam"
-                      rows="3"
-                      placeholder="Preencha o aparelho cardiovascular"
-                    ></textarea>
-                  </label>
                   <label>
                     <span>Abdome</span>
                     <textarea
@@ -1685,10 +1867,15 @@
               </label>
 
               <div class="evolution-actions">
-                <span>Revise os dados antes de imprimir.</span>
-                <button type="button" class="primary-button" (click)="printEvolution()">
-                  Imprimir evolução
-                </button>
+                <span>Revise os dados antes de criar ou imprimir.</span>
+                <div>
+                  <button type="button" class="ghost-button" (click)="printEvolution()">
+                    Imprimir evolução
+                  </button>
+                  <button type="button" class="primary-button" (click)="saveEvolution()">
+                    Criar evolução
+                  </button>
+                </div>
               </div>
             </section>
           </div>
@@ -1773,10 +1960,6 @@
                 {{ evolutionAdmission || ' ' }}
               </div>
             </section>
-            <section class="evolution-print-section">
-              <h2>Evolução</h2>
-              <div class="evolution-print-text">{{ evolutionText || ' ' }}</div>
-            </section>
             <section class="evolution-print-section evolution-print-follow-up">
               <h2>Identificação e acompanhamento</h2>
               <div class="evolution-print-clinical-grid">
@@ -1786,30 +1969,21 @@
                   {{ evolutionAccompaniment || 'NÃO INFORMADO' }}
                 </p>
                 <p>
-                  <strong>Nível de consciência:</strong>
-                  {{ evolutionConsciousness || 'NÃO INFORMADO' }}
-                </p>
-                <p>
-                  <strong>Orientação temporoespacial:</strong>
-                  {{ evolutionOrientation || 'NÃO INFORMADO' }}
+                  <strong>Higiene pessoal:</strong>
+                  {{ evolutionHygiene || 'NÃO INFORMADO' }}
                 </p>
               </div>
             </section>
             <section class="evolution-print-section evolution-print-subjective">
-              <h2>Queixas e funções fisiológicas</h2>
+              <h2>Funções fisiológicas</h2>
               <div class="evolution-print-clinical-grid">
-                <p><strong>Queixa principal:</strong> {{ formattedEvolutionChiefComplaints() }}</p>
-                <p>
-                  <strong>Intercorrências (24h):</strong>
-                  {{ evolutionShiftEvents.join('; ') || 'NÃO INFORMADO' }}
-                </p>
                 <p>
                   <strong>Aceitação alimentar:</strong>
                   {{ evolutionFoodAcceptance || 'NÃO INFORMADO' }}
                 </p>
                 <p>
                   <strong>Eliminação urinária:</strong>
-                  {{ evolutionUrinaryElimination || 'NÃO INFORMADO' }}
+                  {{ formattedUrinaryElimination() }}
                 </p>
                 <p>
                   <strong>Aspecto da urina:</strong>
@@ -1830,6 +2004,86 @@
               </div>
             </section>
             <section class="evolution-print-section">
+              <h2>Neurológico</h2>
+              <div class="evolution-print-clinical-grid">
+                <p>
+                  <strong>Nível de consciência:</strong>
+                  {{ evolutionConsciousness || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Orientação temporoespacial:</strong>
+                  {{ evolutionOrientation || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Interação / contactuante:</strong>
+                  {{ evolutionInteraction || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Observações:</strong>
+                  {{ evolutionNeurological || 'NÃO INFORMADO' }}
+                </p>
+              </div>
+            </section>
+            <section class="evolution-print-section">
+              <h2>Sedação</h2>
+              <div class="evolution-print-clinical-grid">
+                <p>
+                  <strong>Medicamentos sedativos:</strong>
+                  {{ formattedInfusionMedications(evolutionSedatives) }}
+                </p>
+                <p>
+                  <strong>Status e dinâmica:</strong>
+                  {{ evolutionSedationStatus || 'NÃO INFORMADO' }}
+                </p>
+              </div>
+            </section>
+            <section class="evolution-print-section">
+              <h2>Respiratório</h2>
+              <div class="evolution-print-clinical-grid">
+                <p>
+                  <strong>Padrão respiratório:</strong>
+                  {{ evolutionRespiratoryPatterns.join('; ') || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Via aérea e suporte ventilatório:</strong>
+                  {{ evolutionVentilatorySupport || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Observações:</strong>
+                  {{ evolutionRespiratoryExam || 'NÃO INFORMADO' }}
+                </p>
+              </div>
+            </section>
+            <section class="evolution-print-section">
+              <h2>Status hemodinâmico e cardiovascular</h2>
+              <div class="evolution-print-clinical-grid">
+                <p>
+                  <strong>Estabilidade geral:</strong>
+                  {{ evolutionHemodynamicStability || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Perfil pressórico:</strong>
+                  {{ evolutionPressureProfile || 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>PAM dentro do alvo:</strong>
+                  {{ evolutionPamWithinTarget ? 'SIM (PAM ≥ 65 MMHG)' : 'NÃO INFORMADO' }}
+                </p>
+                <p>
+                  <strong>Suporte vasoativo / inotrópico:</strong>
+                  {{ formattedVasoactiveSupport() }}
+                </p>
+                <p>
+                  <strong>Observações:</strong>
+                  {{ evolutionCardiovascularExam || 'NÃO INFORMADO' }}
+                </p>
+              </div>
+            </section>
+            <section class="evolution-print-section">
+              <h2>Evolução</h2>
+              <div class="evolution-print-text">{{ evolutionText || ' ' }}</div>
+            </section>
+            <section class="evolution-print-section">
               <h2>Exame físico</h2>
               <div class="evolution-print-physical">
                 <p>
@@ -1848,9 +2102,6 @@
                   {{ evolutionColoring || '________________' }};
                   {{ evolutionHydration || '________________' }}.
                 </p>
-                <p><strong>NEUROLÓGICO:</strong> {{ evolutionNeurological || ' ' }}</p>
-                <p><strong>AR:</strong> {{ evolutionRespiratoryExam || ' ' }}</p>
-                <p><strong>ACV:</strong> {{ evolutionCardiovascularExam || ' ' }}</p>
                 <p><strong>ABDOME:</strong> {{ evolutionAbdomen || ' ' }}</p>
                 <p><strong>MMII:</strong> {{ evolutionLowerLimbs || ' ' }}</p>
                 <p>
@@ -1909,8 +2160,8 @@
   }
 }
 
-@if (admissionOpen() && selectedBed(); as bed) {
-  <div class="modal-backdrop" (click)="closeAdmission()">
+@if ((admissionOpen() || patientEditOpen()) && selectedBed(); as bed) {
+  <div class="modal-backdrop" (click)="closePatientModal()">
     <section
       class="modal-card modal-card--wide"
       role="dialog"
@@ -1920,17 +2171,28 @@
     >
       <header class="modal-header">
         <div>
-          <p class="eyebrow">Admissão</p>
-          <h2 id="admission-title">Admitir paciente no {{ bed.code }}</h2>
+          <p class="eyebrow">{{ patientEditOpen() ? 'Cadastro do paciente' : 'Admissão' }}</p>
+          <h2 id="admission-title">
+            {{ patientEditOpen() ? 'Editar paciente' : 'Admitir paciente no ' + bed.code }}
+          </h2>
         </div>
-        <button type="button" class="close-button" (click)="closeAdmission()" aria-label="Fechar">
+        <button
+          type="button"
+          class="close-button"
+          (click)="closePatientModal()"
+          aria-label="Fechar"
+        >
           ×
         </button>
       </header>
       <p class="modal-description">
-        Preencha os dados do paciente. A prescrição poderá ser aberta depois pelo botão do leito.
+        {{
+          patientEditOpen()
+            ? 'Atualize somente os dados necessários. A alteração será registrada na auditoria da unidade.'
+            : 'Preencha os dados do paciente. A prescrição poderá ser aberta depois pelo botão do leito.'
+        }}
       </p>
-      <form (ngSubmit)="admitPatient()" class="admission-form">
+      <form (ngSubmit)="submitPatientForm()" class="admission-form">
         <label class="form-field form-field--full"
           ><span>Nome completo</span
           ><input
@@ -1995,8 +2257,10 @@
             placeholder="Informe as alergias, se houver"
         /></label>
         <div class="modal-actions form-field--full">
-          <button type="button" class="ghost-button" (click)="closeAdmission()">Cancelar</button
-          ><button type="submit" class="primary-button">Admitir paciente</button>
+          <button type="button" class="ghost-button" (click)="closePatientModal()">Cancelar</button
+          ><button type="submit" class="primary-button">
+            {{ patientEditOpen() ? 'Salvar alterações' : 'Admitir paciente' }}
+          </button>
         </div>
       </form>
     </section>
