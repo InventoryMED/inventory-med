@@ -57,6 +57,11 @@ sudo bash infra/scripts/enable-tenant-provisioning.sh
 O script solicita a senha atual de `sa` de forma oculta, gera a senha técnica e a chave
 AES-256, atualiza o arquivo protegido, reinicia a API e verifica sua saúde.
 
+Na VPS, o arquivo validado foi executado a partir de
+`/home/gabriel/enable-tenant-provisioning.sh`. O SQL Server confirmou o contexto
+`master`, e o script concluiu informando que o provisionamento estava habilitado e a
+API saudável. Nenhum valor secreto foi exibido ou registrado.
+
 ## Serviços afetados
 
 - `inventory-med-api`: reiniciado uma vez depois da configuração;
@@ -77,9 +82,13 @@ protegido e nunca registrados no Git ou no terminal.
 ## Validação
 
 - ausência inicial das configurações confirmada;
-- análise sintática do script;
-- verificação automática das duas permissões do login técnico;
-- saúde da API verificada automaticamente após o reinício;
+- análise sintática do script executada com `bash -n` na VPS;
+- SHA-256 do arquivo enviado idêntico ao arquivo versionado;
+- verificação automática das duas permissões do login técnico aprovada;
+- saúde da API verificada automaticamente após o reinício e externamente com resultado
+  `UP`;
+- serviços `inventory-med-api` e `mssql-server` ativos;
+- porta SQL `1433` escutando somente em `127.0.0.1` e inacessível publicamente;
 - criação dos bancos hospitalares pelo painel: pendente da execução pelo responsável.
 
 ## Recuperação
@@ -94,6 +103,5 @@ execução controlada rotacionará sua senha.
 
 ## Pendências
 
-- executar a ativação na VPS;
 - reprovisionar os dois hospitais legados pelo painel;
 - validar que cada hospital recebe banco, login e migrações independentes.

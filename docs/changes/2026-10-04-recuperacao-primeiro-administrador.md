@@ -73,10 +73,12 @@ Nenhum valor secreto é registrado no repositório ou impresso pelo script.
 ## Validação
 
 - consulta inicial confirmou ausência de `ADMIN_SISTEMA`;
-- análise sintática do script;
+- análise sintática do script executada na VPS;
 - confirmação de serviço saudável feita automaticamente em cada reinício;
 - confirmação automática de uma conta ativa com o papel `ADMIN_SISTEMA`;
-- confirmação de login e troca de senha: pendente da execução na VPS pelo responsável.
+- primeiro login, troca obrigatória de senha e abertura do painel do administrador geral
+  confirmados pelo responsável;
+- painel confirmou uma conta `ADMIN_SISTEMA` ativa.
 
 ## Recuperação
 
@@ -90,4 +92,4 @@ o papel administrativo antes de repetir qualquer recuperação.
 
 ## Pendências
 
-- validar o primeiro login e a troca obrigatória da senha na interface pública.
+- nenhuma.
