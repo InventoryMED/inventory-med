@@ -150,6 +150,23 @@ O e-mail e a senha temporária são solicitados no terminal. A senha não aparec
 primeiro login. Não execute novamente `configure-vps-environment.sh`, pois esse script
 é destinado à preparação inicial completa do banco e das credenciais técnicas.
 
+### Habilitar posteriormente os bancos por hospital
+
+Se uma instalação anterior já possui o banco central, mas não possui as variáveis de
+provisionamento, não execute novamente a configuração inicial completa. Use:
+
+```bash
+sudo bash infra/scripts/enable-tenant-provisioning.sh
+```
+
+O script solicita a senha de `sa` somente para criar ou atualizar o login técnico
+restrito. A aplicação continuará sem usar `sa`. A senha técnica e a chave de proteção
+das credenciais hospitalares são geradas na própria VPS e gravadas apenas em
+`/etc/inventory-med/api.env`, com permissão `600`.
+
+Por segurança, o procedimento é interrompido se já existirem credenciais hospitalares
+armazenadas, pois nesse caso a chave anterior precisa ser preservada.
+
 ## Diagnóstico
 
 ```bash
