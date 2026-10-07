@@ -39,15 +39,21 @@ public class MedicalWorkspaceController {
     private final HospitalSessionContext sessionContext;
     private final MedicalWorkspaceService workspaceService;
     private final ClinicalDocumentService documentService;
+    private final DietPrescriptionService dietPrescriptionService;
+    private final NursingCarePrescriptionService nursingCarePrescriptionService;
 
     public MedicalWorkspaceController(
         HospitalSessionContext sessionContext,
         MedicalWorkspaceService workspaceService,
-        ClinicalDocumentService documentService
+        ClinicalDocumentService documentService,
+        DietPrescriptionService dietPrescriptionService,
+        NursingCarePrescriptionService nursingCarePrescriptionService
     ) {
         this.sessionContext = sessionContext;
         this.workspaceService = workspaceService;
         this.documentService = documentService;
+        this.dietPrescriptionService = dietPrescriptionService;
+        this.nursingCarePrescriptionService = nursingCarePrescriptionService;
     }
 
     @GetMapping("/workspace")
@@ -118,6 +124,36 @@ public class MedicalWorkspaceController {
     ) {
         HospitalSessionContext.Scope scope = sessionContext.require(session, MEDICAL_ROLES);
         return documentService.publishedTemplates(scope.hospitalId(), kind);
+    }
+
+    @GetMapping("/diets/catalog")
+    public DietPrescriptionCatalog dietCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return dietPrescriptionService.catalog();
+    }
+
+    @PostMapping("/diets/preview")
+    public DietPrescriptionResponse previewDiet(
+        HttpSession session,
+        @Valid @RequestBody DietPrescriptionRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return dietPrescriptionService.preview(body);
+    }
+
+    @GetMapping("/nursing-care/catalog")
+    public NursingCarePrescriptionCatalog nursingCareCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return nursingCarePrescriptionService.catalog();
+    }
+
+    @PostMapping("/nursing-care/preview")
+    public NursingCarePrescriptionResponse previewNursingCare(
+        HttpSession session,
+        @Valid @RequestBody NursingCarePrescriptionRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return nursingCarePrescriptionService.preview(body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")

@@ -11,5 +11,7 @@ public enum FormFieldType {
     MULTI_SELECT,
     BOOLEAN,
     MEDICATION_LINE,
-    CLINICAL_TABLE
+    CLINICAL_TABLE,
+    DIET_PLAN,
+    NURSING_CARE_PLAN
 }

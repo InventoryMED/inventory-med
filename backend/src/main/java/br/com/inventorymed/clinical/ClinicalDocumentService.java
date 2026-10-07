@@ -27,17 +27,23 @@ public class ClinicalDocumentService {
     private final TenantJdbcExecutor tenantJdbc;
     private final FormTemplateService templateService;
     private final ClinicalAuditWriter auditWriter;
+    private final DietPrescriptionService dietPrescriptionService;
+    private final NursingCarePrescriptionService nursingCarePrescriptionService;
     private final ObjectMapper objectMapper;
 
     public ClinicalDocumentService(
         TenantJdbcExecutor tenantJdbc,
         FormTemplateService templateService,
         ClinicalAuditWriter auditWriter,
+        DietPrescriptionService dietPrescriptionService,
+        NursingCarePrescriptionService nursingCarePrescriptionService,
         ObjectMapper objectMapper
     ) {
         this.tenantJdbc = tenantJdbc;
         this.templateService = templateService;
         this.auditWriter = auditWriter;
+        this.dietPrescriptionService = dietPrescriptionService;
+        this.nursingCarePrescriptionService = nursingCarePrescriptionService;
         this.objectMapper = objectMapper;
     }
 
@@ -206,13 +212,23 @@ public class ClinicalDocumentService {
                 throw new BusinessValidationException("Preencha o campo obrigatório: " + field.label());
             }
             if (!empty(value)) {
-                validateType(field, value);
-                normalized.put(key, value);
+                normalized.put(key, normalizedValue(field, value));
             }
         });
         requireContinuousInfusionRates(normalized, "SEDACAO.MEDICAMENTOS", false);
         requireContinuousInfusionRates(normalized, "CARDIOVASCULAR.DROGAS_VASOATIVAS", true);
         return normalized;
+    }
+
+    private Object normalizedValue(FormTemplateDefinition.Field field, Object value) {
+        if (field.type() == FormFieldType.DIET_PLAN) {
+            return dietPrescriptionService.normalizeForClinicalDocument(value);
+        }
+        if (field.type() == FormFieldType.NURSING_CARE_PLAN) {
+            return nursingCarePrescriptionService.normalizeForClinicalDocument(value);
+        }
+        validateType(field, value);
+        return value;
     }
 
     private void requireContinuousInfusionRates(

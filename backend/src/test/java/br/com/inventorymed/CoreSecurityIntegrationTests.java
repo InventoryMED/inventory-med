@@ -723,7 +723,18 @@ class CoreSecurityIntegrationTests {
                         {
                           "templateVersionId":"%s",
                           "kind":"PRESCRIPTION",
-                          "values":{},
+                          "values":{
+                            "ORIENTACOES.DIETA":{
+                              "type":"ORAL",
+                              "oral":{
+                                "consistency":"BRANDA",
+                                "restrictions":["HIPOSSÓDICA (HAS / CARDIOLOGIA)"]
+                              },
+                              "enteral":null,
+                              "parenteral":null,
+                              "fasting":null
+                            }
+                          },
                           "finalizeDocument":true
                         }
                         """.formatted(templateVersionId)
@@ -731,6 +742,10 @@ class CoreSecurityIntegrationTests {
             )
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.status").value("FINALIZED"))
+            .andExpect(
+                jsonPath("$.values['ORIENTACOES.DIETA'].structuredDiet.summaryLine")
+                    .value("DIETA ORAL BRANDA, HIPOSSÓDICA (HAS / CARDIOLOGIA).")
+            )
             .andReturn();
         UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");
 

@@ -1,12 +1,23 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../environments/environment';
 import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
 import { AdministrationComponent } from './features/administration/administration.component';
-import { ClinicalFormKind, ClinicalFormTemplate } from './features/medical/medical.models';
+import { DietPrescriptionComponent } from './features/medical/diet-prescription.component';
+import { NursingCarePrescriptionComponent } from './features/medical/nursing-care-prescription.component';
+import {
+  ClinicalFormKind,
+  ClinicalFormTemplate,
+  DietPrescriptionDraft,
+  DietPrescriptionResponse,
+  DietPrescriptionSelection,
+  NursingCarePrescriptionDraft,
+  NursingCarePrescriptionResponse,
+  NursingCarePrescriptionSelection,
+} from './features/medical/medical.models';
 import { MedicalService } from './features/medical/medical.service';
 import {
   AppScreen,
@@ -91,15 +102,6 @@ const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
     name: 'BOX DE EMERGÊNCIA',
     description: 'ATENDIMENTO EM BOX DE EMERGÊNCIA',
   },
-];
-
-const DIET_PRESETS = [
-  'DIETA LIVRE',
-  'DIETA LÍQUIDA',
-  'DIETA PASTOSA',
-  'DIETA SNE',
-  'DIETA PARA HAS',
-  'DIETA PARA DM',
 ];
 
 const DXT_GUIDANCE = {
@@ -209,7 +211,13 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
 ];
 
 @Component({
-  imports: [CommonModule, FormsModule, AdministrationComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AdministrationComponent,
+    DietPrescriptionComponent,
+    NursingCarePrescriptionComponent,
+  ],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
@@ -231,6 +239,10 @@ export class App implements OnInit {
   protected readonly toast = signal<string | null>(null);
   protected readonly authBusy = signal(false);
   protected readonly authError = signal<string | null>(null);
+  protected readonly dietPreview = signal<DietPrescriptionResponse | null>(null);
+  private readonly dietComponent = viewChild(DietPrescriptionComponent);
+  protected readonly nursingCarePreview = signal<NursingCarePrescriptionResponse | null>(null);
+  private readonly nursingCareComponent = viewChild(NursingCarePrescriptionComponent);
 
   protected loginEmail = '';
   protected loginPassword = '';
@@ -247,6 +259,8 @@ export class App implements OnInit {
   protected prescriptionComorbidities = '';
   protected prescriptionAllergies = '';
   protected prescriptionDiet = '';
+  protected dietDraft: DietPrescriptionDraft = this.emptyDietDraft();
+  protected nursingCareDraft: NursingCarePrescriptionDraft = this.emptyNursingCareDraft();
   protected evolutionDiet = '';
   protected evolutionAdmission = '';
   protected evolutionText = '';
@@ -308,7 +322,6 @@ export class App implements OnInit {
   protected medicationGroups: MedicationOrderGroup[] = [];
   protected selectedTemplateId: PrescriptionTemplateId | '' = '';
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
-  protected readonly dietPresets = DIET_PRESETS;
   protected readonly evolutionPositionOptions = [
     'ACAMADO EM DECÚBITO DORSAL',
     'SENTADO NA POLTRONA',
@@ -1106,6 +1119,10 @@ export class App implements OnInit {
   protected async savePrescription(): Promise<void> {
     const bedId = this.selectedBedId();
     if (!(await this.persistPatientChanges(false))) return;
+    const dietIsValid = await this.dietComponent()?.validateAndPreview();
+    if (dietIsValid === false) return;
+    const nursingCareIsValid = await this.nursingCareComponent()?.validateAndPreview();
+    if (nursingCareIsValid === false) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
     const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
     const validVitalSigns = this.vitalSignRows.filter(
@@ -1125,7 +1142,8 @@ export class App implements OnInit {
         !validMedicationSections.length &&
         !observations.length &&
         !abnormalities.length &&
-        !this.prescriptionDiet.trim())
+        !this.dietDraft.type &&
+        !this.nursingCareComponent()?.hasSelection())
     ) {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
@@ -1192,8 +1210,15 @@ export class App implements OnInit {
     await this.persistPatientChanges(true);
   }
 
-  protected selectDiet(diet: string): void {
-    this.prescriptionDiet = diet;
+  protected updateDietSelection(selection: DietPrescriptionSelection): void {
+    this.dietDraft = selection.draft;
+    this.dietPreview.set(selection.response);
+    this.prescriptionDiet = selection.response?.structuredDiet.summaryLine ?? '';
+  }
+
+  protected updateNursingCareSelection(selection: NursingCarePrescriptionSelection): void {
+    this.nursingCareDraft = selection.draft;
+    this.nursingCarePreview.set(selection.response);
   }
 
   protected prescriptionItemCount(prescription: Prescription): number {
@@ -1429,7 +1454,10 @@ export class App implements OnInit {
     abnormalities: string[],
   ): Record<string, unknown> {
     const values: Record<string, unknown> = {};
-    if (this.prescriptionDiet.trim()) values['ORIENTACOES.DIETA'] = this.prescriptionDiet.trim();
+    if (this.dietDraft.type) values['ORIENTACOES.DIETA'] = this.dietDraft;
+    if (this.nursingCareComponent()?.hasSelection()) {
+      values['CUIDADOS_ENFERMAGEM.CUIDADOS'] = this.nursingCareDraft;
+    }
 
     const signals = vitalSigns.find((row) => row.description === 'SINAIS VITAIS');
     if (signals) values['ORIENTACOES.SINAIS_VITAIS'] = [this.medicationDocumentRow(signals)];
@@ -1504,6 +1532,10 @@ export class App implements OnInit {
   private preparePrescription(patient: Patient): void {
     this.preparePatientForm(patient);
     this.prescriptionDiet = '';
+    this.dietDraft = this.emptyDietDraft();
+    this.dietPreview.set(null);
+    this.nursingCareDraft = this.emptyNursingCareDraft();
+    this.nursingCarePreview.set(null);
     this.observationRows = [];
     this.abnormalityRows = [];
     this.vitalSignRows = [];
@@ -1512,6 +1544,48 @@ export class App implements OnInit {
     this.medicationGroups = [];
     this.selectedTemplateId = '';
     this.prescriptionReady.set(false);
+  }
+
+  private emptyDietDraft(): DietPrescriptionDraft {
+    return {
+      type: null,
+      oral: { consistency: '', restrictions: [] },
+      enteral: {
+        accessRoute: '',
+        infusionRegimen: '',
+        formulaType: '',
+        rateMlHour: null,
+        bolusVolumeMl: null,
+        bolusFrequency: '',
+        tubeFlushMl: null,
+        flushInterval: '',
+      },
+      parenteral: {
+        accessRoute: '',
+        preparationType: '',
+        totalVolumeMl: null,
+        rateMlHour: null,
+        totalCaloriesKcalDay: null,
+        proteinGoalGramsKgDay: null,
+        gastrointestinalFailureJustification: '',
+      },
+      fasting: { reason: '', reassessment: '' },
+    };
+  }
+
+  private emptyNursingCareDraft(): NursingCarePrescriptionDraft {
+    return {
+      positioning: { headPosition: '', repositioningFrequency: '', pressureProtection: [] },
+      hygieneSkin: { bath: '', oralHygiene: '', skinCare: [] },
+      dressingsDrains: {
+        catheterDressing: '',
+        acuteWoundCare: '',
+        complexWoundCoverage: '',
+        dressingChangeFrequency: '',
+        drainCare: [],
+      },
+      procedures: { airwaySuction: '', deviceCare: [], fluidBalance: '' },
+    };
   }
 
   private prepareEvolution(patient: Patient): void {

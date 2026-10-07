@@ -1,0 +1,254 @@
+<section class="care-field" [class.print-empty-section]="!hasSelection()">
+  <header class="care-header">
+    <div>
+      <p class="eyebrow">SEGURANÇA E CONTINUIDADE ASSISTENCIAL</p>
+      <h2>CUIDADOS DE ENFERMAGEM</h2>
+      <p>SELECIONE SOMENTE OS CUIDADOS INDICADOS PARA ESTE PACIENTE.</p>
+    </div>
+    @if (hasSelection()) {
+      <button type="button" class="ghost-button" (click)="clear()">LIMPAR CUIDADOS</button>
+    }
+  </header>
+
+  @if (busy() && !catalog()) {
+    <p class="care-state">CARREGANDO CATÁLOGO DE CUIDADOS...</p>
+  } @else if (catalog(); as options) {
+    <form [formGroup]="form" class="care-groups">
+      <fieldset formGroupName="positioning">
+        <legend><span>01</span> POSICIONAMENTO E DECÚBITO</legend>
+        <div class="care-grid">
+          <label class="care-control">
+            <span>CABECEIRA</span>
+            <select formControlName="headPosition">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.headPositions; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="care-control">
+            <span>MUDANÇA DE DECÚBITO</span>
+            <select formControlName="repositioningFrequency">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.repositioningFrequencies; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="care-checks">
+          <strong>PROTEÇÃO DE PROEMINÊNCIAS ÓSSEAS</strong>
+          @for (option of options.pressureProtection; track option) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="selected(form.controls.positioning.controls.pressureProtection, option)"
+                (change)="
+                  toggle(
+                    form.controls.positioning.controls.pressureProtection,
+                    option,
+                    $any($event.target).checked
+                  )
+                "
+              />
+              <span>{{ option }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <fieldset formGroupName="hygieneSkin">
+        <legend><span>02</span> HIGIENE, CONFORTO E PELE</legend>
+        <div class="care-grid">
+          <label class="care-control">
+            <span>BANHO</span>
+            <select formControlName="bath">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.baths; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="care-control">
+            <span>HIGIENE ORAL</span>
+            <select formControlName="oralHygiene">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.oralHygiene; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="care-checks">
+          <strong>CUIDADOS COM A PELE</strong>
+          @for (option of options.skinCare; track option) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="selected(form.controls.hygieneSkin.controls.skinCare, option)"
+                (change)="
+                  toggle(
+                    form.controls.hygieneSkin.controls.skinCare,
+                    option,
+                    $any($event.target).checked
+                  )
+                "
+              />
+              <span>{{ option }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <fieldset formGroupName="dressingsDrains">
+        <legend><span>03</span> CURATIVOS, FERIDAS E DRENOS</legend>
+        <div class="care-grid">
+          <label class="care-control care-control--wide">
+            <span>CURATIVO DE INSERÇÃO DE CATETER</span>
+            <select formControlName="catheterDressing">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.catheterDressings; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="care-control care-control--wide">
+            <span>FERIDA CIRÚRGICA / AGUDA</span>
+            <select formControlName="acuteWoundCare">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.acuteWoundCare; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="care-control">
+            <span>COBERTURA DE LPP / FERIDA COMPLEXA</span>
+            <select formControlName="complexWoundCoverage">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.complexWoundCoverages; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="care-control">
+            <span>FREQUÊNCIA DE TROCA</span>
+            <select formControlName="dressingChangeFrequency">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.dressingChangeFrequencies; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="care-checks">
+          <strong>CUIDADOS COM DRENOS</strong>
+          @for (option of options.drainCare; track option) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="selected(form.controls.dressingsDrains.controls.drainCare, option)"
+                (change)="
+                  toggle(
+                    form.controls.dressingsDrains.controls.drainCare,
+                    option,
+                    $any($event.target).checked
+                  )
+                "
+              />
+              <span>{{ option }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <fieldset formGroupName="procedures">
+        <legend><span>04</span> PROCEDIMENTOS E MANUTENÇÃO DE DISPOSITIVOS</legend>
+        <div class="care-grid">
+          <label class="care-control">
+            <span>ASPIRAÇÃO DE VIAS AÉREAS (TOT / TQT)</span>
+            <select formControlName="airwaySuction">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.airwaySuction; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="care-control">
+            <span>BALANÇO HÍDRICO E MENSURAÇÕES</span>
+            <select formControlName="fluidBalance">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.fluidBalance; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="care-checks care-checks--two-columns">
+          <strong>MANUTENÇÃO DE DISPOSITIVOS</strong>
+          @for (option of options.deviceCare; track option) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="selected(form.controls.procedures.controls.deviceCare, option)"
+                (change)="
+                  toggle(
+                    form.controls.procedures.controls.deviceCare,
+                    option,
+                    $any($event.target).checked
+                  )
+                "
+              />
+              <span>{{ option }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+    </form>
+
+    <div class="care-actions">
+      <button type="button" class="primary-button" [disabled]="busy()" (click)="generatePreview()">
+        {{ busy() ? 'VALIDANDO...' : 'GERAR E REVISAR CUIDADOS' }}
+      </button>
+      <span>O ITEM SÓ SERÁ INCLUÍDO APÓS A VALIDAÇÃO DOS CAMPOS.</span>
+    </div>
+  }
+
+  @if (error()) {
+    <p class="care-error" role="alert">{{ error() }}</p>
+  }
+  @if (preview(); as result) {
+    <section class="care-preview" aria-label="PRÉVIA DOS CUIDADOS DE ENFERMAGEM">
+      <div class="care-preview-clinical">
+        <span>RESUMO PARA A PRESCRIÇÃO</span>
+        <strong>{{ result.structuredCare.summaryLine }}</strong>
+        <pre>{{ result.structuredCare.prescriptionDetails }}</pre>
+      </div>
+      <div class="care-audit">
+        <div>
+          <span>ITENS PARA CONFERÊNCIA</span>
+          @if (result.billingAudit.itemsForReview.length) {
+            <ul>
+              @for (item of result.billingAudit.itemsForReview; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          } @else {
+            <p>NENHUM ITEM ESPECÍFICO GERADO.</p>
+          }
+        </div>
+        <div>
+          <span>QUALIDADE E SEGURANÇA</span>
+          @if (result.billingAudit.qualitySafetyIndicators.length) {
+            <ul>
+              @for (item of result.billingAudit.qualitySafetyIndicators; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          } @else {
+            <p>NENHUM ALERTA ESPECÍFICO GERADO.</p>
+          }
+        </div>
+      </div>
+    </section>
+  }
+</section>

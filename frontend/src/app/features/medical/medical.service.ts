@@ -5,8 +5,14 @@ import { environment } from '../../../environments/environment';
 import {
   ClinicalFormKind,
   ClinicalFormTemplate,
+  DietPrescriptionCatalog,
+  DietPrescriptionDraft,
+  DietPrescriptionResponse,
   MedicalAdmission,
   MedicalWorkspace,
+  NursingCarePrescriptionCatalog,
+  NursingCarePrescriptionDraft,
+  NursingCarePrescriptionResponse,
 } from './medical.models';
 
 @Injectable({ providedIn: 'root' })
@@ -47,6 +53,33 @@ export class MedicalService {
       this.http.get<ClinicalFormTemplate[]>(`${this.baseUrl}/form-templates`, {
         params: { kind },
       }),
+    );
+  }
+
+  dietCatalog(): Promise<DietPrescriptionCatalog> {
+    return firstValueFrom(this.http.get<DietPrescriptionCatalog>(`${this.baseUrl}/diets/catalog`));
+  }
+
+  previewDiet(draft: DietPrescriptionDraft): Promise<DietPrescriptionResponse> {
+    return firstValueFrom(
+      this.http.post<DietPrescriptionResponse>(`${this.baseUrl}/diets/preview`, draft),
+    );
+  }
+
+  nursingCareCatalog(): Promise<NursingCarePrescriptionCatalog> {
+    return firstValueFrom(
+      this.http.get<NursingCarePrescriptionCatalog>(`${this.baseUrl}/nursing-care/catalog`),
+    );
+  }
+
+  previewNursingCare(
+    draft: NursingCarePrescriptionDraft,
+  ): Promise<NursingCarePrescriptionResponse> {
+    return firstValueFrom(
+      this.http.post<NursingCarePrescriptionResponse>(
+        `${this.baseUrl}/nursing-care/preview`,
+        draft,
+      ),
     );
   }
 

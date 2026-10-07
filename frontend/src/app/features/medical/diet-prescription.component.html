@@ -1,0 +1,256 @@
+<section class="diet-field" [class.print-empty-section]="!form.controls.type.value">
+  <header class="diet-header">
+    <div>
+      <p class="eyebrow">TERAPIA NUTRICIONAL</p>
+      <h2>DIETA</h2>
+      <p>SELECIONE A MODALIDADE E INFORME OS PARÂMETROS DEFINIDOS PELO PRESCRITOR.</p>
+    </div>
+    @if (form.controls.type.value) {
+      <button type="button" class="ghost-button" (click)="clear()">LIMPAR DIETA</button>
+    }
+  </header>
+
+  <div class="diet-type-grid" role="radiogroup" aria-label="TIPO DE DIETA">
+    @for (type of dietTypes; track type.value) {
+      <button
+        type="button"
+        class="diet-type-option"
+        [class.is-selected]="form.controls.type.value === type.value"
+        [attr.aria-pressed]="form.controls.type.value === type.value"
+        (click)="selectType(type.value)"
+      >
+        <strong>{{ type.label }}</strong
+        ><span>{{ type.description }}</span>
+      </button>
+    }
+  </div>
+
+  @if (busy() && !catalog()) {
+    <p class="diet-state">CARREGANDO PARÂMETROS DE DIETA...</p>
+  } @else if (catalog(); as options) {
+    <form [formGroup]="form">
+      @if (form.controls.type.value === 'ORAL') {
+        <div class="diet-parameters" formGroupName="oral">
+          <label class="diet-control diet-control--wide">
+            <span>CONSISTÊNCIA</span>
+            <select formControlName="consistency">
+              <option value="">SELECIONE</option>
+              @for (option of options.oralConsistencies; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <fieldset class="diet-checks">
+            <legend>RESTRIÇÕES E MODIFICADORES • OPCIONAL</legend>
+            <div>
+              @for (option of options.oralRestrictions; track option) {
+                <label>
+                  <input
+                    type="checkbox"
+                    [checked]="restrictionSelected(option)"
+                    (change)="toggleRestriction(option, $any($event.target).checked)"
+                  />
+                  <span>{{ option }}</span>
+                </label>
+              }
+            </div>
+          </fieldset>
+        </div>
+      }
+
+      @if (form.controls.type.value === 'ENTERAL') {
+        <div class="diet-parameters diet-parameters--grid" formGroupName="enteral">
+          <label class="diet-control">
+            <span>VIA DE ACESSO</span>
+            <select formControlName="accessRoute">
+              <option value="">SELECIONE</option>
+              @for (option of options.enteralAccessRoutes; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="diet-control">
+            <span>REGIME DE INFUSÃO</span>
+            <select formControlName="infusionRegimen">
+              <option value="">SELECIONE</option>
+              @for (option of options.enteralInfusionRegimens; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="diet-control diet-control--wide">
+            <span>TIPO DE FÓRMULA</span>
+            <select formControlName="formulaType">
+              <option value="">SELECIONE</option>
+              @for (option of options.enteralFormulaTypes; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          @if (
+            form.controls.enteral.controls.infusionRegimen.value === 'CONTÍNUO EM BOMBA DE INFUSÃO'
+          ) {
+            <label class="diet-control">
+              <span>VAZÃO</span>
+              <div class="input-with-suffix">
+                <input type="number" min="0.1" step="0.1" formControlName="rateMlHour" />
+                <span>ML/H</span>
+              </div>
+            </label>
+          }
+          @if (form.controls.enteral.controls.infusionRegimen.value === 'INTERMITENTE / BOLUS') {
+            <label class="diet-control">
+              <span>VOLUME POR BOLUS</span>
+              <div class="input-with-suffix">
+                <input type="number" min="0.1" step="0.1" formControlName="bolusVolumeMl" />
+                <span>ML</span>
+              </div>
+            </label>
+            <label class="diet-control">
+              <span>FREQUÊNCIA DOS BOLUS</span>
+              <input formControlName="bolusFrequency" placeholder="EX.: 4/4H" />
+            </label>
+          }
+          <label class="diet-control">
+            <span>ÁGUA PARA LAVAGEM • OPCIONAL</span>
+            <div class="input-with-suffix">
+              <input type="number" min="0.1" step="0.1" formControlName="tubeFlushMl" />
+              <span>ML</span>
+            </div>
+          </label>
+          <label class="diet-control">
+            <span>INTERVALO DA LAVAGEM</span>
+            <input formControlName="flushInterval" placeholder="EX.: 4/4H" />
+          </label>
+        </div>
+      }
+
+      @if (form.controls.type.value === 'PARENTERAL') {
+        <div class="diet-parameters diet-parameters--grid" formGroupName="parenteral">
+          <label class="diet-control">
+            <span>VIA DE ACESSO</span>
+            <select formControlName="accessRoute">
+              <option value="">SELECIONE</option>
+              @for (option of options.parenteralAccessRoutes; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="diet-control">
+            <span>TIPO</span>
+            <select formControlName="preparationType">
+              <option value="">SELECIONE</option>
+              @for (option of options.parenteralPreparationTypes; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="diet-control">
+            <span>VOLUME TOTAL</span>
+            <div class="input-with-suffix">
+              <input type="number" min="0.1" step="0.1" formControlName="totalVolumeMl" />
+              <span>ML/24H</span>
+            </div>
+          </label>
+          <label class="diet-control">
+            <span>VELOCIDADE DE INFUSÃO</span>
+            <div class="input-with-suffix">
+              <input type="number" min="0.1" step="0.1" formControlName="rateMlHour" />
+              <span>ML/H</span>
+            </div>
+          </label>
+          <label class="diet-control">
+            <span>CALORIAS TOTAIS • OPCIONAL</span>
+            <div class="input-with-suffix">
+              <input type="number" min="0.1" step="0.1" formControlName="totalCaloriesKcalDay" />
+              <span>KCAL/DIA</span>
+            </div>
+          </label>
+          <label class="diet-control">
+            <span>META PROTEICA • OPCIONAL</span>
+            <div class="input-with-suffix">
+              <input type="number" min="0.1" step="0.1" formControlName="proteinGoalGramsKgDay" />
+              <span>G/KG/DIA</span>
+            </div>
+          </label>
+          <label class="diet-control diet-control--wide">
+            <span>JUSTIFICATIVA CLÍNICA DE FALHA DO TRATO GASTROINTESTINAL</span>
+            <textarea
+              rows="3"
+              maxlength="1000"
+              formControlName="gastrointestinalFailureJustification"
+              placeholder="INFORME A JUSTIFICATIVA CLÍNICA"
+            ></textarea>
+          </label>
+        </div>
+      }
+
+      @if (form.controls.type.value === 'JEJUM') {
+        <div class="diet-parameters diet-parameters--grid" formGroupName="fasting">
+          <label class="diet-control">
+            <span>MOTIVO DO JEJUM</span>
+            <select formControlName="reason">
+              <option value="">SELECIONE</option>
+              @for (option of options.fastingReasons; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="diet-control">
+            <span>PREVISÃO DE REAVALIAÇÃO</span>
+            <input formControlName="reassessment" placeholder="EX.: 12 HORAS OU DATA/HORA" />
+          </label>
+        </div>
+      }
+    </form>
+
+    @if (form.controls.type.value) {
+      <div class="diet-actions">
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="busy()"
+          (click)="generatePreview()"
+        >
+          {{ busy() ? 'VALIDANDO...' : 'GERAR E REVISAR DIETA' }}
+        </button>
+        <span>A DIETA SÓ SERÁ INCLUÍDA APÓS VALIDAÇÃO DOS CAMPOS.</span>
+      </div>
+    }
+  }
+
+  @if (error()) {
+    <p class="diet-error" role="alert">{{ error() }}</p>
+  }
+  @if (preview(); as result) {
+    <section class="diet-preview" aria-label="PRÉVIA DA DIETA ESTRUTURADA">
+      <div class="diet-preview-clinical">
+        <span>RESUMO PARA A PRESCRIÇÃO</span>
+        <strong>{{ result.structuredDiet.summaryLine }}</strong>
+        <pre>{{ result.structuredDiet.prescriptionDetails }}</pre>
+      </div>
+      <div class="diet-audit">
+        <div>
+          <span>ITENS PARA CONFERÊNCIA DE FATURAMENTO</span>
+          @if (result.billingAudit.itemsForReview.length) {
+            <ul>
+              @for (item of result.billingAudit.itemsForReview; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          } @else {
+            <p>NENHUM ITEM ESPECÍFICO GERADO.</p>
+          }
+        </div>
+        <div>
+          <span>ALERTAS DE AUDITORIA ASSISTENCIAL</span>
+          <ul>
+            @for (alert of result.billingAudit.auditAlerts; track alert) {
+              <li>{{ alert }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+    </section>
+  }
+</section>

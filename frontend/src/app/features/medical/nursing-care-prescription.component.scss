@@ -1,0 +1,256 @@
+:host {
+  display: block;
+}
+
+.care-field {
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid #ccd4de;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.care-header,
+.care-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.care-header h2 {
+  margin: 2px 0 4px;
+  color: var(--navy-900);
+  font-size: 19px;
+}
+
+.care-header p:last-child,
+.care-actions span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--navy-700);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.ghost-button,
+.primary-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.ghost-button {
+  border: 1px solid #9dadbf;
+  background: #fff;
+  color: var(--navy-900);
+}
+
+.primary-button {
+  border: 1px solid var(--navy-900);
+  background: var(--navy-900);
+  color: #fff;
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.care-groups {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+fieldset {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #d2dae4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+legend {
+  padding: 0 7px;
+  color: var(--navy-900);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+legend span {
+  margin-right: 6px;
+  color: var(--blue-600, #087eb4);
+}
+
+.care-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.care-control--wide {
+  grid-column: 1 / -1;
+}
+
+.care-control > span,
+.care-checks > strong,
+.care-preview span,
+.care-audit > div > span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--navy-900);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.care-control select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #bfc9d5;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 10px;
+}
+
+.care-checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.care-checks > strong {
+  grid-column: 1 / -1;
+}
+
+.care-checks label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid #d8dfe7;
+  border-radius: 7px;
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.care-checks--two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.care-actions {
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 16px;
+}
+
+.care-state,
+.care-error {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.care-state {
+  background: #edf3f9;
+  color: var(--navy-700);
+}
+
+.care-error {
+  border: 1px solid #efb5b5;
+  background: #fff1f1;
+  color: #a41111;
+}
+
+.care-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.care-preview-clinical,
+.care-audit {
+  padding: 14px;
+  border: 1px solid #c7d3e0;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.care-preview-clinical strong {
+  display: block;
+  color: var(--navy-900);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.care-preview-clinical pre {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #e0e6ed;
+  color: var(--ink);
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.care-audit {
+  display: grid;
+  gap: 12px;
+  border-color: #d8cda6;
+  background: #fffdf6;
+}
+
+.care-audit > div + div {
+  padding-top: 12px;
+  border-top: 1px solid #e6ddbf;
+}
+
+.care-audit ul,
+.care-audit p {
+  margin: 0;
+  padding-left: 16px;
+  color: #4a4535;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.care-audit p {
+  padding-left: 0;
+}
+
+@media (max-width: 760px) {
+  .care-grid,
+  .care-checks,
+  .care-checks--two-columns,
+  .care-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .care-header,
+  .care-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

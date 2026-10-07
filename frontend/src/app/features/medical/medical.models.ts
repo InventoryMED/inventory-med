@@ -56,7 +56,128 @@ export type ClinicalFieldType =
   | 'MULTI_SELECT'
   | 'BOOLEAN'
   | 'MEDICATION_LINE'
-  | 'CLINICAL_TABLE';
+  | 'CLINICAL_TABLE'
+  | 'DIET_PLAN'
+  | 'NURSING_CARE_PLAN';
+
+export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
+
+export interface DietPrescriptionDraft {
+  type: DietType | null;
+  oral: {
+    consistency: string;
+    restrictions: string[];
+  };
+  enteral: {
+    accessRoute: string;
+    infusionRegimen: string;
+    formulaType: string;
+    rateMlHour: number | null;
+    bolusVolumeMl: number | null;
+    bolusFrequency: string;
+    tubeFlushMl: number | null;
+    flushInterval: string;
+  };
+  parenteral: {
+    accessRoute: string;
+    preparationType: string;
+    totalVolumeMl: number | null;
+    rateMlHour: number | null;
+    totalCaloriesKcalDay: number | null;
+    proteinGoalGramsKgDay: number | null;
+    gastrointestinalFailureJustification: string;
+  };
+  fasting: {
+    reason: string;
+    reassessment: string;
+  };
+}
+
+export interface DietPrescriptionCatalog {
+  oralConsistencies: string[];
+  oralRestrictions: string[];
+  enteralAccessRoutes: string[];
+  enteralInfusionRegimens: string[];
+  enteralFormulaTypes: string[];
+  parenteralAccessRoutes: string[];
+  parenteralPreparationTypes: string[];
+  fastingReasons: string[];
+}
+
+export interface DietPrescriptionResponse {
+  structuredDiet: {
+    type: DietType;
+    summaryLine: string;
+    prescriptionDetails: string;
+  };
+  billingAudit: {
+    itemsForReview: string[];
+    auditAlerts: string[];
+  };
+}
+
+export interface DietPrescriptionSelection {
+  draft: DietPrescriptionDraft;
+  response: DietPrescriptionResponse | null;
+}
+
+export interface NursingCarePrescriptionDraft {
+  positioning: {
+    headPosition: string;
+    repositioningFrequency: string;
+    pressureProtection: string[];
+  };
+  hygieneSkin: {
+    bath: string;
+    oralHygiene: string;
+    skinCare: string[];
+  };
+  dressingsDrains: {
+    catheterDressing: string;
+    acuteWoundCare: string;
+    complexWoundCoverage: string;
+    dressingChangeFrequency: string;
+    drainCare: string[];
+  };
+  procedures: {
+    airwaySuction: string;
+    deviceCare: string[];
+    fluidBalance: string;
+  };
+}
+
+export interface NursingCarePrescriptionCatalog {
+  headPositions: string[];
+  repositioningFrequencies: string[];
+  pressureProtection: string[];
+  baths: string[];
+  oralHygiene: string[];
+  skinCare: string[];
+  catheterDressings: string[];
+  acuteWoundCare: string[];
+  complexWoundCoverages: string[];
+  dressingChangeFrequencies: string[];
+  drainCare: string[];
+  airwaySuction: string[];
+  deviceCare: string[];
+  fluidBalance: string[];
+}
+
+export interface NursingCarePrescriptionResponse {
+  structuredCare: {
+    summaryLine: string;
+    prescriptionDetails: string;
+  };
+  billingAudit: {
+    itemsForReview: string[];
+    qualitySafetyIndicators: string[];
+  };
+}
+
+export interface NursingCarePrescriptionSelection {
+  draft: NursingCarePrescriptionDraft;
+  response: NursingCarePrescriptionResponse | null;
+}
 
 export interface ClinicalFormOption {
   id: string;

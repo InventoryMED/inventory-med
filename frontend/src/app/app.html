@@ -579,34 +579,10 @@
                   ><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
                 </div>
               </header>
-              <section
-                class="diet-field"
-                [class.print-empty-section]="!prescriptionDiet.trim()"
-                aria-labelledby="diet-title"
-              >
-                <label for="prescription-diet">
-                  <span id="diet-title">Dieta</span>
-                  <input
-                    id="prescription-diet"
-                    [(ngModel)]="prescriptionDiet"
-                    placeholder="Digite a dieta ou selecione um modelo abaixo"
-                  />
-                </label>
-                <div class="diet-presets">
-                  <span>Modelos de dieta</span>
-                  <div>
-                    @for (diet of dietPresets; track diet) {
-                      <button
-                        type="button"
-                        [class.diet-preset--selected]="prescriptionDiet === diet"
-                        (click)="selectDiet(diet)"
-                      >
-                        {{ diet }}
-                      </button>
-                    }
-                  </div>
-                </div>
-              </section>
+              <app-diet-prescription (selectionChange)="updateDietSelection($event)" />
+              <app-nursing-care-prescription
+                (selectionChange)="updateNursingCareSelection($event)"
+              />
               <section class="clinical-order-section" aria-labelledby="vital-signs-title">
                 <header class="clinical-order-header">
                   <div>
@@ -988,6 +964,20 @@
                   <span>Dieta</span><strong>{{ prescriptionDiet || 'NÃO INFORMADO' }}</strong>
                 </div>
               </section>
+
+              @if (dietPreview(); as preview) {
+                <section class="print-diet-prescription">
+                  <strong>DIETA / TERAPIA NUTRICIONAL</strong>
+                  <span>{{ preview.structuredDiet.prescriptionDetails }}</span>
+                </section>
+              }
+
+              @if (nursingCarePreview(); as preview) {
+                <section class="print-diet-prescription print-nursing-care">
+                  <strong>CUIDADOS DE ENFERMAGEM</strong>
+                  <span>{{ preview.structuredCare.prescriptionDetails }}</span>
+                </section>
+              }
 
               <table class="print-order-table">
                 <thead>
