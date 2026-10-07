@@ -60,7 +60,18 @@ negócio clínica para o navegador.
 
 ## Comandos executados na VPS
 
-Nenhum. A alteração não foi publicada na VPS nesta etapa.
+Versão implantada: `18392cb9278b`.
+
+```bash
+cd /home/gabriel/inventory-med-upload
+tar -xzf inventory-med-18392cb9278b.tar.gz
+cd 18392cb9278b
+sudo bash infra/scripts/install-release.sh "$PWD" 18392cb9278b
+```
+
+O instalador publicou o JAR e o frontend, reiniciou `inventory-med-api`, recarregou o
+Nginx e manteve a versão somente após a verificação de saúde. O Flyway executará `V6`
+em cada banco hospitalar quando a aplicação abrir sua primeira conexão após a versão.
 
 ## Serviços afetados
 
@@ -79,7 +90,13 @@ Nenhuma variável de ambiente nova.
 - `mvn clean test` em Java 21 e SQL Server 2022 descartável: 20 testes aprovados;
 - Flyway aplicou as seis migrações em bancos hospitalares descartáveis;
 - `git diff --check`: sem erro de espaço em branco;
-- verificação de segredos no diff: nenhum segredo adicionado.
+- verificação de segredos no diff: nenhum segredo adicionado;
+- frontend público: HTTP `200`, com o mesmo artefato `main-QTSWAJLW.js` gerado localmente;
+- saúde pública e interna da API: `UP`;
+- endpoints de dieta e cuidados: protegidos com HTTP `401` sem sessão;
+- `inventory-med-api` e `nginx`: ativos após a implantação;
+- a tentativa adicional de executar `nginx -t` sem `sudo` confirmou a sintaxe, mas não
+  pôde ler o PID protegido; a validação privilegiada já faz parte do instalador.
 
 ## Recuperação
 
@@ -90,6 +107,6 @@ por remoção ou alteração retroativa do histórico.
 
 ## Pendências
 
-- publicar somente após aprovação visual e autorização expressa do responsável;
+- validar o fluxo autenticado e o PDF com um usuário médico antes do uso assistencial;
 - validar o catálogo com enfermagem, controle de infecção, auditoria e faturamento de
   cada hospital antes do uso assistencial definitivo.

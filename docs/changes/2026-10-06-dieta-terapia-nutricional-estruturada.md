@@ -57,14 +57,22 @@ mantém a decisão clínica com o prescritor.
 
 ## Comandos executados na VPS
 
-Nenhum. A alteração não foi implantada na VPS nesta etapa.
+Versão implantada: `18392cb9278b`.
 
-Quando houver implantação, o Flyway executará a migração separadamente em cada banco
-hospitalar na primeira abertura da conexão correspondente.
+```bash
+cd /home/gabriel/inventory-med-upload
+tar -xzf inventory-med-18392cb9278b.tar.gz
+cd 18392cb9278b
+sudo bash infra/scripts/install-release.sh "$PWD" 18392cb9278b
+```
+
+O instalador publicou o JAR e o frontend, reiniciou `inventory-med-api`, recarregou o
+Nginx e validou a saúde antes de manter a versão ativa. O Flyway executará `V5`
+separadamente em cada banco hospitalar na primeira abertura da conexão correspondente.
 
 ## Serviços afetados
 
-- `inventory-med-api`: deverá ser reiniciado pelo processo normal de implantação;
+- `inventory-med-api`: reiniciado pelo processo normal de implantação;
 - Nginx e SQL Server não exigem alteração manual.
 
 ## Configurações
@@ -73,14 +81,19 @@ Nenhuma variável de ambiente nova.
 
 ## Validação
 
-- `npm test`: 16 testes aprovados;
+- `npm test -- --watch=false`: 17 testes aprovados;
 - `npm run build`: build de produção aprovado;
-- `mvn clean test` em Java 21 e SQL Server 2022 descartável: 16 testes aprovados;
-- Flyway aplicou as cinco migrações do banco hospitalar e confirmou a versão `v5`;
+- `mvn clean verify` em Java 21 e SQL Server 2022 descartável: 20 testes aprovados;
+- Flyway aplicou as seis migrações do banco hospitalar e confirmou a versão `v6`;
 - a integração confirmou que a dieta é normalizada pelo backend antes de integrar um
   documento finalizado;
 - o backend não recebe identificador ou conexão de hospital pelo navegador: o banco
-  continua derivado da sessão autenticada.
+  continua derivado da sessão autenticada;
+- frontend público: HTTP `200`, com o mesmo artefato `main-QTSWAJLW.js` gerado localmente;
+- saúde pública e interna da API: `UP`;
+- `inventory-med-api` e `nginx`: ativos após a implantação;
+- a tentativa adicional de executar `nginx -t` sem `sudo` confirmou a sintaxe, mas não
+  pôde ler o PID protegido; a validação privilegiada já faz parte do instalador.
 
 ## Recuperação
 
@@ -96,4 +109,4 @@ migração.
   hospital antes de uso com pacientes reais;
 - validar regras de faturamento conforme contrato, convênio e normas vigentes de cada
   instituição;
-- implantação na VPS somente após aprovação visual e funcional local.
+- validar o fluxo autenticado e o PDF com um usuário médico antes do uso assistencial.
