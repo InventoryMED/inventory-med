@@ -41,19 +41,22 @@ public class MedicalWorkspaceController {
     private final ClinicalDocumentService documentService;
     private final DietPrescriptionService dietPrescriptionService;
     private final NursingCarePrescriptionService nursingCarePrescriptionService;
+    private final MonitoringPrescriptionService monitoringPrescriptionService;
 
     public MedicalWorkspaceController(
         HospitalSessionContext sessionContext,
         MedicalWorkspaceService workspaceService,
         ClinicalDocumentService documentService,
         DietPrescriptionService dietPrescriptionService,
-        NursingCarePrescriptionService nursingCarePrescriptionService
+        NursingCarePrescriptionService nursingCarePrescriptionService,
+        MonitoringPrescriptionService monitoringPrescriptionService
     ) {
         this.sessionContext = sessionContext;
         this.workspaceService = workspaceService;
         this.documentService = documentService;
         this.dietPrescriptionService = dietPrescriptionService;
         this.nursingCarePrescriptionService = nursingCarePrescriptionService;
+        this.monitoringPrescriptionService = monitoringPrescriptionService;
     }
 
     @GetMapping("/workspace")
@@ -154,6 +157,21 @@ public class MedicalWorkspaceController {
     ) {
         sessionContext.require(session, MEDICAL_ROLES);
         return nursingCarePrescriptionService.preview(body);
+    }
+
+    @GetMapping("/monitoring/catalog")
+    public MonitoringPrescriptionCatalog monitoringCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return monitoringPrescriptionService.catalog();
+    }
+
+    @PostMapping("/monitoring/preview")
+    public MonitoringPrescriptionResponse previewMonitoring(
+        HttpSession session,
+        @Valid @RequestBody MonitoringPrescriptionRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return monitoringPrescriptionService.preview(body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")

@@ -58,7 +58,8 @@ export type ClinicalFieldType =
   | 'MEDICATION_LINE'
   | 'CLINICAL_TABLE'
   | 'DIET_PLAN'
-  | 'NURSING_CARE_PLAN';
+  | 'NURSING_CARE_PLAN'
+  | 'MONITORING_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -177,6 +178,62 @@ export interface NursingCarePrescriptionResponse {
 export interface NursingCarePrescriptionSelection {
   draft: NursingCarePrescriptionDraft;
   response: NursingCarePrescriptionResponse | null;
+}
+
+export interface MonitoringPrescriptionDraft {
+  vitalSigns: {
+    frequency: string;
+    painScale: string;
+    consciousnessSedationScale: string;
+    fallRiskScale: string;
+  };
+  glucoseMonitoring: {
+    frequency: string;
+    hypoglycemiaProtocol: boolean;
+    slidingScale: boolean;
+    insulinType: string;
+  };
+  fluidBalanceOutputs: {
+    fluidBalance: string;
+    urineOutput: string;
+    drainsTubes: string[];
+    otherMeasurements: string[];
+  };
+  invasiveMonitoring: {
+    hemodynamic: string[];
+    neurological: string[];
+  };
+}
+
+export interface MonitoringPrescriptionCatalog {
+  vitalSignsFrequencies: string[];
+  painScales: string[];
+  consciousnessSedationScales: string[];
+  fallRiskScales: string[];
+  glucoseMonitoringFrequencies: string[];
+  insulinTypes: string[];
+  fluidBalanceOptions: string[];
+  urineOutputOptions: string[];
+  drainsTubes: string[];
+  otherMeasurements: string[];
+  hemodynamicMonitoring: string[];
+  neurologicalMonitoring: string[];
+}
+
+export interface MonitoringPrescriptionResponse {
+  structuredMonitoring: {
+    summaryLine: string;
+    prescriptionDetails: string;
+  };
+  billingAudit: {
+    itemsForReview: string[];
+    auditAlerts: string[];
+  };
+}
+
+export interface MonitoringPrescriptionSelection {
+  draft: MonitoringPrescriptionDraft;
+  response: MonitoringPrescriptionResponse | null;
 }
 
 export interface ClinicalFormOption {

@@ -583,65 +583,7 @@
               <app-nursing-care-prescription
                 (selectionChange)="updateNursingCareSelection($event)"
               />
-              <section class="clinical-order-section" aria-labelledby="vital-signs-title">
-                <header class="clinical-order-header">
-                  <div>
-                    <p class="eyebrow">Monitoramento</p>
-                    <h2 id="vital-signs-title">Dados vitais</h2>
-                  </div>
-                  <span>Informe a frequência para cada cuidado</span>
-                </header>
-                <div class="prescription-table-wrap">
-                  <table class="prescription-table vital-signs-table">
-                    <thead>
-                      <tr>
-                        <th class="vital-description-column">Dados vitais</th>
-                        <th class="frequency-column">Frequência</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (row of vitalSignRows; track $index) {
-                        <tr>
-                          <td>
-                            <input [(ngModel)]="row.description" aria-label="Dado vital" />
-                          </td>
-                          <td>
-                            <input
-                              [(ngModel)]="row.frequency"
-                              placeholder="Ex.: 6/6h"
-                              aria-label="Frequência do dado vital"
-                            />
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-                <aside class="dxt-guidance" aria-labelledby="dxt-guidance-title">
-                  <header>
-                    <span>Conduta conforme resultado</span>
-                    <h3 id="dxt-guidance-title">Orientações DXT</h3>
-                  </header>
-                  <div class="dxt-guidance-grid">
-                    <article class="dxt-guidance-low">
-                      <span>Glicemia baixa</span>
-                      <strong>{{ dxtGuidance.low }}</strong>
-                    </article>
-                    <article class="dxt-guidance-high">
-                      <span>Glicemia alta</span>
-                      <strong>{{ dxtGuidance.highTitle }}</strong>
-                      <div class="dxt-ranges">
-                        @for (range of dxtGuidance.ranges; track range.glucose) {
-                          <div>
-                            <span>{{ range.glucose }} MG/DL</span>
-                            <strong>{{ range.insulin }}</strong>
-                          </div>
-                        }
-                      </div>
-                    </article>
-                  </div>
-                </aside>
-              </section>
+              <app-monitoring-prescription (selectionChange)="updateMonitoringSelection($event)" />
               <section
                 class="clinical-order-section"
                 [class.print-empty-section]="!hydrationRow.description.trim()"
@@ -979,6 +921,18 @@
                 </section>
               }
 
+              @if (monitoringPreview(); as preview) {
+                <section class="print-diet-prescription print-monitoring">
+                  <strong>MONITORIZAÇÃO E CONTROLES</strong>
+                  <div class="print-monitoring-content">
+                    <span>{{ preview.structuredMonitoring.prescriptionDetails }}</span>
+                    @if (monitoringDraft.glucoseMonitoring.frequency) {
+                      <div class="print-check-in"><strong>CHECK-IN</strong></div>
+                    }
+                  </div>
+                </section>
+              }
+
               <table class="print-order-table">
                 <thead>
                   <tr>
@@ -1011,26 +965,7 @@
                 </tbody>
               </table>
 
-              <section class="print-support-grid">
-                <article class="print-dxt-guidance">
-                  <div class="print-dxt-header">
-                    <div class="print-dxt-copy">
-                      <h2>Orientações DXT</h2>
-                      <p><strong>Glicemia baixa:</strong> {{ dxtGuidance.low }}</p>
-                      <p><strong>Glicemia alta:</strong> {{ dxtGuidance.highTitle }}</p>
-                    </div>
-                    <div class="print-check-in">
-                      <strong>Check-in</strong>
-                    </div>
-                  </div>
-                  <div class="print-dxt-ranges">
-                    @for (range of dxtGuidance.ranges; track range.glucose) {
-                      <span
-                        ><strong>{{ range.glucose }} MG/DL</strong>{{ range.insulin }}</span
-                      >
-                    }
-                  </div>
-                </article>
+              <section class="print-support-grid print-support-grid--single">
                 @if (hasTextRows(observationRows) || hasTextRows(abnormalityRows)) {
                   <article class="print-observations">
                     <h2>Observações</h2>

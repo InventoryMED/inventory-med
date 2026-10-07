@@ -10,6 +10,9 @@ import {
   DietPrescriptionResponse,
   MedicalAdmission,
   MedicalWorkspace,
+  MonitoringPrescriptionCatalog,
+  MonitoringPrescriptionDraft,
+  MonitoringPrescriptionResponse,
   NursingCarePrescriptionCatalog,
   NursingCarePrescriptionDraft,
   NursingCarePrescriptionResponse,
@@ -80,6 +83,18 @@ export class MedicalService {
         `${this.baseUrl}/nursing-care/preview`,
         draft,
       ),
+    );
+  }
+
+  monitoringCatalog(): Promise<MonitoringPrescriptionCatalog> {
+    return firstValueFrom(
+      this.http.get<MonitoringPrescriptionCatalog>(`${this.baseUrl}/monitoring/catalog`),
+    );
+  }
+
+  previewMonitoring(draft: MonitoringPrescriptionDraft): Promise<MonitoringPrescriptionResponse> {
+    return firstValueFrom(
+      this.http.post<MonitoringPrescriptionResponse>(`${this.baseUrl}/monitoring/preview`, draft),
     );
   }
 

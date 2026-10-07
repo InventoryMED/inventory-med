@@ -7,6 +7,7 @@ import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
 import { AdministrationComponent } from './features/administration/administration.component';
 import { DietPrescriptionComponent } from './features/medical/diet-prescription.component';
+import { MonitoringPrescriptionComponent } from './features/medical/monitoring-prescription.component';
 import { NursingCarePrescriptionComponent } from './features/medical/nursing-care-prescription.component';
 import {
   ClinicalFormKind,
@@ -14,6 +15,9 @@ import {
   DietPrescriptionDraft,
   DietPrescriptionResponse,
   DietPrescriptionSelection,
+  MonitoringPrescriptionDraft,
+  MonitoringPrescriptionResponse,
+  MonitoringPrescriptionSelection,
   NursingCarePrescriptionDraft,
   NursingCarePrescriptionResponse,
   NursingCarePrescriptionSelection,
@@ -32,7 +36,6 @@ import {
   PrescriptionDraftRow,
   PrescriptionScheduling,
   Room,
-  VitalSignDraftRow,
 } from './models';
 
 type PrescriptionTemplateId = 'ADMISSION' | 'PAC' | 'CAD' | 'TVP' | 'TEP' | 'EMERGENCY_BOX';
@@ -103,19 +106,6 @@ const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
     description: 'ATENDIMENTO EM BOX DE EMERGÊNCIA',
   },
 ];
-
-const DXT_GUIDANCE = {
-  low: 'GH 50% 40ML EV SE DXT < 70 MG/DL',
-  highTitle: 'INSULINA REGULAR SC CONFORME DXT',
-  ranges: [
-    { glucose: '180–230', insulin: '2 UI' },
-    { glucose: '231–280', insulin: '4 UI' },
-    { glucose: '281–330', insulin: '6 UI' },
-    { glucose: '331–380', insulin: '8 UI' },
-  ],
-  fullText:
-    'GH 50% 40ML EV SE DXT < 70 MG/DL. INSULINA REGULAR SC CONFORME DXT: 180–230: 2 UI; 231–280: 4 UI; 281–330: 6 UI; 331–380: 8 UI.',
-};
 
 const HYDRATION_PRESETS: PrescriptionRowPreset[] = [
   {
@@ -217,6 +207,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
     AdministrationComponent,
     DietPrescriptionComponent,
     NursingCarePrescriptionComponent,
+    MonitoringPrescriptionComponent,
   ],
   selector: 'app-root',
   styleUrl: './app.scss',
@@ -243,6 +234,8 @@ export class App implements OnInit {
   private readonly dietComponent = viewChild(DietPrescriptionComponent);
   protected readonly nursingCarePreview = signal<NursingCarePrescriptionResponse | null>(null);
   private readonly nursingCareComponent = viewChild(NursingCarePrescriptionComponent);
+  protected readonly monitoringPreview = signal<MonitoringPrescriptionResponse | null>(null);
+  private readonly monitoringComponent = viewChild(MonitoringPrescriptionComponent);
 
   protected loginEmail = '';
   protected loginPassword = '';
@@ -261,6 +254,7 @@ export class App implements OnInit {
   protected prescriptionDiet = '';
   protected dietDraft: DietPrescriptionDraft = this.emptyDietDraft();
   protected nursingCareDraft: NursingCarePrescriptionDraft = this.emptyNursingCareDraft();
+  protected monitoringDraft: MonitoringPrescriptionDraft = this.emptyMonitoringDraft();
   protected evolutionDiet = '';
   protected evolutionAdmission = '';
   protected evolutionText = '';
@@ -316,7 +310,6 @@ export class App implements OnInit {
   protected evolutionExamRows: EvolutionExamRow[] = this.createEvolutionExamRows();
   protected observationRows: string[] = [];
   protected abnormalityRows: string[] = [];
-  protected vitalSignRows: VitalSignDraftRow[] = [];
   protected hydrationRow: PrescriptionDraftRow = this.emptyHydrationRow();
   protected selectedHydrationPreset = '';
   protected medicationGroups: MedicationOrderGroup[] = [];
@@ -433,7 +426,6 @@ export class App implements OnInit {
     },
   ];
   protected readonly hydrationPresets = HYDRATION_PRESETS;
-  protected readonly dxtGuidance = DXT_GUIDANCE;
   protected readonly printHours = Array.from({ length: 24 }, (_, hour) =>
     hour.toString().padStart(2, '0'),
   );
@@ -1031,18 +1023,24 @@ export class App implements OnInit {
 
   protected printOrderRows(): PrintablePrescriptionRow[] {
     const rows: PrintablePrescriptionRow[] = [];
-    this.vitalSignRows
-      .filter((row) => row.description.trim())
-      .forEach((row) =>
-        rows.push({
-          section: 'DADOS VITAIS',
-          description: row.description.trim(),
-          route: '—',
-          frequency: row.frequency.trim() || '—',
-          scheduling: '—',
-        }),
-      );
-
+    if (this.monitoringDraft.vitalSigns.frequency) {
+      rows.push({
+        section: 'MONITORIZAÇÃO',
+        description: 'SINAIS VITAIS: PA, FC, FR, SPO₂ E TEMPERATURA',
+        route: '—',
+        frequency: this.monitoringDraft.vitalSigns.frequency,
+        scheduling: '—',
+      });
+    }
+    if (this.monitoringDraft.glucoseMonitoring.frequency) {
+      rows.push({
+        section: 'MONITORIZAÇÃO',
+        description: 'DXT',
+        route: '—',
+        frequency: this.monitoringDraft.glucoseMonitoring.frequency,
+        scheduling: '—',
+      });
+    }
     if (this.hydrationRow.description.trim()) {
       rows.push({
         section: 'HIDRATAÇÃO',
@@ -1123,11 +1121,10 @@ export class App implements OnInit {
     if (dietIsValid === false) return;
     const nursingCareIsValid = await this.nursingCareComponent()?.validateAndPreview();
     if (nursingCareIsValid === false) return;
+    const monitoringIsValid = await this.monitoringComponent()?.validateAndPreview();
+    if (monitoringIsValid === false) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
     const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
-    const validVitalSigns = this.vitalSignRows.filter(
-      (row) => row.description.trim() && row.frequency.trim(),
-    );
     const validHydrationRows = this.hydrationRow.description.trim() ? [this.hydrationRow] : [];
     const validMedicationSections: MedicationSectionDraft[] = this.medicationGroups
       .map((group) => ({
@@ -1137,13 +1134,13 @@ export class App implements OnInit {
       .filter((section) => section.items.length);
     if (
       !bedId ||
-      (!validVitalSigns.length &&
-        !validHydrationRows.length &&
+      (!validHydrationRows.length &&
         !validMedicationSections.length &&
         !observations.length &&
         !abnormalities.length &&
         !this.dietDraft.type &&
-        !this.nursingCareComponent()?.hasSelection())
+        !this.nursingCareComponent()?.hasSelection() &&
+        !this.monitoringComponent()?.hasSelection())
     ) {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
@@ -1160,7 +1157,6 @@ export class App implements OnInit {
           admissionId,
           template,
           this.prescriptionDocumentValues(
-            validVitalSigns,
             validHydrationRows,
             validMedicationSections,
             observations,
@@ -1179,7 +1175,7 @@ export class App implements OnInit {
       this.prescriptionDiet.trim(),
       observations,
       abnormalities,
-      validVitalSigns,
+      [],
       validHydrationRows,
       validMedicationSections,
     );
@@ -1219,6 +1215,11 @@ export class App implements OnInit {
   protected updateNursingCareSelection(selection: NursingCarePrescriptionSelection): void {
     this.nursingCareDraft = selection.draft;
     this.nursingCarePreview.set(selection.response);
+  }
+
+  protected updateMonitoringSelection(selection: MonitoringPrescriptionSelection): void {
+    this.monitoringDraft = selection.draft;
+    this.monitoringPreview.set(selection.response);
   }
 
   protected prescriptionItemCount(prescription: Prescription): number {
@@ -1447,7 +1448,6 @@ export class App implements OnInit {
   }
 
   private prescriptionDocumentValues(
-    vitalSigns: VitalSignDraftRow[],
     hydration: PrescriptionDraftRow[],
     medicationSections: MedicationSectionDraft[],
     observations: string[],
@@ -1458,17 +1458,8 @@ export class App implements OnInit {
     if (this.nursingCareComponent()?.hasSelection()) {
       values['CUIDADOS_ENFERMAGEM.CUIDADOS'] = this.nursingCareDraft;
     }
-
-    const signals = vitalSigns.find((row) => row.description === 'SINAIS VITAIS');
-    if (signals) values['ORIENTACOES.SINAIS_VITAIS'] = [this.medicationDocumentRow(signals)];
-    const dxt = vitalSigns.find((row) => row.description === 'DXT');
-    if (dxt) {
-      values['ORIENTACOES.DXT'] = [
-        this.medicationDocumentRow({
-          ...dxt,
-          description: dxt.guidance ? `${dxt.description} — ${dxt.guidance}` : dxt.description,
-        }),
-      ];
+    if (this.monitoringComponent()?.hasSelection()) {
+      values['MONITORIZACAO.CONTROLES'] = this.monitoringDraft;
     }
     if (hydration.length) {
       values['MEDICAMENTOS.HIDRATACAO'] = hydration.map((row) => this.medicationDocumentRow(row));
@@ -1498,9 +1489,7 @@ export class App implements OnInit {
     return values;
   }
 
-  private medicationDocumentRow(
-    row: PrescriptionDraftRow | VitalSignDraftRow,
-  ): Record<string, string> {
+  private medicationDocumentRow(row: PrescriptionDraftRow): Record<string, string> {
     return {
       description: row.description,
       route: 'route' in row ? row.route : '',
@@ -1536,9 +1525,10 @@ export class App implements OnInit {
     this.dietPreview.set(null);
     this.nursingCareDraft = this.emptyNursingCareDraft();
     this.nursingCarePreview.set(null);
+    this.monitoringDraft = this.emptyMonitoringDraft();
+    this.monitoringPreview.set(null);
     this.observationRows = [];
     this.abnormalityRows = [];
-    this.vitalSignRows = [];
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
     this.medicationGroups = [];
@@ -1585,6 +1575,30 @@ export class App implements OnInit {
         drainCare: [],
       },
       procedures: { airwaySuction: '', deviceCare: [], fluidBalance: '' },
+    };
+  }
+
+  private emptyMonitoringDraft(): MonitoringPrescriptionDraft {
+    return {
+      vitalSigns: {
+        frequency: '',
+        painScale: '',
+        consciousnessSedationScale: '',
+        fallRiskScale: '',
+      },
+      glucoseMonitoring: {
+        frequency: '',
+        hypoglycemiaProtocol: false,
+        slidingScale: false,
+        insulinType: '',
+      },
+      fluidBalanceOutputs: {
+        fluidBalance: '',
+        urineOutput: '',
+        drainsTubes: [],
+        otherMeasurements: [],
+      },
+      invasiveMonitoring: { hemodynamic: [], neurological: [] },
     };
   }
 
@@ -1899,10 +1913,9 @@ export class App implements OnInit {
   }
 
   private resetStructuredOrders(): void {
-    this.vitalSignRows = [
-      { description: 'SINAIS VITAIS', frequency: '' },
-      { description: 'DXT', frequency: '', guidance: DXT_GUIDANCE.fullText },
-    ];
+    this.monitoringDraft = this.emptyMonitoringDraft();
+    this.monitoringPreview.set(null);
+    this.monitoringComponent()?.reset();
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
     this.medicationGroups = this.buildMedicationGroups();

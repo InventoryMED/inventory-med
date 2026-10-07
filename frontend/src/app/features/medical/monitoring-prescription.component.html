@@ -1,0 +1,265 @@
+<section class="monitoring-field" [class.print-empty-section]="!hasSelection()">
+  <header class="monitoring-header">
+    <div>
+      <p class="eyebrow">VIGILÂNCIA CLÍNICA E SEGURANÇA ASSISTENCIAL</p>
+      <h2>MONITORIZAÇÃO E CONTROLES GLOBAIS</h2>
+      <p>DEFINA FREQUÊNCIAS, PROTOCOLOS E CONTROLES APLICÁVEIS AO PACIENTE.</p>
+    </div>
+    @if (hasSelection()) {
+      <button type="button" class="ghost-button" (click)="clear()">LIMPAR CONTROLES</button>
+    }
+  </header>
+
+  @if (busy() && !catalog()) {
+    <p class="monitoring-state">CARREGANDO CATÁLOGO DE MONITORIZAÇÃO...</p>
+  } @else if (catalog(); as options) {
+    <form [formGroup]="form" class="monitoring-groups">
+      <fieldset formGroupName="vitalSigns">
+        <legend><span>01</span> SINAIS VITAIS (SSVV) E ESCALAS CLÍNICAS</legend>
+        <p class="group-note">A SELEÇÃO DE SSVV INCLUI PA, FC, FR, SPO₂ E TEMPERATURA.</p>
+        <div class="monitoring-grid">
+          <label class="monitoring-control monitoring-control--wide">
+            <span>FREQUÊNCIA DOS SINAIS VITAIS</span>
+            <select formControlName="frequency">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.vitalSignsFrequencies; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="monitoring-control">
+            <span>ESCALA DE DOR</span>
+            <select formControlName="painScale">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.painScales; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="monitoring-control">
+            <span>CONSCIÊNCIA / SEDAÇÃO</span>
+            <select formControlName="consciousnessSedationScale">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.consciousnessSedationScales; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="monitoring-control">
+            <span>RISCO DE QUEDA</span>
+            <select formControlName="fallRiskScale">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.fallRiskScales; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset formGroupName="glucoseMonitoring">
+        <legend><span>02</span> DXT E PROTOCOLOS GLICÊMICOS</legend>
+        <div class="monitoring-grid">
+          <label class="monitoring-control monitoring-control--wide">
+            <span>FREQUÊNCIA DO DXT</span>
+            <select formControlName="frequency">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.glucoseMonitoringFrequencies; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="protocol-grid">
+          <label class="protocol-card">
+            <input type="checkbox" formControlName="hypoglycemiaProtocol" />
+            <span>
+              <strong>PROTOCOLO DE HIPOGLICEMIA</strong>
+              <small>DXT &lt; 70 MG/DL: GLICOSE 50% 40 ML EV E NOVO DXT EM 15–30 MIN.</small>
+            </span>
+          </label>
+          <label class="protocol-card">
+            <input
+              type="checkbox"
+              [checked]="form.controls.glucoseMonitoring.controls.slidingScale.value"
+              (change)="toggleSlidingScale($any($event.target).checked)"
+            />
+            <span>
+              <strong>ESCALA DE CORREÇÃO</strong>
+              <small>INCLUI FAIXAS DE 180 MG/DL ATÉ &gt; 380 MG/DL.</small>
+            </span>
+          </label>
+        </div>
+        @if (form.controls.glucoseMonitoring.controls.slidingScale.value) {
+          <label class="monitoring-control insulin-control">
+            <span>TIPO DE INSULINA</span>
+            <select formControlName="insulinType">
+              <option value="">SELECIONE</option>
+              @for (option of options.insulinTypes; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+        }
+      </fieldset>
+
+      <fieldset formGroupName="fluidBalanceOutputs">
+        <legend><span>03</span> BALANÇO HÍDRICO, DIURESE E DÉBITOS</legend>
+        <div class="monitoring-grid">
+          <label class="monitoring-control">
+            <span>BALANÇO HÍDRICO</span>
+            <select formControlName="fluidBalance">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.fluidBalanceOptions; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+          <label class="monitoring-control">
+            <span>CONTROLE DE DIURESE</span>
+            <select formControlName="urineOutput">
+              <option value="">NÃO SELECIONADO</option>
+              @for (option of options.urineOutputOptions; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="monitoring-checks">
+          <strong>DRENOS E SONDAS PARA MENSURAÇÃO</strong>
+          @for (option of options.drainsTubes; track option) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="selected(form.controls.fluidBalanceOutputs.controls.drainsTubes, option)"
+                (change)="
+                  toggle(
+                    form.controls.fluidBalanceOutputs.controls.drainsTubes,
+                    option,
+                    $any($event.target).checked
+                  )
+                "
+              />
+              <span>{{ option }}</span>
+            </label>
+          }
+        </div>
+        <div class="monitoring-checks monitoring-checks--two-columns">
+          <strong>OUTRAS MENSURAÇÕES</strong>
+          @for (option of options.otherMeasurements; track option) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="
+                  selected(form.controls.fluidBalanceOutputs.controls.otherMeasurements, option)
+                "
+                (change)="
+                  toggle(
+                    form.controls.fluidBalanceOutputs.controls.otherMeasurements,
+                    option,
+                    $any($event.target).checked
+                  )
+                "
+              />
+              <span>{{ option }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <fieldset formGroupName="invasiveMonitoring">
+        <legend><span>04</span> MONITORIZAÇÃO INVASIVA</legend>
+        <div class="invasive-grid">
+          <div class="monitoring-checks monitoring-checks--single">
+            <strong>HEMODINÂMICA</strong>
+            @for (option of options.hemodynamicMonitoring; track option) {
+              <label>
+                <input
+                  type="checkbox"
+                  [checked]="
+                    selected(form.controls.invasiveMonitoring.controls.hemodynamic, option)
+                  "
+                  (change)="
+                    toggle(
+                      form.controls.invasiveMonitoring.controls.hemodynamic,
+                      option,
+                      $any($event.target).checked
+                    )
+                  "
+                />
+                <span>{{ option }}</span>
+              </label>
+            }
+          </div>
+          <div class="monitoring-checks monitoring-checks--single">
+            <strong>NEUROLÓGICA</strong>
+            @for (option of options.neurologicalMonitoring; track option) {
+              <label>
+                <input
+                  type="checkbox"
+                  [checked]="
+                    selected(form.controls.invasiveMonitoring.controls.neurological, option)
+                  "
+                  (change)="
+                    toggle(
+                      form.controls.invasiveMonitoring.controls.neurological,
+                      option,
+                      $any($event.target).checked
+                    )
+                  "
+                />
+                <span>{{ option }}</span>
+              </label>
+            }
+          </div>
+        </div>
+      </fieldset>
+    </form>
+
+    <div class="monitoring-actions">
+      <button type="button" class="primary-button" [disabled]="busy()" (click)="generatePreview()">
+        {{ busy() ? 'VALIDANDO...' : 'GERAR E REVISAR MONITORIZAÇÃO' }}
+      </button>
+      <span>O ITEM SÓ SERÁ INCLUÍDO APÓS A VALIDAÇÃO DOS CAMPOS PELA API.</span>
+    </div>
+  }
+
+  @if (error()) {
+    <p class="monitoring-error" role="alert">{{ error() }}</p>
+  }
+  @if (preview(); as result) {
+    <section class="monitoring-preview" aria-label="PRÉVIA DA MONITORIZAÇÃO">
+      <div class="monitoring-preview-clinical">
+        <span>RESUMO PARA A PRESCRIÇÃO</span>
+        <strong>{{ result.structuredMonitoring.summaryLine }}</strong>
+        <pre>{{ result.structuredMonitoring.prescriptionDetails }}</pre>
+      </div>
+      <div class="monitoring-audit">
+        <div>
+          <span>ITENS PARA CONFERÊNCIA</span>
+          @if (result.billingAudit.itemsForReview.length) {
+            <ul>
+              @for (item of result.billingAudit.itemsForReview; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          } @else {
+            <p>NENHUM ITEM ESPECÍFICO GERADO.</p>
+          }
+        </div>
+        <div>
+          <span>ALERTAS DE REGISTRO E SEGURANÇA</span>
+          @if (result.billingAudit.auditAlerts.length) {
+            <ul>
+              @for (item of result.billingAudit.auditAlerts; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          } @else {
+            <p>NENHUM ALERTA ESPECÍFICO GERADO.</p>
+          }
+        </div>
+      </div>
+    </section>
+  }
+</section>

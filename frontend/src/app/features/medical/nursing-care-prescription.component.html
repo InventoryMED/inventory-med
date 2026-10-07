@@ -173,15 +173,6 @@
               }
             </select>
           </label>
-          <label class="care-control">
-            <span>BALANÇO HÍDRICO E MENSURAÇÕES</span>
-            <select formControlName="fluidBalance">
-              <option value="">NÃO SELECIONADO</option>
-              @for (option of options.fluidBalance; track option) {
-                <option [value]="option">{{ option }}</option>
-              }
-            </select>
-          </label>
         </div>
         <div class="care-checks care-checks--two-columns">
           <strong>MANUTENÇÃO DE DISPOSITIVOS</strong>

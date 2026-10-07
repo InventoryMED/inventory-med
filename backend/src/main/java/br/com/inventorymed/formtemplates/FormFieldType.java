@@ -13,5 +13,6 @@ public enum FormFieldType {
     MEDICATION_LINE,
     CLINICAL_TABLE,
     DIET_PLAN,
-    NURSING_CARE_PLAN
+    NURSING_CARE_PLAN,
+    MONITORING_PLAN
 }

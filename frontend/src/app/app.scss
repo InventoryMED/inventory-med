@@ -2742,6 +2742,17 @@ svg {
   .print-diet-prescription span {
     white-space: pre-line;
   }
+  .print-monitoring-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 28mm;
+    align-items: stretch;
+  }
+  .print-monitoring-content > span {
+    border-right: 0.6pt solid #98a2b3;
+  }
+  .print-monitoring-content .print-check-in {
+    min-height: 13mm;
+  }
   .print-order-table {
     width: 100%;
     border-collapse: collapse;
@@ -2816,6 +2827,9 @@ svg {
     gap: 2mm;
     margin-top: 3mm;
   }
+  .print-support-grid--single {
+    grid-template-columns: 1fr;
+  }
   .print-support-grid article {
     min-height: 22mm;
     padding: 2mm;
@@ -2851,6 +2865,11 @@ svg {
   .print-check-in > strong {
     color: #0a1f38;
     font-size: 5.5pt;
+  }
+  .print-monitoring-content .print-check-in > strong {
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
   .print-abnormalities-inside {
     margin-top: 2mm;

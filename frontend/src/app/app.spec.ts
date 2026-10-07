@@ -77,7 +77,8 @@ describe('App', () => {
     ]);
     const prophylaxis = app.medicationGroups.find((group: any) => group.id === 'PROPHYLAXIS');
     expect(prophylaxis.rows[0].description).toContain('OMEPRAZOL');
-    expect(app.vitalSignRows[1].guidance).toContain('GH 50% 40ML EV');
+    expect(app.monitoringDraft.vitalSigns.frequency).toBe('');
+    expect(app.monitoringDraft.glucoseMonitoring.hypoglycemiaProtocol).toBe(false);
     expect(app.observationRows).toEqual(['']);
     expect(app.abnormalityRows).toEqual(['']);
   });
@@ -90,6 +91,8 @@ describe('App', () => {
 
     app.selectMedicationPreset(symptomatics, 'ONDANSETRONA 1 AMPOLA + 100ML DE SF 0,9%');
     app.addMedicationRow(symptomatics);
+    app.monitoringDraft.vitalSigns.frequency = '6/6H';
+    app.monitoringDraft.glucoseMonitoring.frequency = '4/4H';
 
     expect(symptomatics.rows[0]).toMatchObject({
       route: 'EV',
@@ -102,6 +105,16 @@ describe('App', () => {
         expect.objectContaining({
           section: 'SINTOMÁTICOS',
           description: 'ONDANSETRONA 1 AMPOLA + 100ML DE SF 0,9%',
+        }),
+        expect.objectContaining({
+          section: 'MONITORIZAÇÃO',
+          description: 'SINAIS VITAIS: PA, FC, FR, SPO₂ E TEMPERATURA',
+          frequency: '6/6H',
+        }),
+        expect.objectContaining({
+          section: 'MONITORIZAÇÃO',
+          description: 'DXT',
+          frequency: '4/4H',
         }),
       ]),
     );

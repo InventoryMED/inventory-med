@@ -2,7 +2,11 @@ import { provideHttpClient, withInterceptors, withXsrfConfiguration } from '@ang
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { authInterceptor } from '../../auth/auth.interceptor';
-import { DietPrescriptionDraft, NursingCarePrescriptionDraft } from './medical.models';
+import {
+  DietPrescriptionDraft,
+  MonitoringPrescriptionDraft,
+  NursingCarePrescriptionDraft,
+} from './medical.models';
 import { MedicalService } from './medical.service';
 
 describe('MedicalService', () => {
@@ -136,5 +140,61 @@ describe('MedicalService', () => {
       billingAudit: { itemsForReview: [], qualitySafetyIndicators: [] },
     });
     expect((await previewPromise).structuredCare.summaryLine).toContain('CUIDADOS');
+  });
+
+  it('loads the monitoring catalog and requests a backend-validated preview', async () => {
+    const catalogPromise = service.monitoringCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/monitoring/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      vitalSignsFrequencies: ['6/6H'],
+      painScales: ['EVA'],
+      consciousnessSedationScales: [],
+      fallRiskScales: [],
+      glucoseMonitoringFrequencies: ['6/6H'],
+      insulinTypes: ['REGULAR'],
+      fluidBalanceOptions: [],
+      urineOutputOptions: [],
+      drainsTubes: [],
+      otherMeasurements: [],
+      hemodynamicMonitoring: [],
+      neurologicalMonitoring: [],
+    });
+    expect((await catalogPromise).vitalSignsFrequencies).toEqual(['6/6H']);
+
+    const draft: MonitoringPrescriptionDraft = {
+      vitalSigns: {
+        frequency: '6/6H',
+        painScale: 'EVA',
+        consciousnessSedationScale: '',
+        fallRiskScale: '',
+      },
+      glucoseMonitoring: {
+        frequency: '6/6H',
+        hypoglycemiaProtocol: true,
+        slidingScale: true,
+        insulinType: 'REGULAR',
+      },
+      fluidBalanceOutputs: {
+        fluidBalance: '',
+        urineOutput: '',
+        drainsTubes: [],
+        otherMeasurements: [],
+      },
+      invasiveMonitoring: { hemodynamic: [], neurological: [] },
+    };
+    const previewPromise = service.previewMonitoring(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/monitoring/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredMonitoring: {
+        summaryLine: 'MONITORIZAÇÃO E CONTROLES GLOBAIS: SSVV 6/6H; DXT 6/6H.',
+        prescriptionDetails: 'MONITORIZAÇÃO E CONTROLES GLOBAIS.',
+      },
+      billingAudit: { itemsForReview: [], auditAlerts: [] },
+    });
+    expect((await previewPromise).structuredMonitoring.summaryLine).toContain('SSVV 6/6H');
   });
 });

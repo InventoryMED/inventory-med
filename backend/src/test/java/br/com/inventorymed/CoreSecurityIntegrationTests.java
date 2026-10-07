@@ -733,6 +733,30 @@ class CoreSecurityIntegrationTests {
                               "enteral":null,
                               "parenteral":null,
                               "fasting":null
+                            },
+                            "MONITORIZACAO.CONTROLES":{
+                              "vitalSigns":{
+                                "frequency":"6/6H",
+                                "painScale":"EVA",
+                                "consciousnessSedationScale":"",
+                                "fallRiskScale":"MORSE"
+                              },
+                              "glucoseMonitoring":{
+                                "frequency":"6/6H",
+                                "hypoglycemiaProtocol":true,
+                                "slidingScale":true,
+                                "insulinType":"REGULAR"
+                              },
+                              "fluidBalanceOutputs":{
+                                "fluidBalance":"SEM INDICAÇÃO",
+                                "urineOutput":"DIURESE ESPONTÂNEA",
+                                "drainsTubes":[],
+                                "otherMeasurements":[]
+                              },
+                              "invasiveMonitoring":{
+                                "hemodynamic":[],
+                                "neurological":[]
+                              }
                             }
                           },
                           "finalizeDocument":true
@@ -745,6 +769,10 @@ class CoreSecurityIntegrationTests {
             .andExpect(
                 jsonPath("$.values['ORIENTACOES.DIETA'].structuredDiet.summaryLine")
                     .value("DIETA ORAL BRANDA, HIPOSSÓDICA (HAS / CARDIOLOGIA).")
+            )
+            .andExpect(
+                jsonPath("$.values['MONITORIZACAO.CONTROLES'].structuredMonitoring.summaryLine")
+                    .value(org.hamcrest.Matchers.containsString("SSVV 6/6H"))
             )
             .andReturn();
         UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");

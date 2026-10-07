@@ -83,7 +83,6 @@ export class NursingCarePrescriptionComponent implements OnInit {
       ...value.dressingsDrains.drainCare,
       value.procedures.airwaySuction,
       ...value.procedures.deviceCare,
-      value.procedures.fluidBalance,
     ].some(Boolean);
   }
 
