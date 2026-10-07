@@ -37,10 +37,9 @@ O navegador nunca acessa diretamente as portas 8080 ou 1433.
   uma aplicação autônoma;
 - `ng serve` usa `environment.ts` e encaminha `/api` para a API local.
 
-O painel geral, autenticação, hospitais e usuários usam a API real. As telas clínicas
-permanecem inacessíveis no modo conectado até que seus endpoints e bancos hospitalares
-sejam implementados. Isso impede a aparência enganosa de dados persistidos quando o
-módulo ainda não está pronto.
+O painel geral, a autenticação, os hospitais, os usuários e as telas clínicas usam a
+API real. Depois da seleção de uma unidade autorizada, a API resolve internamente o
+banco exclusivo daquele hospital; o navegador nunca recebe nome de banco ou credencial.
 
 ## 1. Gerar uma versão no Windows
 
@@ -60,6 +59,46 @@ O script:
 4. gera `artifacts/releases/inventory-med-COMMIT.tar.gz`.
 
 `artifacts/` é ignorado pelo Git.
+
+## Publicação completa com um único comando
+
+Depois de revisar a alteração, atualizar seu registro em `docs/changes/`, criar o commit
+e deixar o repositório sem arquivos pendentes, execute no PowerShell:
+
+```powershell
+cd 'C:\Inventory MED'
+.\infra\scripts\deploy-production.ps1 -ConfirmarProducao
+```
+
+Esse comando executa o fluxo das seções 1, 3, 5 e 6 automaticamente. Ele:
+
+1. interrompe a publicação se houver alterações sem commit;
+2. verifica o agente e a chave SSH, iniciando o serviço quando permitido e solicitando
+   sua frase secreta uma vez se a chave ainda não estiver carregada;
+3. compara a branch atual com o GitHub e envia commits locais ainda não publicados;
+4. executa testes e builds completos por meio de `build-release.ps1`;
+5. envia o pacote e confere seu SHA-256 na VPS antes de extrair;
+6. chama `install-release.sh`, que preserva a versão anterior e faz rollback se a API
+   não ficar saudável;
+7. valida o frontend e o endpoint público de saúde;
+8. grava um comprovante sem segredos em `artifacts/deployments/`.
+
+Um pacote existente nunca é reutilizado silenciosamente. Para repetir conscientemente
+a instalação do mesmo commit sem recompilar, use:
+
+```powershell
+.\infra\scripts\deploy-production.ps1 `
+  -ConfirmarProducao `
+  -ReutilizarPacoteExistente
+```
+
+O script não cria commits automaticamente, não executa SQL manual, não lê o arquivo de
+segredos da VPS e não publica as portas da API ou do SQL Server. A senha de `sudo` é
+solicitada diretamente pelo terminal remoto e não é gravada no comprovante.
+
+Enquanto o endereço público usar HTTP por IP, esse ambiente continua classificado como
+homologação pública pela arquitetura. Dados clínicos reais exigem domínio, HTTPS e os
+demais controles descritos na seção **Produção** de `docs/architecture.md`.
 
 ## 2. Liberar a chave SSH nesta sessão do Windows
 
