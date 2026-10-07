@@ -42,6 +42,7 @@ public class MedicalWorkspaceController {
     private final DietPrescriptionService dietPrescriptionService;
     private final NursingCarePrescriptionService nursingCarePrescriptionService;
     private final MonitoringPrescriptionService monitoringPrescriptionService;
+    private final VentilatorySupportService ventilatorySupportService;
 
     public MedicalWorkspaceController(
         HospitalSessionContext sessionContext,
@@ -49,7 +50,8 @@ public class MedicalWorkspaceController {
         ClinicalDocumentService documentService,
         DietPrescriptionService dietPrescriptionService,
         NursingCarePrescriptionService nursingCarePrescriptionService,
-        MonitoringPrescriptionService monitoringPrescriptionService
+        MonitoringPrescriptionService monitoringPrescriptionService,
+        VentilatorySupportService ventilatorySupportService
     ) {
         this.sessionContext = sessionContext;
         this.workspaceService = workspaceService;
@@ -57,6 +59,7 @@ public class MedicalWorkspaceController {
         this.dietPrescriptionService = dietPrescriptionService;
         this.nursingCarePrescriptionService = nursingCarePrescriptionService;
         this.monitoringPrescriptionService = monitoringPrescriptionService;
+        this.ventilatorySupportService = ventilatorySupportService;
     }
 
     @GetMapping("/workspace")
@@ -172,6 +175,21 @@ public class MedicalWorkspaceController {
     ) {
         sessionContext.require(session, MEDICAL_ROLES);
         return monitoringPrescriptionService.preview(body);
+    }
+
+    @GetMapping("/ventilatory-support/catalog")
+    public VentilatorySupportCatalog ventilatorySupportCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return ventilatorySupportService.catalog();
+    }
+
+    @PostMapping("/ventilatory-support/preview")
+    public VentilatorySupportResponse previewVentilatorySupport(
+        HttpSession session,
+        @Valid @RequestBody VentilatorySupportRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return ventilatorySupportService.preview(body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")

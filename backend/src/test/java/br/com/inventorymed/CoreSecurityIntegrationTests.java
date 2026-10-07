@@ -757,6 +757,23 @@ class CoreSecurityIntegrationTests {
                                 "hemodynamic":[],
                                 "neurological":[]
                               }
+                            },
+                            "SUPORTE_VENTILATORIO.PLANO":{
+                              "selectedTemplate":"NASAL_CANNULA_2L_PRN_92",
+                              "items":[{
+                                "id":1,
+                                "supportType":"LOW_FLOW",
+                                "frequency":"PRN_SPO2_92",
+                                "scheduling":"PRN",
+                                "lowFlow":{
+                                  "device":"NASAL_CANNULA",
+                                  "oxygenFlowLitersMinute":2,
+                                  "fio2Percent":null
+                                },
+                                "highFlow":null,
+                                "nonInvasive":null,
+                                "invasive":null
+                              }]
                             }
                           },
                           "finalizeDocument":true
@@ -773,6 +790,10 @@ class CoreSecurityIntegrationTests {
             .andExpect(
                 jsonPath("$.values['MONITORIZACAO.CONTROLES'].structuredMonitoring.summaryLine")
                     .value(org.hamcrest.Matchers.containsString("SSVV 6/6H"))
+            )
+            .andExpect(
+                jsonPath("$.values['SUPORTE_VENTILATORIO.PLANO'].structuredVentilatorySupport.summaryLine")
+                    .value(org.hamcrest.Matchers.containsString("CATETER NASAL DE O₂"))
             )
             .andReturn();
         UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");

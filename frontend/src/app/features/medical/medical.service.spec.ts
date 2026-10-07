@@ -6,6 +6,7 @@ import {
   DietPrescriptionDraft,
   MonitoringPrescriptionDraft,
   NursingCarePrescriptionDraft,
+  VentilatorySupportDraft,
 } from './medical.models';
 import { MedicalService } from './medical.service';
 
@@ -196,5 +197,67 @@ describe('MedicalService', () => {
       billingAudit: { itemsForReview: [], auditAlerts: [] },
     });
     expect((await previewPromise).structuredMonitoring.summaryLine).toContain('SSVV 6/6H');
+  });
+
+  it('loads the ventilatory support catalog and validates the structured plan in the backend', async () => {
+    const catalogPromise = service.ventilatorySupportCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/ventilatory-support/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      supportTypes: [{ code: 'LOW_FLOW', label: 'OXIGENOTERAPIA DE BAIXO FLUXO' }],
+      lowFlowDevices: [{ code: 'NASAL_CANNULA', label: 'CATETER NASAL DE O₂' }],
+      lowFlowFrequencies: [{ code: 'PRN_SPO2_92', label: 'SN SE SPO₂ < 92%' }],
+      highFlowInterfaceSizes: [],
+      nonInvasiveModes: [],
+      nonInvasiveInterfaces: [],
+      nonInvasiveFrequencies: [],
+      invasiveAirways: [],
+      invasiveModes: [],
+      schedulingOptions: [{ code: 'PRN', label: 'SN' }],
+      protectiveGoals: [],
+      templates: [],
+    });
+    expect((await catalogPromise).supportTypes[0].code).toBe('LOW_FLOW');
+
+    const draft: VentilatorySupportDraft = {
+      selectedTemplate: '',
+      items: [
+        {
+          id: 1,
+          supportType: 'LOW_FLOW',
+          frequency: 'PRN_SPO2_92',
+          scheduling: 'PRN',
+          lowFlow: {
+            device: 'NASAL_CANNULA',
+            oxygenFlowLitersMinute: 2,
+            fio2Percent: null,
+          },
+          highFlow: null,
+          nonInvasive: null,
+          invasive: null,
+        },
+      ],
+    };
+    const previewPromise = service.previewVentilatorySupport(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/ventilatory-support/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredVentilatorySupport: {
+        summaryLine: 'CATETER NASAL DE O₂ 2 L/MIN, SN SE SPO₂ < 92%.',
+        prescriptionDetails: 'CATETER NASAL DE O₂ 2 L/MIN.',
+        orderRows: [
+          {
+            description: 'CATETER NASAL DE O₂ 2 L/MIN',
+            interfaceRoute: 'CATETER NASAL',
+            frequency: 'SN SE SPO₂ < 92%',
+            scheduling: 'SN',
+          },
+        ],
+      },
+      billingAudit: { itemsForReview: [], auditAlerts: [] },
+    });
+    expect((await previewPromise).structuredVentilatorySupport.orderRows).toHaveLength(1);
   });
 });

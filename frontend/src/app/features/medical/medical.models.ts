@@ -59,7 +59,8 @@ export type ClinicalFieldType =
   | 'CLINICAL_TABLE'
   | 'DIET_PLAN'
   | 'NURSING_CARE_PLAN'
-  | 'MONITORING_PLAN';
+  | 'MONITORING_PLAN'
+  | 'VENTILATORY_SUPPORT_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -234,6 +235,101 @@ export interface MonitoringPrescriptionResponse {
 export interface MonitoringPrescriptionSelection {
   draft: MonitoringPrescriptionDraft;
   response: MonitoringPrescriptionResponse | null;
+}
+
+export interface VentilatorySupportItemDraft {
+  id: number;
+  supportType: string;
+  frequency: string;
+  scheduling: string;
+  lowFlow: {
+    device: string;
+    oxygenFlowLitersMinute: number | null;
+    fio2Percent: number | null;
+  } | null;
+  highFlow: {
+    flowLitersMinute: number | null;
+    fio2Percent: number | null;
+    temperatureCelsius: number | null;
+    interfaceSize: string;
+  } | null;
+  nonInvasive: {
+    mode: string;
+    ipapCmH2o: number | null;
+    epapPeepCmH2o: number | null;
+    supportPressureCmH2o: number | null;
+    fio2Percent: number | null;
+    backupRate: number | null;
+    interfaceType: string;
+    sessionHours: number | null;
+  } | null;
+  invasive: {
+    airway: string;
+    airwayDetail: string;
+    mode: string;
+    tidalVolumeMl: number | null;
+    respiratoryRate: number | null;
+    peepCmH2o: number | null;
+    fio2Percent: number | null;
+    inspiratoryFlowLitersMinute: number | null;
+    inspiratoryTimeSeconds: number | null;
+    pauseSeconds: number | null;
+    inspiratoryPressureCmH2o: number | null;
+    supportPressureCmH2o: number | null;
+    triggerSensitivity: number | null;
+    protectiveGoals: string[];
+  } | null;
+}
+
+export interface VentilatorySupportDraft {
+  selectedTemplate: string;
+  items: VentilatorySupportItemDraft[];
+}
+
+export interface VentilatorySupportOption {
+  code: string;
+  label: string;
+}
+
+export interface VentilatorySupportCatalog {
+  supportTypes: VentilatorySupportOption[];
+  lowFlowDevices: VentilatorySupportOption[];
+  lowFlowFrequencies: VentilatorySupportOption[];
+  highFlowInterfaceSizes: VentilatorySupportOption[];
+  nonInvasiveModes: VentilatorySupportOption[];
+  nonInvasiveInterfaces: VentilatorySupportOption[];
+  nonInvasiveFrequencies: VentilatorySupportOption[];
+  invasiveAirways: VentilatorySupportOption[];
+  invasiveModes: VentilatorySupportOption[];
+  schedulingOptions: VentilatorySupportOption[];
+  protectiveGoals: VentilatorySupportOption[];
+  templates: Array<{
+    code: string;
+    label: string;
+    item: VentilatorySupportItemDraft;
+  }>;
+}
+
+export interface VentilatorySupportResponse {
+  structuredVentilatorySupport: {
+    summaryLine: string;
+    prescriptionDetails: string;
+    orderRows: Array<{
+      description: string;
+      interfaceRoute: string;
+      frequency: string;
+      scheduling: string;
+    }>;
+  };
+  billingAudit: {
+    itemsForReview: string[];
+    auditAlerts: string[];
+  };
+}
+
+export interface VentilatorySupportSelection {
+  draft: VentilatorySupportDraft;
+  response: VentilatorySupportResponse | null;
 }
 
 export interface ClinicalFormOption {

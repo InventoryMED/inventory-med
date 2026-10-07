@@ -16,6 +16,9 @@ import {
   NursingCarePrescriptionCatalog,
   NursingCarePrescriptionDraft,
   NursingCarePrescriptionResponse,
+  VentilatorySupportCatalog,
+  VentilatorySupportDraft,
+  VentilatorySupportResponse,
 } from './medical.models';
 
 @Injectable({ providedIn: 'root' })
@@ -95,6 +98,21 @@ export class MedicalService {
   previewMonitoring(draft: MonitoringPrescriptionDraft): Promise<MonitoringPrescriptionResponse> {
     return firstValueFrom(
       this.http.post<MonitoringPrescriptionResponse>(`${this.baseUrl}/monitoring/preview`, draft),
+    );
+  }
+
+  ventilatorySupportCatalog(): Promise<VentilatorySupportCatalog> {
+    return firstValueFrom(
+      this.http.get<VentilatorySupportCatalog>(`${this.baseUrl}/ventilatory-support/catalog`),
+    );
+  }
+
+  previewVentilatorySupport(draft: VentilatorySupportDraft): Promise<VentilatorySupportResponse> {
+    return firstValueFrom(
+      this.http.post<VentilatorySupportResponse>(
+        `${this.baseUrl}/ventilatory-support/preview`,
+        draft,
+      ),
     );
   }
 

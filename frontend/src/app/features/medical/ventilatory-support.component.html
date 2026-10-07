@@ -1,0 +1,433 @@
+<section class="ventilatory-field" [class.print-empty-section]="!hasSelection()">
+  <header class="ventilatory-header">
+    <div>
+      <p class="eyebrow">OXIGENOTERAPIA E VENTILAÇÃO</p>
+      <h2>SUPORTE VENTILATÓRIO</h2>
+      <p>DEFINA DISPOSITIVO, INTERFACE, PARÂMETROS, FREQUÊNCIA E APRAZAMENTO.</p>
+    </div>
+    @if (hasSelection()) {
+      <button type="button" class="ghost-button" (click)="reset()">LIMPAR SUPORTE</button>
+    }
+  </header>
+
+  @if (busy() && !catalog()) {
+    <p class="ventilatory-state">CARREGANDO CATÁLOGO DE SUPORTE VENTILATÓRIO...</p>
+  } @else if (catalog(); as options) {
+    <div class="template-row">
+      <label>
+        <span>MODELO PRÉ-CONFIGURADO (OPCIONAL)</span>
+        <select
+          [formControl]="selectedTemplate"
+          (change)="applyTemplate($any($event.target).value)"
+        >
+          <option value="">CRIAR DO ZERO</option>
+          @for (template of options.templates; track template.code) {
+            <option [value]="template.code">{{ template.label }}</option>
+          }
+        </select>
+      </label>
+      <p>MODELOS COM PARÂMETROS EM BRANCO EXIGEM PREENCHIMENTO E VALIDAÇÃO MÉDICA.</p>
+    </div>
+
+    <div class="ventilatory-items">
+      @for (group of items.controls; track group.controls.id.value; let itemIndex = $index) {
+        <fieldset [formGroup]="group" class="ventilatory-item">
+          <legend>
+            <span>{{ (itemIndex + 1).toString().padStart(2, '0') }}</span>
+            ITEM DE SUPORTE VENTILATÓRIO
+          </legend>
+          <button
+            type="button"
+            class="remove-item"
+            (click)="removeItem(itemIndex)"
+            [attr.aria-label]="'REMOVER ITEM ' + (itemIndex + 1)"
+          >
+            REMOVER
+          </button>
+
+          <div class="control-grid">
+            <label class="field field--wide">
+              <span>TIPO DE SUPORTE</span>
+              <select
+                formControlName="supportType"
+                (change)="changeSupportType(group, $any($event.target).value)"
+              >
+                <option value="">SELECIONE</option>
+                @for (option of options.supportTypes; track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          @switch (group.controls.supportType.value) {
+            @case ('ROOM_AIR') {
+              <p class="clinical-note">
+                SEM SUPLEMENTAÇÃO DE OXIGÊNIO. MANTER MONITORIZAÇÃO DE SPO₂ CONFORME A PRESCRIÇÃO.
+              </p>
+            }
+            @case ('LOW_FLOW') {
+              <div class="control-grid">
+                <label class="field field--wide">
+                  <span>DISPOSITIVO</span>
+                  <select
+                    formControlName="lowFlowDevice"
+                    (change)="changeLowFlowDevice(group, $any($event.target).value)"
+                  >
+                    <option value="">SELECIONE</option>
+                    @for (option of options.lowFlowDevices; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                @if (group.controls.lowFlowDevice.value === 'VENTURI_MASK') {
+                  <label class="field">
+                    <span>FIO₂ (%)</span>
+                    <select formControlName="fio2Percent">
+                      <option [ngValue]="null">SELECIONE</option>
+                      @for (value of [24, 28, 31, 35, 40, 50]; track value) {
+                        <option [ngValue]="value">{{ value }}%</option>
+                      }
+                    </select>
+                  </label>
+                } @else if (group.controls.lowFlowDevice.value) {
+                  <label class="field">
+                    <span>FLUXO (L/MIN)</span>
+                    <input
+                      type="number"
+                      step="0.5"
+                      formControlName="oxygenFlowLitersMinute"
+                      placeholder="EX.: 2"
+                    />
+                  </label>
+                }
+                <label class="field field--wide">
+                  <span>FREQUÊNCIA / USO</span>
+                  <select
+                    formControlName="frequency"
+                    (change)="changeFrequency(group, $any($event.target).value)"
+                  >
+                    @for (option of options.lowFlowFrequencies; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+            }
+            @case ('HIGH_FLOW') {
+              <div class="control-grid">
+                <label class="field">
+                  <span>FLUXO (30–60 L/MIN)</span>
+                  <input type="number" min="30" max="60" formControlName="highFlowLitersMinute" />
+                </label>
+                <label class="field">
+                  <span>FIO₂ (21–100%)</span>
+                  <input type="number" min="21" max="100" formControlName="fio2Percent" />
+                </label>
+                <label class="field">
+                  <span>TEMPERATURA (31–37 °C)</span>
+                  <input
+                    type="number"
+                    min="31"
+                    max="37"
+                    step="0.5"
+                    formControlName="temperatureCelsius"
+                  />
+                </label>
+                <label class="field">
+                  <span>TAMANHO DA CÂNULA</span>
+                  <select formControlName="highFlowInterfaceSize">
+                    <option value="">SELECIONE</option>
+                    @for (option of options.highFlowInterfaceSizes; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+            }
+            @case ('NIV') {
+              <div class="control-grid">
+                <label class="field">
+                  <span>MODO</span>
+                  <select
+                    formControlName="nonInvasiveMode"
+                    (change)="changeNonInvasiveMode(group, $any($event.target).value)"
+                  >
+                    <option value="">SELECIONE</option>
+                    @for (option of options.nonInvasiveModes; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="field">
+                  <span>INTERFACE</span>
+                  <select formControlName="nonInvasiveInterface">
+                    <option value="">SELECIONE</option>
+                    @for (option of options.nonInvasiveInterfaces; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                @if (group.controls.nonInvasiveMode.value === 'BIPAP') {
+                  <label class="field">
+                    <span>IPAP (CMH₂O)</span>
+                    <input type="number" min="1" max="40" formControlName="ipapCmH2o" />
+                  </label>
+                }
+                @if (['CPAP', 'BIPAP', 'PSV_PEEP'].includes(group.controls.nonInvasiveMode.value)) {
+                  <label class="field">
+                    <span
+                      >{{
+                        group.controls.nonInvasiveMode.value === 'BIPAP' ? 'EPAP' : 'PEEP'
+                      }}
+                      (CMH₂O)</span
+                    >
+                    <input type="number" min="1" max="30" formControlName="epapPeepCmH2o" />
+                  </label>
+                }
+                @if (group.controls.nonInvasiveMode.value === 'PSV_PEEP') {
+                  <label class="field">
+                    <span>PRESSÃO DE SUPORTE (CMH₂O)</span>
+                    <input type="number" min="1" max="40" formControlName="supportPressureCmH2o" />
+                  </label>
+                }
+                <label class="field">
+                  <span>FIO₂ (%)</span>
+                  <input type="number" min="21" max="100" formControlName="fio2Percent" />
+                </label>
+                @if (group.controls.nonInvasiveMode.value === 'BIPAP') {
+                  <label class="field">
+                    <span>FREQUÊNCIA DE BACKUP (IRPM)</span>
+                    <input type="number" min="1" max="60" formControlName="backupRate" />
+                  </label>
+                }
+                <label class="field">
+                  <span>FREQUÊNCIA / USO</span>
+                  <select
+                    formControlName="frequency"
+                    (change)="changeFrequency(group, $any($event.target).value)"
+                  >
+                    @for (option of options.nonInvasiveFrequencies; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                @if (group.controls.frequency.value === 'EVERY_12H') {
+                  <label class="field">
+                    <span>DURAÇÃO POR SESSÃO (HORAS)</span>
+                    <input
+                      type="number"
+                      min="0.5"
+                      max="12"
+                      step="0.5"
+                      formControlName="sessionHours"
+                    />
+                  </label>
+                }
+              </div>
+            }
+            @case ('IMV') {
+              <div class="control-grid">
+                <label class="field">
+                  <span>VIA AÉREA</span>
+                  <select formControlName="invasiveAirway">
+                    <option value="">SELECIONE</option>
+                    @for (option of options.invasiveAirways; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="field">
+                  <span>NÚMERO / DETALHE DA VIA AÉREA</span>
+                  <input formControlName="airwayDetail" placeholder="EX.: Nº 8.0" maxlength="80" />
+                </label>
+                <label class="field">
+                  <span>MODO VENTILATÓRIO</span>
+                  <select
+                    formControlName="invasiveMode"
+                    (change)="changeInvasiveMode(group, $any($event.target).value)"
+                  >
+                    <option value="">SELECIONE</option>
+                    @for (option of options.invasiveModes; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="field">
+                  <span>PEEP (CMH₂O)</span>
+                  <input type="number" min="0" max="30" step="0.5" formControlName="peepCmH2o" />
+                </label>
+                <label class="field">
+                  <span>FIO₂ (%)</span>
+                  <input type="number" min="21" max="100" formControlName="fio2Percent" />
+                </label>
+                @if (group.controls.invasiveMode.value === 'VCV') {
+                  <label class="field">
+                    <span>VOLUME CORRENTE (ML)</span>
+                    <input type="number" min="50" max="1500" formControlName="tidalVolumeMl" />
+                  </label>
+                  <label class="field">
+                    <span>FREQUÊNCIA RESPIRATÓRIA (IRPM)</span>
+                    <input type="number" min="1" max="80" formControlName="respiratoryRate" />
+                  </label>
+                  <label class="field">
+                    <span>FLUXO INSPIRATÓRIO (L/MIN)</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="120"
+                      step="0.5"
+                      formControlName="inspiratoryFlowLitersMinute"
+                    />
+                  </label>
+                  <label class="field">
+                    <span>TEMPO INSPIRATÓRIO (S) — ALTERNATIVO AO FLUXO</span>
+                    <input
+                      type="number"
+                      min="0.1"
+                      max="5"
+                      step="0.1"
+                      formControlName="inspiratoryTimeSeconds"
+                    />
+                  </label>
+                  <label class="field">
+                    <span>PAUSA INSPIRATÓRIA (S) — OPCIONAL</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      formControlName="pauseSeconds"
+                    />
+                  </label>
+                }
+                @if (group.controls.invasiveMode.value === 'PCV') {
+                  <label class="field">
+                    <span>PRESSÃO INSPIRATÓRIA ACIMA DA PEEP (CMH₂O)</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      formControlName="inspiratoryPressureCmH2o"
+                    />
+                  </label>
+                  <label class="field">
+                    <span>TEMPO INSPIRATÓRIO (S)</span>
+                    <input
+                      type="number"
+                      min="0.1"
+                      max="5"
+                      step="0.1"
+                      formControlName="inspiratoryTimeSeconds"
+                    />
+                  </label>
+                  <label class="field">
+                    <span>FREQUÊNCIA RESPIRATÓRIA (IRPM)</span>
+                    <input type="number" min="1" max="80" formControlName="respiratoryRate" />
+                  </label>
+                }
+                @if (group.controls.invasiveMode.value === 'PSV') {
+                  <label class="field">
+                    <span>PRESSÃO DE SUPORTE (CMH₂O)</span>
+                    <input type="number" min="1" max="50" formControlName="supportPressureCmH2o" />
+                  </label>
+                  <label class="field">
+                    <span>SENSIBILIDADE DO GATILHO</span>
+                    <input
+                      type="number"
+                      min="0.1"
+                      max="20"
+                      step="0.1"
+                      formControlName="triggerSensitivity"
+                    />
+                  </label>
+                }
+              </div>
+              <div class="goal-grid">
+                <strong>METAS GASOMÉTRICAS E CUIDADOS</strong>
+                @for (goal of options.protectiveGoals; track goal.code) {
+                  <label>
+                    <input
+                      type="checkbox"
+                      [checked]="goalSelected(group, goal.code)"
+                      (change)="toggleGoal(group, goal.code, $any($event.target).checked)"
+                    />
+                    <span>{{ goal.label }}</span>
+                  </label>
+                }
+              </div>
+            }
+          }
+
+          @if (group.controls.supportType.value) {
+            <div class="apportionment-row">
+              <label class="field">
+                <span>APRAZAMENTO</span>
+                <select formControlName="scheduling">
+                  @for (option of options.schedulingOptions; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+              <p>O APRAZAMENTO É AJUSTADO AUTOMATICAMENTE À FREQUÊNCIA E VALIDADO PELA API.</p>
+            </div>
+          }
+        </fieldset>
+      }
+    </div>
+
+    @if (items.length === 0) {
+      <div class="empty-support">
+        <strong>NENHUM SUPORTE VENTILATÓRIO ADICIONADO</strong>
+        <span>SELECIONE UM MODELO OU CRIE UM ITEM DO ZERO.</span>
+      </div>
+    }
+
+    <div class="ventilatory-actions">
+      <button type="button" class="add-support" [disabled]="items.length >= 4" (click)="addItem()">
+        + ADICIONAR SUPORTE
+      </button>
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="busy() || !hasSelection()"
+        (click)="generatePreview()"
+      >
+        {{ busy() ? 'VALIDANDO...' : 'GERAR E REVISAR SUPORTE' }}
+      </button>
+    </div>
+  }
+
+  @if (error()) {
+    <p class="ventilatory-error" role="alert">{{ error() }}</p>
+  }
+  @if (preview(); as result) {
+    <section class="ventilatory-preview" aria-label="PRÉVIA DO SUPORTE VENTILATÓRIO">
+      <div class="clinical-preview">
+        <span>RESUMO PARA A PRESCRIÇÃO</span>
+        <strong>{{ result.structuredVentilatorySupport.summaryLine }}</strong>
+        <pre>{{ result.structuredVentilatorySupport.prescriptionDetails }}</pre>
+      </div>
+      <div class="audit-preview">
+        <div>
+          <span>ITENS PARA CONFERÊNCIA</span>
+          <ul>
+            @for (item of result.billingAudit.itemsForReview; track item) {
+              <li>{{ item }}</li>
+            } @empty {
+              <li>NENHUM ITEM ESPECÍFICO GERADO.</li>
+            }
+          </ul>
+        </div>
+        <div>
+          <span>ALERTAS DE REGISTRO E SEGURANÇA</span>
+          <ul>
+            @for (item of result.billingAudit.auditAlerts; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+    </section>
+  }
+</section>

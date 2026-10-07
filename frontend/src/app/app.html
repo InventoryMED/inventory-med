@@ -584,6 +584,9 @@
                 (selectionChange)="updateNursingCareSelection($event)"
               />
               <app-monitoring-prescription (selectionChange)="updateMonitoringSelection($event)" />
+              <app-ventilatory-support
+                (selectionChange)="updateVentilatorySupportSelection($event)"
+              />
               <section
                 class="clinical-order-section"
                 [class.print-empty-section]="!hydrationRow.description.trim()"
@@ -930,6 +933,13 @@
                       <div class="print-check-in"><strong>CHECK-IN</strong></div>
                     }
                   </div>
+                </section>
+              }
+
+              @if (ventilatorySupportPreview(); as preview) {
+                <section class="print-diet-prescription print-ventilatory-support">
+                  <strong>SUPORTE VENTILATÓRIO E OXIGENOTERAPIA</strong>
+                  <span>{{ preview.structuredVentilatorySupport.prescriptionDetails }}</span>
                 </section>
               }
 

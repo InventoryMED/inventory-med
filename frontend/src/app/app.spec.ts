@@ -79,6 +79,7 @@ describe('App', () => {
     expect(prophylaxis.rows[0].description).toContain('OMEPRAZOL');
     expect(app.monitoringDraft.vitalSigns.frequency).toBe('');
     expect(app.monitoringDraft.glucoseMonitoring.hypoglycemiaProtocol).toBe(false);
+    expect(app.ventilatorySupportDraft).toEqual({ selectedTemplate: '', items: [] });
     expect(app.observationRows).toEqual(['']);
     expect(app.abnormalityRows).toEqual(['']);
   });
@@ -93,6 +94,21 @@ describe('App', () => {
     app.addMedicationRow(symptomatics);
     app.monitoringDraft.vitalSigns.frequency = '6/6H';
     app.monitoringDraft.glucoseMonitoring.frequency = '4/4H';
+    app.ventilatorySupportPreview.set({
+      structuredVentilatorySupport: {
+        summaryLine: 'CATETER NASAL DE O₂ 2 L/MIN.',
+        prescriptionDetails: 'CATETER NASAL DE O₂ 2 L/MIN.',
+        orderRows: [
+          {
+            description: 'CATETER NASAL DE O₂ 2 L/MIN',
+            interfaceRoute: 'CATETER NASAL',
+            frequency: 'SN SE SPO₂ < 92%',
+            scheduling: 'SN',
+          },
+        ],
+      },
+      billingAudit: { itemsForReview: [], auditAlerts: [] },
+    });
 
     expect(symptomatics.rows[0]).toMatchObject({
       route: 'EV',
@@ -115,6 +131,12 @@ describe('App', () => {
           section: 'MONITORIZAÇÃO',
           description: 'DXT',
           frequency: '4/4H',
+        }),
+        expect.objectContaining({
+          section: 'SUPORTE VENTILATÓRIO',
+          description: 'CATETER NASAL DE O₂ 2 L/MIN',
+          route: 'CATETER NASAL',
+          scheduling: 'SN',
         }),
       ]),
     );
