@@ -587,6 +587,9 @@
               <app-ventilatory-support
                 (selectionChange)="updateVentilatorySupportSelection($event)"
               />
+              <app-rehabilitation-prescription
+                (selectionChange)="updateRehabilitationSelection($event)"
+              />
               <section
                 class="clinical-order-section"
                 [class.print-empty-section]="!hydrationRow.description.trim()"
@@ -940,6 +943,13 @@
                 <section class="print-diet-prescription print-ventilatory-support">
                   <strong>SUPORTE VENTILATÓRIO E OXIGENOTERAPIA</strong>
                   <span>{{ preview.structuredVentilatorySupport.prescriptionDetails }}</span>
+                </section>
+              }
+
+              @if (rehabilitationPreview(); as preview) {
+                <section class="print-diet-prescription print-rehabilitation">
+                  <strong>REABILITAÇÃO MULTIDISCIPLINAR</strong>
+                  <span>{{ preview.structuredRehabilitation.prescriptionDetails }}</span>
                 </section>
               }
 

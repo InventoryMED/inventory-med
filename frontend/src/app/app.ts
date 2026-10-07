@@ -9,6 +9,7 @@ import { AdministrationComponent } from './features/administration/administratio
 import { DietPrescriptionComponent } from './features/medical/diet-prescription.component';
 import { MonitoringPrescriptionComponent } from './features/medical/monitoring-prescription.component';
 import { NursingCarePrescriptionComponent } from './features/medical/nursing-care-prescription.component';
+import { RehabilitationPrescriptionComponent } from './features/medical/rehabilitation-prescription.component';
 import { VentilatorySupportComponent } from './features/medical/ventilatory-support.component';
 import {
   ClinicalFormKind,
@@ -22,6 +23,9 @@ import {
   NursingCarePrescriptionDraft,
   NursingCarePrescriptionResponse,
   NursingCarePrescriptionSelection,
+  RehabilitationDraft,
+  RehabilitationResponse,
+  RehabilitationSelection,
   VentilatorySupportDraft,
   VentilatorySupportResponse,
   VentilatorySupportSelection,
@@ -213,6 +217,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
     NursingCarePrescriptionComponent,
     MonitoringPrescriptionComponent,
     VentilatorySupportComponent,
+    RehabilitationPrescriptionComponent,
   ],
   selector: 'app-root',
   styleUrl: './app.scss',
@@ -243,6 +248,8 @@ export class App implements OnInit {
   private readonly monitoringComponent = viewChild(MonitoringPrescriptionComponent);
   protected readonly ventilatorySupportPreview = signal<VentilatorySupportResponse | null>(null);
   private readonly ventilatorySupportComponent = viewChild(VentilatorySupportComponent);
+  protected readonly rehabilitationPreview = signal<RehabilitationResponse | null>(null);
+  private readonly rehabilitationComponent = viewChild(RehabilitationPrescriptionComponent);
 
   protected loginEmail = '';
   protected loginPassword = '';
@@ -263,6 +270,7 @@ export class App implements OnInit {
   protected nursingCareDraft: NursingCarePrescriptionDraft = this.emptyNursingCareDraft();
   protected monitoringDraft: MonitoringPrescriptionDraft = this.emptyMonitoringDraft();
   protected ventilatorySupportDraft: VentilatorySupportDraft = this.emptyVentilatorySupportDraft();
+  protected rehabilitationDraft: RehabilitationDraft = this.emptyRehabilitationDraft();
   protected evolutionDiet = '';
   protected evolutionAdmission = '';
   protected evolutionText = '';
@@ -1058,6 +1066,15 @@ export class App implements OnInit {
         scheduling: row.scheduling,
       }),
     );
+    this.rehabilitationPreview()?.structuredRehabilitation.orderRows.forEach((row) =>
+      rows.push({
+        section: 'REABILITAÇÃO',
+        description: `${row.specialty}: ${row.description}`,
+        route: '—',
+        frequency: row.frequency,
+        scheduling: row.scheduling,
+      }),
+    );
     if (this.hydrationRow.description.trim()) {
       rows.push({
         section: 'HIDRATAÇÃO',
@@ -1143,6 +1160,8 @@ export class App implements OnInit {
     const ventilatorySupportIsValid =
       await this.ventilatorySupportComponent()?.validateAndPreview();
     if (ventilatorySupportIsValid === false) return;
+    const rehabilitationIsValid = await this.rehabilitationComponent()?.validateAndPreview();
+    if (rehabilitationIsValid === false) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
     const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
     const validHydrationRows = this.hydrationRow.description.trim() ? [this.hydrationRow] : [];
@@ -1161,7 +1180,8 @@ export class App implements OnInit {
         !this.dietDraft.type &&
         !this.nursingCareComponent()?.hasSelection() &&
         !this.monitoringComponent()?.hasSelection() &&
-        !this.ventilatorySupportComponent()?.hasSelection())
+        !this.ventilatorySupportComponent()?.hasSelection() &&
+        !this.rehabilitationComponent()?.hasSelection())
     ) {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
@@ -1246,6 +1266,11 @@ export class App implements OnInit {
   protected updateVentilatorySupportSelection(selection: VentilatorySupportSelection): void {
     this.ventilatorySupportDraft = selection.draft;
     this.ventilatorySupportPreview.set(selection.response);
+  }
+
+  protected updateRehabilitationSelection(selection: RehabilitationSelection): void {
+    this.rehabilitationDraft = selection.draft;
+    this.rehabilitationPreview.set(selection.response);
   }
 
   protected prescriptionItemCount(prescription: Prescription): number {
@@ -1490,6 +1515,9 @@ export class App implements OnInit {
     if (this.ventilatorySupportComponent()?.hasSelection()) {
       values['SUPORTE_VENTILATORIO.PLANO'] = this.ventilatorySupportDraft;
     }
+    if (this.rehabilitationComponent()?.hasSelection()) {
+      values['REABILITACAO.PLANO'] = this.rehabilitationDraft;
+    }
     if (hydration.length) {
       values['MEDICAMENTOS.HIDRATACAO'] = hydration.map((row) => this.medicationDocumentRow(row));
     }
@@ -1558,6 +1586,8 @@ export class App implements OnInit {
     this.monitoringPreview.set(null);
     this.ventilatorySupportDraft = this.emptyVentilatorySupportDraft();
     this.ventilatorySupportPreview.set(null);
+    this.rehabilitationDraft = this.emptyRehabilitationDraft();
+    this.rehabilitationPreview.set(null);
     this.observationRows = [];
     this.abnormalityRows = [];
     this.hydrationRow = this.emptyHydrationRow();
@@ -1634,6 +1664,10 @@ export class App implements OnInit {
   }
 
   private emptyVentilatorySupportDraft(): VentilatorySupportDraft {
+    return { selectedTemplate: '', items: [] };
+  }
+
+  private emptyRehabilitationDraft(): RehabilitationDraft {
     return { selectedTemplate: '', items: [] };
   }
 
@@ -1954,6 +1988,9 @@ export class App implements OnInit {
     this.ventilatorySupportDraft = this.emptyVentilatorySupportDraft();
     this.ventilatorySupportPreview.set(null);
     this.ventilatorySupportComponent()?.reset();
+    this.rehabilitationDraft = this.emptyRehabilitationDraft();
+    this.rehabilitationPreview.set(null);
+    this.rehabilitationComponent()?.reset();
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
     this.medicationGroups = this.buildMedicationGroups();

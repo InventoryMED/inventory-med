@@ -6,6 +6,7 @@ import {
   DietPrescriptionDraft,
   MonitoringPrescriptionDraft,
   NursingCarePrescriptionDraft,
+  RehabilitationDraft,
   VentilatorySupportDraft,
 } from './medical.models';
 import { MedicalService } from './medical.service';
@@ -259,5 +260,60 @@ describe('MedicalService', () => {
       billingAudit: { itemsForReview: [], auditAlerts: [] },
     });
     expect((await previewPromise).structuredVentilatorySupport.orderRows).toHaveLength(1);
+  });
+
+  it('loads the rehabilitation catalog and validates the multidisciplinary plan in the backend', async () => {
+    const catalogPromise = service.rehabilitationCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/rehabilitation/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      specialties: [{ code: 'MOTOR_PHYSIOTHERAPY', label: 'FISIOTERAPIA MOTORA' }],
+      respiratoryProcedures: [],
+      motorProcedures: [{ code: 'PASSIVE_MOBILIZATION', label: 'MOBILIZAÇÃO PASSIVA' }],
+      speechTherapyProcedures: [],
+      occupationalTherapyProcedures: [],
+      respiratoryFrequencies: [],
+      motorFrequencies: [{ code: 'DAILY', label: '1X AO DIA' }],
+      speechTherapyFrequencies: [],
+      occupationalTherapyFrequencies: [],
+      schedulingOptions: [{ code: 'FIXED', label: 'FIXO' }],
+      templates: [],
+    });
+    expect((await catalogPromise).motorProcedures[0].code).toBe('PASSIVE_MOBILIZATION');
+
+    const draft: RehabilitationDraft = {
+      selectedTemplate: 'MOTOR_PASSIVE_DAILY',
+      items: [
+        {
+          id: 1,
+          specialty: 'MOTOR_PHYSIOTHERAPY',
+          procedure: 'PASSIVE_MOBILIZATION',
+          frequency: 'DAILY',
+          scheduling: 'FIXED',
+          clinicalJustification: '',
+        },
+      ],
+    };
+    const previewPromise = service.previewRehabilitation(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/rehabilitation/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredRehabilitation: {
+        summaryLine: 'FISIOTERAPIA MOTORA: MOBILIZAÇÃO PASSIVA — 1X AO DIA.',
+        prescriptionDetails: 'REABILITAÇÃO MULTIDISCIPLINAR.',
+        orderRows: [
+          {
+            description: 'MOBILIZAÇÃO PASSIVA',
+            specialty: 'FISIOTERAPIA MOTORA',
+            frequency: '1X AO DIA',
+            scheduling: 'FIXO',
+          },
+        ],
+      },
+      billingAudit: { itemsForReview: [], auditAlerts: [] },
+    });
+    expect((await previewPromise).structuredRehabilitation.orderRows).toHaveLength(1);
   });
 });

@@ -1,0 +1,163 @@
+<section class="rehabilitation-field" [class.print-empty-section]="!hasSelection()">
+  <header class="rehabilitation-header">
+    <div>
+      <p class="eyebrow">ASSISTÊNCIA MULTIDISCIPLINAR</p>
+      <h2>REABILITAÇÃO MULTIDISCIPLINAR</h2>
+      <p>DEFINA ESPECIALIDADE, CONDUTA, FREQUÊNCIA E APRAZAMENTO.</p>
+    </div>
+    @if (hasSelection()) {
+      <button type="button" class="ghost-button" (click)="reset()">LIMPAR REABILITAÇÃO</button>
+    }
+  </header>
+
+  @if (busy() && !catalog()) {
+    <p class="rehabilitation-state">CARREGANDO CATÁLOGO DE REABILITAÇÃO...</p>
+  } @else if (catalog(); as options) {
+    <div class="template-row">
+      <label>
+        <span>MODELO PRÉ-CONFIGURADO (OPCIONAL)</span>
+        <select
+          [formControl]="selectedTemplate"
+          (change)="applyTemplate($any($event.target).value)"
+        >
+          <option value="">CRIAR DO ZERO</option>
+          @for (template of options.templates; track template.code) {
+            <option [value]="template.code">{{ template.label }}</option>
+          }
+        </select>
+      </label>
+      <p>TODO ATENDIMENTO DEVE SER EXECUTADO E REGISTRADO PELO PROFISSIONAL RESPONSÁVEL.</p>
+    </div>
+
+    <div class="rehabilitation-items">
+      @for (group of items.controls; track group.controls.id.value; let itemIndex = $index) {
+        <fieldset [formGroup]="group" class="rehabilitation-item">
+          <legend>
+            <span>{{ itemIndex + 1 }}</span>
+            CONDUTA DE REABILITAÇÃO
+          </legend>
+          <button
+            type="button"
+            class="remove-item"
+            (click)="removeItem(itemIndex)"
+            [attr.aria-label]="'REMOVER CONDUTA ' + (itemIndex + 1)"
+          >
+            REMOVER
+          </button>
+
+          <div class="control-grid">
+            <label class="field field--wide">
+              <span>ESPECIALIDADE</span>
+              <select
+                formControlName="specialty"
+                (change)="changeSpecialty(group, $any($event.target).value)"
+              >
+                <option value="">SELECIONE</option>
+                @for (option of options.specialties; track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field field--wide">
+              <span>OBJETIVO / CONDUTA</span>
+              <select formControlName="procedure">
+                <option value="">SELECIONE</option>
+                @for (option of proceduresFor(group.controls.specialty.value); track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>FREQUÊNCIA</span>
+              <select
+                formControlName="frequency"
+                (change)="changeFrequency(group, $any($event.target).value)"
+              >
+                <option value="">SELECIONE</option>
+                @for (option of frequenciesFor(group.controls.specialty.value); track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>APRAZAMENTO</span>
+              <select formControlName="scheduling">
+                <option value="">SELECIONE A FREQUÊNCIA</option>
+                @for (option of options.schedulingOptions; track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          @if (requiresJustification(group)) {
+            <label class="field justification-field">
+              <span>JUSTIFICATIVA CLÍNICA OBRIGATÓRIA</span>
+              <textarea
+                formControlName="clinicalJustification"
+                maxlength="500"
+                rows="3"
+                placeholder="INFORME SUPORTE VENTILATÓRIO, RISCO DE IMOBILISMO OU OUTRA INDICAÇÃO CLÍNICA"
+              ></textarea>
+              <small>
+                NECESSÁRIA PARA DUAS OU TRÊS SESSÕES DIÁRIAS E PARA A CONFERÊNCIA DE AUDITORIA.
+              </small>
+            </label>
+          }
+        </fieldset>
+      }
+    </div>
+
+    @if (!items.length) {
+      <p class="empty-rehabilitation">
+        NENHUMA CONDUTA SELECIONADA. USE UM MODELO OU ADICIONE UMA CONDUTA.
+      </p>
+    }
+
+    <div class="rehabilitation-actions">
+      <button
+        type="button"
+        class="add-rehabilitation"
+        (click)="addItem()"
+        [disabled]="items.length >= 12"
+      >
+        + ADICIONAR CONDUTA
+      </button>
+      <button
+        type="button"
+        class="primary-button"
+        (click)="generatePreview()"
+        [disabled]="busy() || !hasSelection()"
+      >
+        {{ busy() ? 'VALIDANDO...' : 'VALIDAR REABILITAÇÃO' }}
+      </button>
+    </div>
+  }
+
+  @if (error(); as message) {
+    <p class="rehabilitation-error" role="alert">{{ message }}</p>
+  }
+
+  @if (preview(); as result) {
+    <section class="rehabilitation-preview" aria-live="polite">
+      <article class="clinical-preview">
+        <h3>PRÉVIA CLÍNICA</h3>
+        <p>{{ result.structuredRehabilitation.prescriptionDetails }}</p>
+      </article>
+      <article class="audit-preview">
+        <h3>CONFERÊNCIA DE AUDITORIA</h3>
+        <ul>
+          @for (item of result.billingAudit.itemsForReview; track item) {
+            <li>{{ item }}</li>
+          }
+          @for (alert of result.billingAudit.auditAlerts; track alert) {
+            <li>{{ alert }}</li>
+          }
+        </ul>
+      </article>
+    </section>
+  }
+</section>

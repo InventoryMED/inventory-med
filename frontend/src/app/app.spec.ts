@@ -80,6 +80,7 @@ describe('App', () => {
     expect(app.monitoringDraft.vitalSigns.frequency).toBe('');
     expect(app.monitoringDraft.glucoseMonitoring.hypoglycemiaProtocol).toBe(false);
     expect(app.ventilatorySupportDraft).toEqual({ selectedTemplate: '', items: [] });
+    expect(app.rehabilitationDraft).toEqual({ selectedTemplate: '', items: [] });
     expect(app.observationRows).toEqual(['']);
     expect(app.abnormalityRows).toEqual(['']);
   });
@@ -104,6 +105,21 @@ describe('App', () => {
             interfaceRoute: 'CATETER NASAL',
             frequency: 'SN SE SPO₂ < 92%',
             scheduling: 'SN',
+          },
+        ],
+      },
+      billingAudit: { itemsForReview: [], auditAlerts: [] },
+    });
+    app.rehabilitationPreview.set({
+      structuredRehabilitation: {
+        summaryLine: 'FISIOTERAPIA MOTORA: MOBILIZAÇÃO PASSIVA — 1X AO DIA.',
+        prescriptionDetails: 'REABILITAÇÃO MULTIDISCIPLINAR.',
+        orderRows: [
+          {
+            description: 'MOBILIZAÇÃO PASSIVA NO LEITO',
+            specialty: 'FISIOTERAPIA MOTORA',
+            frequency: '1X AO DIA',
+            scheduling: 'FIXO',
           },
         ],
       },
@@ -137,6 +153,12 @@ describe('App', () => {
           description: 'CATETER NASAL DE O₂ 2 L/MIN',
           route: 'CATETER NASAL',
           scheduling: 'SN',
+        }),
+        expect.objectContaining({
+          section: 'REABILITAÇÃO',
+          description: 'FISIOTERAPIA MOTORA: MOBILIZAÇÃO PASSIVA NO LEITO',
+          route: '—',
+          scheduling: 'FIXO',
         }),
       ]),
     );

@@ -43,6 +43,7 @@ public class MedicalWorkspaceController {
     private final NursingCarePrescriptionService nursingCarePrescriptionService;
     private final MonitoringPrescriptionService monitoringPrescriptionService;
     private final VentilatorySupportService ventilatorySupportService;
+    private final RehabilitationPrescriptionService rehabilitationPrescriptionService;
 
     public MedicalWorkspaceController(
         HospitalSessionContext sessionContext,
@@ -51,7 +52,8 @@ public class MedicalWorkspaceController {
         DietPrescriptionService dietPrescriptionService,
         NursingCarePrescriptionService nursingCarePrescriptionService,
         MonitoringPrescriptionService monitoringPrescriptionService,
-        VentilatorySupportService ventilatorySupportService
+        VentilatorySupportService ventilatorySupportService,
+        RehabilitationPrescriptionService rehabilitationPrescriptionService
     ) {
         this.sessionContext = sessionContext;
         this.workspaceService = workspaceService;
@@ -60,6 +62,7 @@ public class MedicalWorkspaceController {
         this.nursingCarePrescriptionService = nursingCarePrescriptionService;
         this.monitoringPrescriptionService = monitoringPrescriptionService;
         this.ventilatorySupportService = ventilatorySupportService;
+        this.rehabilitationPrescriptionService = rehabilitationPrescriptionService;
     }
 
     @GetMapping("/workspace")
@@ -190,6 +193,21 @@ public class MedicalWorkspaceController {
     ) {
         sessionContext.require(session, MEDICAL_ROLES);
         return ventilatorySupportService.preview(body);
+    }
+
+    @GetMapping("/rehabilitation/catalog")
+    public RehabilitationPrescriptionCatalog rehabilitationCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return rehabilitationPrescriptionService.catalog();
+    }
+
+    @PostMapping("/rehabilitation/preview")
+    public RehabilitationPrescriptionResponse previewRehabilitation(
+        HttpSession session,
+        @Valid @RequestBody RehabilitationPrescriptionRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return rehabilitationPrescriptionService.preview(body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")

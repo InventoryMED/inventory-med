@@ -60,7 +60,8 @@ export type ClinicalFieldType =
   | 'DIET_PLAN'
   | 'NURSING_CARE_PLAN'
   | 'MONITORING_PLAN'
-  | 'VENTILATORY_SUPPORT_PLAN';
+  | 'VENTILATORY_SUPPORT_PLAN'
+  | 'REHABILITATION_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -330,6 +331,60 @@ export interface VentilatorySupportResponse {
 export interface VentilatorySupportSelection {
   draft: VentilatorySupportDraft;
   response: VentilatorySupportResponse | null;
+}
+
+export interface RehabilitationItemDraft {
+  id: number;
+  specialty: string;
+  procedure: string;
+  frequency: string;
+  scheduling: string;
+  clinicalJustification: string;
+}
+
+export interface RehabilitationDraft {
+  selectedTemplate: string;
+  items: RehabilitationItemDraft[];
+}
+
+export interface RehabilitationCatalog {
+  specialties: VentilatorySupportOption[];
+  respiratoryProcedures: VentilatorySupportOption[];
+  motorProcedures: VentilatorySupportOption[];
+  speechTherapyProcedures: VentilatorySupportOption[];
+  occupationalTherapyProcedures: VentilatorySupportOption[];
+  respiratoryFrequencies: VentilatorySupportOption[];
+  motorFrequencies: VentilatorySupportOption[];
+  speechTherapyFrequencies: VentilatorySupportOption[];
+  occupationalTherapyFrequencies: VentilatorySupportOption[];
+  schedulingOptions: VentilatorySupportOption[];
+  templates: Array<{
+    code: string;
+    label: string;
+    item: RehabilitationItemDraft;
+  }>;
+}
+
+export interface RehabilitationResponse {
+  structuredRehabilitation: {
+    summaryLine: string;
+    prescriptionDetails: string;
+    orderRows: Array<{
+      description: string;
+      specialty: string;
+      frequency: string;
+      scheduling: string;
+    }>;
+  };
+  billingAudit: {
+    itemsForReview: string[];
+    auditAlerts: string[];
+  };
+}
+
+export interface RehabilitationSelection {
+  draft: RehabilitationDraft;
+  response: RehabilitationResponse | null;
 }
 
 export interface ClinicalFormOption {

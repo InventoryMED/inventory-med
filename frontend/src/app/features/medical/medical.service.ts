@@ -16,6 +16,9 @@ import {
   NursingCarePrescriptionCatalog,
   NursingCarePrescriptionDraft,
   NursingCarePrescriptionResponse,
+  RehabilitationCatalog,
+  RehabilitationDraft,
+  RehabilitationResponse,
   VentilatorySupportCatalog,
   VentilatorySupportDraft,
   VentilatorySupportResponse,
@@ -113,6 +116,18 @@ export class MedicalService {
         `${this.baseUrl}/ventilatory-support/preview`,
         draft,
       ),
+    );
+  }
+
+  rehabilitationCatalog(): Promise<RehabilitationCatalog> {
+    return firstValueFrom(
+      this.http.get<RehabilitationCatalog>(`${this.baseUrl}/rehabilitation/catalog`),
+    );
+  }
+
+  previewRehabilitation(draft: RehabilitationDraft): Promise<RehabilitationResponse> {
+    return firstValueFrom(
+      this.http.post<RehabilitationResponse>(`${this.baseUrl}/rehabilitation/preview`, draft),
     );
   }
 

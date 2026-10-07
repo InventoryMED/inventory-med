@@ -774,6 +774,17 @@ class CoreSecurityIntegrationTests {
                                 "nonInvasive":null,
                                 "invasive":null
                               }]
+                            },
+                            "REABILITACAO.PLANO":{
+                              "selectedTemplate":"MOTOR_PASSIVE_DAILY",
+                              "items":[{
+                                "id":1,
+                                "specialty":"MOTOR_PHYSIOTHERAPY",
+                                "procedure":"PASSIVE_MOBILIZATION",
+                                "frequency":"DAILY",
+                                "scheduling":"FIXED",
+                                "clinicalJustification":""
+                              }]
                             }
                           },
                           "finalizeDocument":true
@@ -794,6 +805,10 @@ class CoreSecurityIntegrationTests {
             .andExpect(
                 jsonPath("$.values['SUPORTE_VENTILATORIO.PLANO'].structuredVentilatorySupport.summaryLine")
                     .value(org.hamcrest.Matchers.containsString("CATETER NASAL DE O₂"))
+            )
+            .andExpect(
+                jsonPath("$.values['REABILITACAO.PLANO'].structuredRehabilitation.summaryLine")
+                    .value(org.hamcrest.Matchers.containsString("MOBILIZAÇÃO PASSIVA"))
             )
             .andReturn();
         UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");
