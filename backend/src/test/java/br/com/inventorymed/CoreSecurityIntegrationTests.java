@@ -712,6 +712,20 @@ class CoreSecurityIntegrationTests {
                 UUID.class
             )
         );
+        List<String> structuredSectionOrder = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForList(
+                "SELECT section_key FROM dbo.form_section WHERE version_id = ? " +
+                    "AND section_key IN ('REABILITACAO', 'PRECAUCOES_ISOLAMENTO', 'SUPORTE_TERAPEUTICO') " +
+                    "ORDER BY display_order",
+                String.class,
+                templateVersionId
+            )
+        );
+        assertThat(structuredSectionOrder).containsExactly(
+            "REABILITACAO",
+            "PRECAUCOES_ISOLAMENTO",
+            "SUPORTE_TERAPEUTICO"
+        );
         MvcResult finalized = mockMvc
             .perform(
                 post("/clinical/admissions/" + admissionId + "/documents")

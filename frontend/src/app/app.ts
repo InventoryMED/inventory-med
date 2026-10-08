@@ -1041,9 +1041,6 @@ export class App implements OnInit {
         scheduling: '—',
       });
     }
-    this.therapeuticSupportPreview()?.structuredTherapeuticSupport.orderRows.forEach((row) =>
-      rows.push(row),
-    );
     this.ventilatorySupportPreview()?.structuredVentilatorySupport.orderRows.forEach((row) =>
       rows.push({
         section: 'SUPORTE VENTILATÓRIO',
@@ -1070,6 +1067,9 @@ export class App implements OnInit {
         frequency: row.durationReview,
         scheduling: row.scheduling,
       }),
+    );
+    this.therapeuticSupportPreview()?.structuredTherapeuticSupport.orderRows.forEach((row) =>
+      rows.push(row),
     );
     this.medicationGroups.forEach((group) =>
       group.rows
@@ -1138,9 +1138,6 @@ export class App implements OnInit {
     if (nursingCareIsValid === false) return;
     const monitoringIsValid = await this.monitoringComponent()?.validateAndPreview();
     if (monitoringIsValid === false) return;
-    const therapeuticSupportIsValid =
-      await this.therapeuticSupportComponent()?.validateAndPreview();
-    if (therapeuticSupportIsValid === false) return;
     const ventilatorySupportIsValid =
       await this.ventilatorySupportComponent()?.validateAndPreview();
     if (ventilatorySupportIsValid === false) return;
@@ -1149,6 +1146,9 @@ export class App implements OnInit {
     const isolationPrecautionIsValid =
       await this.isolationPrecautionComponent()?.validateAndPreview();
     if (isolationPrecautionIsValid === false) return;
+    const therapeuticSupportIsValid =
+      await this.therapeuticSupportComponent()?.validateAndPreview();
+    if (therapeuticSupportIsValid === false) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
     const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
     const validMedicationSections: MedicationSectionDraft[] = this.medicationGroups
@@ -1503,9 +1503,6 @@ export class App implements OnInit {
     if (this.monitoringComponent()?.hasSelection()) {
       values['MONITORIZACAO.CONTROLES'] = this.monitoringDraft;
     }
-    if (this.therapeuticSupportComponent()?.hasSelection()) {
-      values['SUPORTE_TERAPEUTICO.PLANO'] = this.therapeuticSupportDraft;
-    }
     if (this.ventilatorySupportComponent()?.hasSelection()) {
       values['SUPORTE_VENTILATORIO.PLANO'] = this.ventilatorySupportDraft;
     }
@@ -1514,6 +1511,9 @@ export class App implements OnInit {
     }
     if (this.isolationPrecautionComponent()?.hasSelection()) {
       values['PRECAUCOES_ISOLAMENTO.PLANO'] = this.isolationPrecautionDraft;
+    }
+    if (this.therapeuticSupportComponent()?.hasSelection()) {
+      values['SUPORTE_TERAPEUTICO.PLANO'] = this.therapeuticSupportDraft;
     }
     const sectionKeys: Record<MedicationSectionId, string> = {
       ANALGESIA: 'ANALGESIA',

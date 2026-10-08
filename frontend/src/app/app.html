@@ -584,17 +584,17 @@
                 (selectionChange)="updateNursingCareSelection($event)"
               />
               <app-monitoring-prescription (selectionChange)="updateMonitoringSelection($event)" />
-              <app-therapeutic-support
-                (selectionChange)="updateTherapeuticSupportSelection($event)"
-              />
-              <app-isolation-precautions
-                (selectionChange)="updateIsolationPrecautionSelection($event)"
-              />
               <app-ventilatory-support
                 (selectionChange)="updateVentilatorySupportSelection($event)"
               />
               <app-rehabilitation-prescription
                 (selectionChange)="updateRehabilitationSelection($event)"
+              />
+              <app-isolation-precautions
+                (selectionChange)="updateIsolationPrecautionSelection($event)"
+              />
+              <app-therapeutic-support
+                (selectionChange)="updateTherapeuticSupportSelection($event)"
               />
               @for (group of medicationGroups; track group.id) {
                 <section
@@ -850,13 +850,6 @@
                 </div>
               </section>
 
-              @if (isolationPrecautionPreview(); as preview) {
-                <section class="print-diet-prescription print-isolation-precautions">
-                  <strong>PRECAUÇÕES E ISOLAMENTO</strong>
-                  <span>{{ preview.structuredIsolation.prescriptionDetails }}</span>
-                </section>
-              }
-
               @if (dietPreview(); as preview) {
                 <section class="print-diet-prescription">
                   <strong>DIETA / TERAPIA NUTRICIONAL</strong>
@@ -880,18 +873,6 @@
                 </section>
               }
 
-              @if (therapeuticSupportPreview(); as preview) {
-                <section class="print-diet-prescription print-monitoring">
-                  <strong>HIDRATAÇÃO, CONTROLE GLICÊMICO E HEMOTERAPIA</strong>
-                  <div class="print-monitoring-content">
-                    <span>{{ preview.structuredTherapeuticSupport.prescriptionDetails }}</span>
-                    @if (therapeuticSupportDraft.glucoseControl.frequency) {
-                      <div class="print-check-in"><strong>CHECK-IN</strong></div>
-                    }
-                  </div>
-                </section>
-              }
-
               @if (ventilatorySupportPreview(); as preview) {
                 <section class="print-diet-prescription print-ventilatory-support">
                   <strong>SUPORTE VENTILATÓRIO E OXIGENOTERAPIA</strong>
@@ -903,6 +884,25 @@
                 <section class="print-diet-prescription print-rehabilitation">
                   <strong>REABILITAÇÃO MULTIDISCIPLINAR</strong>
                   <span>{{ preview.structuredRehabilitation.prescriptionDetails }}</span>
+                </section>
+              }
+
+              @if (isolationPrecautionPreview(); as preview) {
+                <section class="print-diet-prescription print-isolation-precautions">
+                  <strong>PRECAUÇÕES E ISOLAMENTO</strong>
+                  <span>{{ preview.structuredIsolation.prescriptionDetails }}</span>
+                </section>
+              }
+
+              @if (therapeuticSupportPreview(); as preview) {
+                <section class="print-diet-prescription print-monitoring">
+                  <strong>HIDRATAÇÃO, CONTROLE GLICÊMICO E HEMOTERAPIA</strong>
+                  <div class="print-monitoring-content">
+                    <span>{{ preview.structuredTherapeuticSupport.prescriptionDetails }}</span>
+                    @if (therapeuticSupportDraft.glucoseControl.frequency) {
+                      <div class="print-check-in"><strong>CHECK-IN</strong></div>
+                    }
+                  </div>
                 </section>
               }
 

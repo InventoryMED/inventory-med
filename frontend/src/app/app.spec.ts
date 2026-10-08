@@ -174,7 +174,8 @@ describe('App', () => {
       scheduling: 'SN',
     });
     expect(symptomatics.rows).toHaveLength(2);
-    expect(app.printOrderRows()).toEqual(
+    const printRows = app.printOrderRows();
+    expect(printRows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           section: 'SINTOMÁTICOS',
@@ -209,6 +210,13 @@ describe('App', () => {
           scheduling: 'CONTÍNUO',
         }),
       ]),
+    );
+    const printedSections = printRows.map((row: any) => row.section);
+    expect(printedSections.indexOf('REABILITAÇÃO')).toBeLessThan(
+      printedSections.indexOf('PRECAUÇÕES / ISOLAMENTO'),
+    );
+    expect(printedSections.indexOf('PRECAUÇÕES / ISOLAMENTO')).toBeLessThan(
+      printedSections.indexOf('CONTROLE GLICÊMICO'),
     );
     expect(app.printHours).toHaveLength(24);
   });
