@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { authInterceptor } from '../../auth/auth.interceptor';
 import {
   DietPrescriptionDraft,
+  IsolationPrecautionDraft,
   MonitoringPrescriptionDraft,
   NursingCarePrescriptionDraft,
   RehabilitationDraft,
@@ -315,5 +316,51 @@ describe('MedicalService', () => {
       billingAudit: { itemsForReview: [], auditAlerts: [] },
     });
     expect((await previewPromise).structuredRehabilitation.orderRows).toHaveLength(1);
+  });
+
+  it('loads the isolation catalog and validates precautions in the backend', async () => {
+    const catalogPromise = service.isolationPrecautionCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/isolation-precautions/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      precautionTypes: [{ code: 'CONTACT', label: 'PRECAUÇÃO DE CONTATO' }],
+      durationOptions: [{ code: 'ENTIRE_HOSPITALIZATION', label: 'DURANTE TODA A INTERNAÇÃO' }],
+      schedulingOptions: [{ code: 'CONTINUOUS', label: 'CONTÍNUO' }],
+      templates: [],
+    });
+    expect((await catalogPromise).precautionTypes[0].code).toBe('CONTACT');
+
+    const draft: IsolationPrecautionDraft = {
+      selectedTemplate: 'CONTACT_KPC_MDR',
+      items: [
+        {
+          id: 1,
+          precautionType: 'CONTACT',
+          reasonPathogen: 'COLONIZAÇÃO POR KPC',
+          durationReview: 'ENTIRE_HOSPITALIZATION',
+          scheduling: 'CONTINUOUS',
+        },
+      ],
+    };
+    const previewPromise = service.previewIsolationPrecautions(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/isolation-precautions/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredIsolation: {
+        summaryLine: 'PRECAUÇÃO DE CONTATO — COLONIZAÇÃO POR KPC.',
+        prescriptionDetails: '1. PRECAUÇÕES E ISOLAMENTO.',
+        orderRows: [
+          {
+            description: 'PRECAUÇÃO DE CONTATO — COLONIZAÇÃO POR KPC',
+            durationReview: 'DURANTE TODA A INTERNAÇÃO',
+            scheduling: 'CONTÍNUO',
+          },
+        ],
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
+    });
+    expect((await previewPromise).structuredIsolation.orderRows).toHaveLength(1);
   });
 });

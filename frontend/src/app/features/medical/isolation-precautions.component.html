@@ -1,0 +1,142 @@
+<section class="isolation-field" [class.print-empty-section]="!hasSelection()">
+  <header class="isolation-header">
+    <div>
+      <p class="eyebrow">SEGURANÇA ASSISTENCIAL</p>
+      <h2>PRECAUÇÕES E ISOLAMENTO</h2>
+      <p>DEFINA TIPO, MOTIVO OU PATÓGENO, DURAÇÃO E APRAZAMENTO.</p>
+    </div>
+    @if (hasSelection()) {
+      <button type="button" class="ghost-button" (click)="reset()">LIMPAR PRECAUÇÕES</button>
+    }
+  </header>
+
+  @if (busy() && !catalog()) {
+    <p class="isolation-state">CARREGANDO CATÁLOGO DE PRECAUÇÕES...</p>
+  } @else if (catalog(); as options) {
+    <div class="template-row">
+      <label>
+        <span>MODELO PRÉ-CONFIGURADO (OPCIONAL)</span>
+        <select
+          [formControl]="selectedTemplate"
+          (change)="applyTemplate($any($event.target).value)"
+        >
+          <option value="">CRIAR DO ZERO</option>
+          @for (template of options.templates; track template.code) {
+            <option [value]="template.code">{{ template.label }}</option>
+          }
+        </select>
+      </label>
+      <p>A INDICAÇÃO E O CRITÉRIO DE SUSPENSÃO DEVEM SER VALIDADOS COM A CCIH.</p>
+    </div>
+
+    <div class="isolation-items">
+      @for (group of items.controls; track group.controls.id.value; let itemIndex = $index) {
+        <fieldset [formGroup]="group" class="isolation-item">
+          <legend>
+            <span>{{ itemIndex + 1 }}</span>
+            PRECAUÇÃO / ISOLAMENTO
+          </legend>
+          <button
+            type="button"
+            class="remove-item"
+            (click)="removeItem(itemIndex)"
+            [attr.aria-label]="'REMOVER PRECAUÇÃO ' + (itemIndex + 1)"
+          >
+            REMOVER
+          </button>
+
+          <div class="control-grid">
+            <label class="field">
+              <span>TIPO DE PRECAUÇÃO</span>
+              <select formControlName="precautionType">
+                <option value="">SELECIONE</option>
+                @for (option of options.precautionTypes; track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>DURAÇÃO / REAVALIAÇÃO</span>
+              <select formControlName="durationReview">
+                <option value="">SELECIONE</option>
+                @for (option of options.durationOptions; track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>APRAZAMENTO</span>
+              <select formControlName="scheduling">
+                <option value="">SELECIONE</option>
+                @for (option of options.schedulingOptions; track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field field--reason">
+              <span>MOTIVO, PATÓGENO OU CONDIÇÃO CLÍNICA</span>
+              <textarea
+                formControlName="reasonPathogen"
+                maxlength="500"
+                rows="3"
+                placeholder="EX.: COLONIZAÇÃO POR KPC, SUSPEITA DE TUBERCULOSE OU NEUTROPENIA GRAVE"
+              ></textarea>
+            </label>
+          </div>
+        </fieldset>
+      }
+    </div>
+
+    @if (!items.length) {
+      <p class="empty-isolation">
+        NENHUMA PRECAUÇÃO SELECIONADA. USE UM MODELO OU ADICIONE UMA PRECAUÇÃO.
+      </p>
+    }
+
+    <div class="isolation-actions">
+      <button
+        type="button"
+        class="add-isolation"
+        (click)="addItem()"
+        [disabled]="items.length >= 8"
+      >
+        + ADICIONAR PRECAUÇÃO
+      </button>
+      <button
+        type="button"
+        class="primary-button"
+        (click)="generatePreview()"
+        [disabled]="busy() || !hasSelection()"
+      >
+        {{ busy() ? 'VALIDANDO...' : 'VALIDAR PRECAUÇÕES' }}
+      </button>
+    </div>
+  }
+
+  @if (error(); as message) {
+    <p class="isolation-error" role="alert">{{ message }}</p>
+  }
+
+  @if (preview(); as result) {
+    <section class="isolation-preview" aria-live="polite">
+      <article class="clinical-preview">
+        <h3>PRÉVIA CLÍNICA</h3>
+        <p>{{ result.structuredIsolation.prescriptionDetails }}</p>
+      </article>
+      <article class="audit-preview">
+        <h3>CONFERÊNCIA CCIH / AUDITORIA</h3>
+        <ul>
+          @for (item of result.billingAudit.suppliesEquipmentForReview; track item) {
+            <li>{{ item }}</li>
+          }
+          @for (alert of result.billingAudit.auditAlerts; track alert) {
+            <li>{{ alert }}</li>
+          }
+        </ul>
+      </article>
+    </section>
+  }
+</section>

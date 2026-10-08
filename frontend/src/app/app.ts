@@ -7,6 +7,7 @@ import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
 import { AdministrationComponent } from './features/administration/administration.component';
 import { DietPrescriptionComponent } from './features/medical/diet-prescription.component';
+import { IsolationPrecautionsComponent } from './features/medical/isolation-precautions.component';
 import { MonitoringPrescriptionComponent } from './features/medical/monitoring-prescription.component';
 import { NursingCarePrescriptionComponent } from './features/medical/nursing-care-prescription.component';
 import { RehabilitationPrescriptionComponent } from './features/medical/rehabilitation-prescription.component';
@@ -17,6 +18,9 @@ import {
   DietPrescriptionDraft,
   DietPrescriptionResponse,
   DietPrescriptionSelection,
+  IsolationPrecautionDraft,
+  IsolationPrecautionResponse,
+  IsolationPrecautionSelection,
   MonitoringPrescriptionDraft,
   MonitoringPrescriptionResponse,
   MonitoringPrescriptionSelection,
@@ -218,6 +222,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
     MonitoringPrescriptionComponent,
     VentilatorySupportComponent,
     RehabilitationPrescriptionComponent,
+    IsolationPrecautionsComponent,
   ],
   selector: 'app-root',
   styleUrl: './app.scss',
@@ -250,6 +255,8 @@ export class App implements OnInit {
   private readonly ventilatorySupportComponent = viewChild(VentilatorySupportComponent);
   protected readonly rehabilitationPreview = signal<RehabilitationResponse | null>(null);
   private readonly rehabilitationComponent = viewChild(RehabilitationPrescriptionComponent);
+  protected readonly isolationPrecautionPreview = signal<IsolationPrecautionResponse | null>(null);
+  private readonly isolationPrecautionComponent = viewChild(IsolationPrecautionsComponent);
 
   protected loginEmail = '';
   protected loginPassword = '';
@@ -271,6 +278,8 @@ export class App implements OnInit {
   protected monitoringDraft: MonitoringPrescriptionDraft = this.emptyMonitoringDraft();
   protected ventilatorySupportDraft: VentilatorySupportDraft = this.emptyVentilatorySupportDraft();
   protected rehabilitationDraft: RehabilitationDraft = this.emptyRehabilitationDraft();
+  protected isolationPrecautionDraft: IsolationPrecautionDraft =
+    this.emptyIsolationPrecautionDraft();
   protected evolutionDiet = '';
   protected evolutionAdmission = '';
   protected evolutionText = '';
@@ -1075,6 +1084,15 @@ export class App implements OnInit {
         scheduling: row.scheduling,
       }),
     );
+    this.isolationPrecautionPreview()?.structuredIsolation.orderRows.forEach((row) =>
+      rows.push({
+        section: 'PRECAUÇÕES / ISOLAMENTO',
+        description: row.description,
+        route: '—',
+        frequency: row.durationReview,
+        scheduling: row.scheduling,
+      }),
+    );
     if (this.hydrationRow.description.trim()) {
       rows.push({
         section: 'HIDRATAÇÃO',
@@ -1162,6 +1180,9 @@ export class App implements OnInit {
     if (ventilatorySupportIsValid === false) return;
     const rehabilitationIsValid = await this.rehabilitationComponent()?.validateAndPreview();
     if (rehabilitationIsValid === false) return;
+    const isolationPrecautionIsValid =
+      await this.isolationPrecautionComponent()?.validateAndPreview();
+    if (isolationPrecautionIsValid === false) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
     const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
     const validHydrationRows = this.hydrationRow.description.trim() ? [this.hydrationRow] : [];
@@ -1181,7 +1202,8 @@ export class App implements OnInit {
         !this.nursingCareComponent()?.hasSelection() &&
         !this.monitoringComponent()?.hasSelection() &&
         !this.ventilatorySupportComponent()?.hasSelection() &&
-        !this.rehabilitationComponent()?.hasSelection())
+        !this.rehabilitationComponent()?.hasSelection() &&
+        !this.isolationPrecautionComponent()?.hasSelection())
     ) {
       this.showToast('Inclua ao menos um item na prescrição.');
       return;
@@ -1271,6 +1293,11 @@ export class App implements OnInit {
   protected updateRehabilitationSelection(selection: RehabilitationSelection): void {
     this.rehabilitationDraft = selection.draft;
     this.rehabilitationPreview.set(selection.response);
+  }
+
+  protected updateIsolationPrecautionSelection(selection: IsolationPrecautionSelection): void {
+    this.isolationPrecautionDraft = selection.draft;
+    this.isolationPrecautionPreview.set(selection.response);
   }
 
   protected prescriptionItemCount(prescription: Prescription): number {
@@ -1518,6 +1545,9 @@ export class App implements OnInit {
     if (this.rehabilitationComponent()?.hasSelection()) {
       values['REABILITACAO.PLANO'] = this.rehabilitationDraft;
     }
+    if (this.isolationPrecautionComponent()?.hasSelection()) {
+      values['PRECAUCOES_ISOLAMENTO.PLANO'] = this.isolationPrecautionDraft;
+    }
     if (hydration.length) {
       values['MEDICAMENTOS.HIDRATACAO'] = hydration.map((row) => this.medicationDocumentRow(row));
     }
@@ -1588,6 +1618,8 @@ export class App implements OnInit {
     this.ventilatorySupportPreview.set(null);
     this.rehabilitationDraft = this.emptyRehabilitationDraft();
     this.rehabilitationPreview.set(null);
+    this.isolationPrecautionDraft = this.emptyIsolationPrecautionDraft();
+    this.isolationPrecautionPreview.set(null);
     this.observationRows = [];
     this.abnormalityRows = [];
     this.hydrationRow = this.emptyHydrationRow();
@@ -1668,6 +1700,10 @@ export class App implements OnInit {
   }
 
   private emptyRehabilitationDraft(): RehabilitationDraft {
+    return { selectedTemplate: '', items: [] };
+  }
+
+  private emptyIsolationPrecautionDraft(): IsolationPrecautionDraft {
     return { selectedTemplate: '', items: [] };
   }
 
@@ -1991,6 +2027,9 @@ export class App implements OnInit {
     this.rehabilitationDraft = this.emptyRehabilitationDraft();
     this.rehabilitationPreview.set(null);
     this.rehabilitationComponent()?.reset();
+    this.isolationPrecautionDraft = this.emptyIsolationPrecautionDraft();
+    this.isolationPrecautionPreview.set(null);
+    this.isolationPrecautionComponent()?.reset();
     this.hydrationRow = this.emptyHydrationRow();
     this.selectedHydrationPreset = '';
     this.medicationGroups = this.buildMedicationGroups();

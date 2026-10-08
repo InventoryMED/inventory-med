@@ -8,6 +8,9 @@ import {
   DietPrescriptionCatalog,
   DietPrescriptionDraft,
   DietPrescriptionResponse,
+  IsolationPrecautionCatalog,
+  IsolationPrecautionDraft,
+  IsolationPrecautionResponse,
   MedicalAdmission,
   MedicalWorkspace,
   MonitoringPrescriptionCatalog,
@@ -128,6 +131,23 @@ export class MedicalService {
   previewRehabilitation(draft: RehabilitationDraft): Promise<RehabilitationResponse> {
     return firstValueFrom(
       this.http.post<RehabilitationResponse>(`${this.baseUrl}/rehabilitation/preview`, draft),
+    );
+  }
+
+  isolationPrecautionCatalog(): Promise<IsolationPrecautionCatalog> {
+    return firstValueFrom(
+      this.http.get<IsolationPrecautionCatalog>(`${this.baseUrl}/isolation-precautions/catalog`),
+    );
+  }
+
+  previewIsolationPrecautions(
+    draft: IsolationPrecautionDraft,
+  ): Promise<IsolationPrecautionResponse> {
+    return firstValueFrom(
+      this.http.post<IsolationPrecautionResponse>(
+        `${this.baseUrl}/isolation-precautions/preview`,
+        draft,
+      ),
     );
   }
 

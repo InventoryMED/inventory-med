@@ -61,7 +61,8 @@ export type ClinicalFieldType =
   | 'NURSING_CARE_PLAN'
   | 'MONITORING_PLAN'
   | 'VENTILATORY_SUPPORT_PLAN'
-  | 'REHABILITATION_PLAN';
+  | 'REHABILITATION_PLAN'
+  | 'ISOLATION_PRECAUTIONS_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -385,6 +386,51 @@ export interface RehabilitationResponse {
 export interface RehabilitationSelection {
   draft: RehabilitationDraft;
   response: RehabilitationResponse | null;
+}
+
+export interface IsolationPrecautionItemDraft {
+  id: number;
+  precautionType: string;
+  reasonPathogen: string;
+  durationReview: string;
+  scheduling: string;
+}
+
+export interface IsolationPrecautionDraft {
+  selectedTemplate: string;
+  items: IsolationPrecautionItemDraft[];
+}
+
+export interface IsolationPrecautionCatalog {
+  precautionTypes: VentilatorySupportOption[];
+  durationOptions: VentilatorySupportOption[];
+  schedulingOptions: VentilatorySupportOption[];
+  templates: Array<{
+    code: string;
+    label: string;
+    items: IsolationPrecautionItemDraft[];
+  }>;
+}
+
+export interface IsolationPrecautionResponse {
+  structuredIsolation: {
+    summaryLine: string;
+    prescriptionDetails: string;
+    orderRows: Array<{
+      description: string;
+      durationReview: string;
+      scheduling: string;
+    }>;
+  };
+  billingAudit: {
+    suppliesEquipmentForReview: string[];
+    auditAlerts: string[];
+  };
+}
+
+export interface IsolationPrecautionSelection {
+  draft: IsolationPrecautionDraft;
+  response: IsolationPrecautionResponse | null;
 }
 
 export interface ClinicalFormOption {

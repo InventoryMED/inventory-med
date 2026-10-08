@@ -584,6 +584,9 @@
                 (selectionChange)="updateNursingCareSelection($event)"
               />
               <app-monitoring-prescription (selectionChange)="updateMonitoringSelection($event)" />
+              <app-isolation-precautions
+                (selectionChange)="updateIsolationPrecautionSelection($event)"
+              />
               <app-ventilatory-support
                 (selectionChange)="updateVentilatorySupportSelection($event)"
               />
@@ -912,6 +915,13 @@
                   <span>Dieta</span><strong>{{ prescriptionDiet || 'NÃO INFORMADO' }}</strong>
                 </div>
               </section>
+
+              @if (isolationPrecautionPreview(); as preview) {
+                <section class="print-diet-prescription print-isolation-precautions">
+                  <strong>PRECAUÇÕES E ISOLAMENTO</strong>
+                  <span>{{ preview.structuredIsolation.prescriptionDetails }}</span>
+                </section>
+              }
 
               @if (dietPreview(); as preview) {
                 <section class="print-diet-prescription">

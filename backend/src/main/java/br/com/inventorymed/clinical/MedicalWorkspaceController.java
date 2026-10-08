@@ -44,6 +44,7 @@ public class MedicalWorkspaceController {
     private final MonitoringPrescriptionService monitoringPrescriptionService;
     private final VentilatorySupportService ventilatorySupportService;
     private final RehabilitationPrescriptionService rehabilitationPrescriptionService;
+    private final IsolationPrecautionService isolationPrecautionService;
 
     public MedicalWorkspaceController(
         HospitalSessionContext sessionContext,
@@ -53,7 +54,8 @@ public class MedicalWorkspaceController {
         NursingCarePrescriptionService nursingCarePrescriptionService,
         MonitoringPrescriptionService monitoringPrescriptionService,
         VentilatorySupportService ventilatorySupportService,
-        RehabilitationPrescriptionService rehabilitationPrescriptionService
+        RehabilitationPrescriptionService rehabilitationPrescriptionService,
+        IsolationPrecautionService isolationPrecautionService
     ) {
         this.sessionContext = sessionContext;
         this.workspaceService = workspaceService;
@@ -63,6 +65,7 @@ public class MedicalWorkspaceController {
         this.monitoringPrescriptionService = monitoringPrescriptionService;
         this.ventilatorySupportService = ventilatorySupportService;
         this.rehabilitationPrescriptionService = rehabilitationPrescriptionService;
+        this.isolationPrecautionService = isolationPrecautionService;
     }
 
     @GetMapping("/workspace")
@@ -208,6 +211,21 @@ public class MedicalWorkspaceController {
     ) {
         sessionContext.require(session, MEDICAL_ROLES);
         return rehabilitationPrescriptionService.preview(body);
+    }
+
+    @GetMapping("/isolation-precautions/catalog")
+    public IsolationPrecautionCatalog isolationPrecautionCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return isolationPrecautionService.catalog();
+    }
+
+    @PostMapping("/isolation-precautions/preview")
+    public IsolationPrecautionResponse previewIsolationPrecautions(
+        HttpSession session,
+        @Valid @RequestBody IsolationPrecautionRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return isolationPrecautionService.preview(body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")

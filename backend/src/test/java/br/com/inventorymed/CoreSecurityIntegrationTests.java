@@ -785,6 +785,16 @@ class CoreSecurityIntegrationTests {
                                 "scheduling":"FIXED",
                                 "clinicalJustification":""
                               }]
+                            },
+                            "PRECAUCOES_ISOLAMENTO.PLANO":{
+                              "selectedTemplate":"CONTACT_KPC_MDR",
+                              "items":[{
+                                "id":1,
+                                "precautionType":"CONTACT",
+                                "reasonPathogen":"COLONIZAÇÃO POR KPC / ENTEROBACTÉRIA MULTIRRESISTENTE",
+                                "durationReview":"ENTIRE_HOSPITALIZATION",
+                                "scheduling":"CONTINUOUS"
+                              }]
                             }
                           },
                           "finalizeDocument":true
@@ -809,6 +819,14 @@ class CoreSecurityIntegrationTests {
             .andExpect(
                 jsonPath("$.values['REABILITACAO.PLANO'].structuredRehabilitation.summaryLine")
                     .value(org.hamcrest.Matchers.containsString("MOBILIZAÇÃO PASSIVA"))
+            )
+            .andExpect(
+                jsonPath("$.values['PRECAUCOES_ISOLAMENTO.PLANO'].structuredIsolation.summaryLine")
+                    .value(org.hamcrest.Matchers.containsString("PRECAUÇÃO DE CONTATO"))
+            )
+            .andExpect(
+                jsonPath("$.values['PRECAUCOES_ISOLAMENTO.PLANO'].billingAudit.auditAlerts[0]")
+                    .value(org.hamcrest.Matchers.containsString("CULTURA PRÉVIA OU SWAB"))
             )
             .andReturn();
         UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");

@@ -81,6 +81,7 @@ describe('App', () => {
     expect(app.monitoringDraft.glucoseMonitoring.hypoglycemiaProtocol).toBe(false);
     expect(app.ventilatorySupportDraft).toEqual({ selectedTemplate: '', items: [] });
     expect(app.rehabilitationDraft).toEqual({ selectedTemplate: '', items: [] });
+    expect(app.isolationPrecautionDraft).toEqual({ selectedTemplate: '', items: [] });
     expect(app.observationRows).toEqual(['']);
     expect(app.abnormalityRows).toEqual(['']);
   });
@@ -125,6 +126,20 @@ describe('App', () => {
       },
       billingAudit: { itemsForReview: [], auditAlerts: [] },
     });
+    app.isolationPrecautionPreview.set({
+      structuredIsolation: {
+        summaryLine: 'PRECAUÇÃO DE CONTATO — COLONIZAÇÃO POR KPC.',
+        prescriptionDetails: '1. PRECAUÇÕES E ISOLAMENTO.',
+        orderRows: [
+          {
+            description: 'PRECAUÇÃO DE CONTATO — COLONIZAÇÃO POR KPC',
+            durationReview: 'DURANTE TODA A INTERNAÇÃO',
+            scheduling: 'CONTÍNUO',
+          },
+        ],
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
+    });
 
     expect(symptomatics.rows[0]).toMatchObject({
       route: 'EV',
@@ -159,6 +174,12 @@ describe('App', () => {
           description: 'FISIOTERAPIA MOTORA: MOBILIZAÇÃO PASSIVA NO LEITO',
           route: '—',
           scheduling: 'FIXO',
+        }),
+        expect.objectContaining({
+          section: 'PRECAUÇÕES / ISOLAMENTO',
+          description: 'PRECAUÇÃO DE CONTATO — COLONIZAÇÃO POR KPC',
+          frequency: 'DURANTE TODA A INTERNAÇÃO',
+          scheduling: 'CONTÍNUO',
         }),
       ]),
     );
