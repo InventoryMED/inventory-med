@@ -795,6 +795,38 @@ class CoreSecurityIntegrationTests {
                                 "durationReview":"ENTIRE_HOSPITALIZATION",
                                 "scheduling":"CONTINUOUS"
                               }]
+                            },
+                            "SUPORTE_TERAPEUTICO.PLANO":{
+                              "clinicalContext":"ICU",
+                              "hydrationSolutions":[{
+                                "id":1,
+                                "baseSolution":"SF09_500",
+                                "additives":["KCL191_10"],
+                                "route":"EV",
+                                "frequency":"EVERY_12_HOURS",
+                                "infusionMode":"PUMP",
+                                "rateValue":42,
+                                "rateUnit":"ML_H",
+                                "scheduling":"FIXED"
+                              }],
+                              "glucoseControl":{
+                                "frequency":"EVERY_4_HOURS",
+                                "hypoglycemiaProtocolActive":true,
+                                "correctionScaleActive":true,
+                                "insulinType":"REGULAR",
+                                "continuousPump":false
+                              },
+                              "bloodProducts":[{
+                                "id":1,
+                                "product":"RBC",
+                                "modifications":["LEUKOREDUCED"],
+                                "quantity":1,
+                                "quantityUnit":"UNIT",
+                                "route":"DEDICATED_ACCESS",
+                                "infusionMinutes":180,
+                                "preMedications":[],
+                                "scheduling":"URGENT"
+                              }]
                             }
                           },
                           "finalizeDocument":true
@@ -827,6 +859,14 @@ class CoreSecurityIntegrationTests {
             .andExpect(
                 jsonPath("$.values['PRECAUCOES_ISOLAMENTO.PLANO'].billingAudit.auditAlerts[0]")
                     .value(org.hamcrest.Matchers.containsString("CULTURA PRÉVIA OU SWAB"))
+            )
+            .andExpect(
+                jsonPath("$.values['SUPORTE_TERAPEUTICO.PLANO'].structuredTherapeuticSupport.prescriptionDetails")
+                    .value(org.hamcrest.Matchers.containsString("10. HEMODERIVADOS E TRANSFUSÕES"))
+            )
+            .andExpect(
+                jsonPath("$.values['SUPORTE_TERAPEUTICO.PLANO'].billingAudit.auditAlerts[0]")
+                    .value(org.hamcrest.Matchers.containsString("KCL CONCENTRADO"))
             )
             .andReturn();
         UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");

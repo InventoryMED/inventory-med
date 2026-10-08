@@ -57,54 +57,8 @@
         </div>
       </fieldset>
 
-      <fieldset formGroupName="glucoseMonitoring">
-        <legend><span>02</span> DXT E PROTOCOLOS GLICÊMICOS</legend>
-        <div class="monitoring-grid">
-          <label class="monitoring-control monitoring-control--wide">
-            <span>FREQUÊNCIA DO DXT</span>
-            <select formControlName="frequency">
-              <option value="">NÃO SELECIONADO</option>
-              @for (option of options.glucoseMonitoringFrequencies; track option) {
-                <option [value]="option">{{ option }}</option>
-              }
-            </select>
-          </label>
-        </div>
-        <div class="protocol-grid">
-          <label class="protocol-card">
-            <input type="checkbox" formControlName="hypoglycemiaProtocol" />
-            <span>
-              <strong>PROTOCOLO DE HIPOGLICEMIA</strong>
-              <small>DXT &lt; 70 MG/DL: GLICOSE 50% 40 ML EV E NOVO DXT EM 15–30 MIN.</small>
-            </span>
-          </label>
-          <label class="protocol-card">
-            <input
-              type="checkbox"
-              [checked]="form.controls.glucoseMonitoring.controls.slidingScale.value"
-              (change)="toggleSlidingScale($any($event.target).checked)"
-            />
-            <span>
-              <strong>ESCALA DE CORREÇÃO</strong>
-              <small>INCLUI FAIXAS DE 180 MG/DL ATÉ &gt; 380 MG/DL.</small>
-            </span>
-          </label>
-        </div>
-        @if (form.controls.glucoseMonitoring.controls.slidingScale.value) {
-          <label class="monitoring-control insulin-control">
-            <span>TIPO DE INSULINA</span>
-            <select formControlName="insulinType">
-              <option value="">SELECIONE</option>
-              @for (option of options.insulinTypes; track option) {
-                <option [value]="option">{{ option }}</option>
-              }
-            </select>
-          </label>
-        }
-      </fieldset>
-
       <fieldset formGroupName="fluidBalanceOutputs">
-        <legend><span>03</span> BALANÇO HÍDRICO, DIURESE E DÉBITOS</legend>
+        <legend><span>02</span> BALANÇO HÍDRICO, DIURESE E DÉBITOS</legend>
         <div class="monitoring-grid">
           <label class="monitoring-control">
             <span>BALANÇO HÍDRICO</span>
@@ -168,7 +122,7 @@
       </fieldset>
 
       <fieldset formGroupName="invasiveMonitoring">
-        <legend><span>04</span> MONITORIZAÇÃO INVASIVA</legend>
+        <legend><span>03</span> MONITORIZAÇÃO INVASIVA</legend>
         <div class="invasive-grid">
           <div class="monitoring-checks monitoring-checks--single">
             <strong>HEMODINÂMICA</strong>

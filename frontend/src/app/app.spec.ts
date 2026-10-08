@@ -82,6 +82,18 @@ describe('App', () => {
     expect(app.ventilatorySupportDraft).toEqual({ selectedTemplate: '', items: [] });
     expect(app.rehabilitationDraft).toEqual({ selectedTemplate: '', items: [] });
     expect(app.isolationPrecautionDraft).toEqual({ selectedTemplate: '', items: [] });
+    expect(app.therapeuticSupportDraft).toEqual({
+      clinicalContext: '',
+      hydrationSolutions: [],
+      glucoseControl: {
+        frequency: '',
+        hypoglycemiaProtocolActive: false,
+        correctionScaleActive: false,
+        insulinType: '',
+        continuousPump: false,
+      },
+      bloodProducts: [],
+    });
     expect(app.observationRows).toEqual(['']);
     expect(app.abnormalityRows).toEqual(['']);
   });
@@ -95,7 +107,22 @@ describe('App', () => {
     app.selectMedicationPreset(symptomatics, 'ONDANSETRONA 1 AMPOLA + 100ML DE SF 0,9%');
     app.addMedicationRow(symptomatics);
     app.monitoringDraft.vitalSigns.frequency = '6/6H';
-    app.monitoringDraft.glucoseMonitoring.frequency = '4/4H';
+    app.therapeuticSupportPreview.set({
+      structuredTherapeuticSupport: {
+        summaryLine: 'DXT 4/4H COM PROTOCOLO E ESCALA SC.',
+        prescriptionDetails: '8. CONTROLE GLICÊMICO E INSULINOTERAPIA.',
+        orderRows: [
+          {
+            section: 'CONTROLE GLICÊMICO',
+            description: 'DXT + PROTOCOLO DE HIPOGLICEMIA + ESCALA DE INSULINA REGULAR',
+            route: 'SC / EV CONFORME CONDUTA',
+            frequency: '4/4H',
+            scheduling: 'FIXO',
+          },
+        ],
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
+    });
     app.ventilatorySupportPreview.set({
       structuredVentilatorySupport: {
         summaryLine: 'CATETER NASAL DE O₂ 2 L/MIN.',
@@ -159,8 +186,8 @@ describe('App', () => {
           frequency: '6/6H',
         }),
         expect.objectContaining({
-          section: 'MONITORIZAÇÃO',
-          description: 'DXT',
+          section: 'CONTROLE GLICÊMICO',
+          description: 'DXT + PROTOCOLO DE HIPOGLICEMIA + ESCALA DE INSULINA REGULAR',
           frequency: '4/4H',
         }),
         expect.objectContaining({

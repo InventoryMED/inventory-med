@@ -11,6 +11,7 @@ import { IsolationPrecautionsComponent } from './features/medical/isolation-prec
 import { MonitoringPrescriptionComponent } from './features/medical/monitoring-prescription.component';
 import { NursingCarePrescriptionComponent } from './features/medical/nursing-care-prescription.component';
 import { RehabilitationPrescriptionComponent } from './features/medical/rehabilitation-prescription.component';
+import { TherapeuticSupportComponent } from './features/medical/therapeutic-support.component';
 import { VentilatorySupportComponent } from './features/medical/ventilatory-support.component';
 import {
   ClinicalFormKind,
@@ -30,6 +31,9 @@ import {
   RehabilitationDraft,
   RehabilitationResponse,
   RehabilitationSelection,
+  TherapeuticSupportDraft,
+  TherapeuticSupportResponse,
+  TherapeuticSupportSelection,
   VentilatorySupportDraft,
   VentilatorySupportResponse,
   VentilatorySupportSelection,
@@ -119,27 +123,6 @@ const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
   },
 ];
 
-const HYDRATION_PRESETS: PrescriptionRowPreset[] = [
-  {
-    description: 'SORO FISIOLÓGICO 0,9% 500ML',
-    route: 'EV',
-    frequency: '12/12HR',
-    scheduling: 'FIXO',
-  },
-  {
-    description: 'SORO FISIOLÓGICO 0,9% 250ML',
-    route: 'EV',
-    frequency: '6/6HR',
-    scheduling: 'FIXO',
-  },
-  {
-    description: 'RINGER LACTATO 500ML',
-    route: 'EV',
-    frequency: '12/12HR',
-    scheduling: 'FIXO',
-  },
-];
-
 const ANALGESIA_PRESETS: PrescriptionRowPreset[] = [
   {
     description: 'DIPIRONA 1 AMPOLA + 18ML DE SF 0,9%',
@@ -223,6 +206,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
     VentilatorySupportComponent,
     RehabilitationPrescriptionComponent,
     IsolationPrecautionsComponent,
+    TherapeuticSupportComponent,
   ],
   selector: 'app-root',
   styleUrl: './app.scss',
@@ -257,6 +241,8 @@ export class App implements OnInit {
   private readonly rehabilitationComponent = viewChild(RehabilitationPrescriptionComponent);
   protected readonly isolationPrecautionPreview = signal<IsolationPrecautionResponse | null>(null);
   private readonly isolationPrecautionComponent = viewChild(IsolationPrecautionsComponent);
+  protected readonly therapeuticSupportPreview = signal<TherapeuticSupportResponse | null>(null);
+  private readonly therapeuticSupportComponent = viewChild(TherapeuticSupportComponent);
 
   protected loginEmail = '';
   protected loginPassword = '';
@@ -280,6 +266,7 @@ export class App implements OnInit {
   protected rehabilitationDraft: RehabilitationDraft = this.emptyRehabilitationDraft();
   protected isolationPrecautionDraft: IsolationPrecautionDraft =
     this.emptyIsolationPrecautionDraft();
+  protected therapeuticSupportDraft: TherapeuticSupportDraft = this.emptyTherapeuticSupportDraft();
   protected evolutionDiet = '';
   protected evolutionAdmission = '';
   protected evolutionText = '';
@@ -335,8 +322,6 @@ export class App implements OnInit {
   protected evolutionExamRows: EvolutionExamRow[] = this.createEvolutionExamRows();
   protected observationRows: string[] = [];
   protected abnormalityRows: string[] = [];
-  protected hydrationRow: PrescriptionDraftRow = this.emptyHydrationRow();
-  protected selectedHydrationPreset = '';
   protected medicationGroups: MedicationOrderGroup[] = [];
   protected selectedTemplateId: PrescriptionTemplateId | '' = '';
   protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
@@ -450,7 +435,6 @@ export class App implements OnInit {
       description: 'Paciente liberado após melhora clínica.',
     },
   ];
-  protected readonly hydrationPresets = HYDRATION_PRESETS;
   protected readonly printHours = Array.from({ length: 24 }, (_, hour) =>
     hour.toString().padStart(2, '0'),
   );
@@ -1057,15 +1041,9 @@ export class App implements OnInit {
         scheduling: '—',
       });
     }
-    if (this.monitoringDraft.glucoseMonitoring.frequency) {
-      rows.push({
-        section: 'MONITORIZAÇÃO',
-        description: 'DXT',
-        route: '—',
-        frequency: this.monitoringDraft.glucoseMonitoring.frequency,
-        scheduling: '—',
-      });
-    }
+    this.therapeuticSupportPreview()?.structuredTherapeuticSupport.orderRows.forEach((row) =>
+      rows.push(row),
+    );
     this.ventilatorySupportPreview()?.structuredVentilatorySupport.orderRows.forEach((row) =>
       rows.push({
         section: 'SUPORTE VENTILATÓRIO',
@@ -1093,16 +1071,6 @@ export class App implements OnInit {
         scheduling: row.scheduling,
       }),
     );
-    if (this.hydrationRow.description.trim()) {
-      rows.push({
-        section: 'HIDRATAÇÃO',
-        description: this.hydrationRow.description.trim(),
-        route: this.hydrationRow.route,
-        frequency: this.hydrationRow.frequency.trim() || '—',
-        scheduling: this.hydrationRow.scheduling,
-      });
-    }
-
     this.medicationGroups.forEach((group) =>
       group.rows
         .filter((row) => row.description.trim())
@@ -1134,11 +1102,6 @@ export class App implements OnInit {
 
   protected removeAbnormalityRow(index: number): void {
     this.abnormalityRows = this.removeTextRow(this.abnormalityRows, index);
-  }
-
-  protected selectHydrationPreset(description: string): void {
-    const preset = HYDRATION_PRESETS.find((item) => item.description === description);
-    this.hydrationRow = preset ? { ...preset } : this.emptyHydrationRow();
   }
 
   protected selectMedicationPreset(group: MedicationOrderGroup, description: string): void {
@@ -1175,6 +1138,9 @@ export class App implements OnInit {
     if (nursingCareIsValid === false) return;
     const monitoringIsValid = await this.monitoringComponent()?.validateAndPreview();
     if (monitoringIsValid === false) return;
+    const therapeuticSupportIsValid =
+      await this.therapeuticSupportComponent()?.validateAndPreview();
+    if (therapeuticSupportIsValid === false) return;
     const ventilatorySupportIsValid =
       await this.ventilatorySupportComponent()?.validateAndPreview();
     if (ventilatorySupportIsValid === false) return;
@@ -1185,7 +1151,6 @@ export class App implements OnInit {
     if (isolationPrecautionIsValid === false) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
     const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
-    const validHydrationRows = this.hydrationRow.description.trim() ? [this.hydrationRow] : [];
     const validMedicationSections: MedicationSectionDraft[] = this.medicationGroups
       .map((group) => ({
         id: group.id,
@@ -1194,13 +1159,13 @@ export class App implements OnInit {
       .filter((section) => section.items.length);
     if (
       !bedId ||
-      (!validHydrationRows.length &&
-        !validMedicationSections.length &&
+      (!validMedicationSections.length &&
         !observations.length &&
         !abnormalities.length &&
         !this.dietDraft.type &&
         !this.nursingCareComponent()?.hasSelection() &&
         !this.monitoringComponent()?.hasSelection() &&
+        !this.therapeuticSupportComponent()?.hasSelection() &&
         !this.ventilatorySupportComponent()?.hasSelection() &&
         !this.rehabilitationComponent()?.hasSelection() &&
         !this.isolationPrecautionComponent()?.hasSelection())
@@ -1219,12 +1184,7 @@ export class App implements OnInit {
         await this.medical.createDocument(
           admissionId,
           template,
-          this.prescriptionDocumentValues(
-            validHydrationRows,
-            validMedicationSections,
-            observations,
-            abnormalities,
-          ),
+          this.prescriptionDocumentValues(validMedicationSections, observations, abnormalities),
           true,
         );
       } catch (error) {
@@ -1239,7 +1199,7 @@ export class App implements OnInit {
       observations,
       abnormalities,
       [],
-      validHydrationRows,
+      [],
       validMedicationSections,
     );
     this.showToast('PRESCRIÇÃO CRIADA.');
@@ -1283,6 +1243,11 @@ export class App implements OnInit {
   protected updateMonitoringSelection(selection: MonitoringPrescriptionSelection): void {
     this.monitoringDraft = selection.draft;
     this.monitoringPreview.set(selection.response);
+  }
+
+  protected updateTherapeuticSupportSelection(selection: TherapeuticSupportSelection): void {
+    this.therapeuticSupportDraft = selection.draft;
+    this.therapeuticSupportPreview.set(selection.response);
   }
 
   protected updateVentilatorySupportSelection(selection: VentilatorySupportSelection): void {
@@ -1526,7 +1491,6 @@ export class App implements OnInit {
   }
 
   private prescriptionDocumentValues(
-    hydration: PrescriptionDraftRow[],
     medicationSections: MedicationSectionDraft[],
     observations: string[],
     abnormalities: string[],
@@ -1539,6 +1503,9 @@ export class App implements OnInit {
     if (this.monitoringComponent()?.hasSelection()) {
       values['MONITORIZACAO.CONTROLES'] = this.monitoringDraft;
     }
+    if (this.therapeuticSupportComponent()?.hasSelection()) {
+      values['SUPORTE_TERAPEUTICO.PLANO'] = this.therapeuticSupportDraft;
+    }
     if (this.ventilatorySupportComponent()?.hasSelection()) {
       values['SUPORTE_VENTILATORIO.PLANO'] = this.ventilatorySupportDraft;
     }
@@ -1548,10 +1515,6 @@ export class App implements OnInit {
     if (this.isolationPrecautionComponent()?.hasSelection()) {
       values['PRECAUCOES_ISOLAMENTO.PLANO'] = this.isolationPrecautionDraft;
     }
-    if (hydration.length) {
-      values['MEDICAMENTOS.HIDRATACAO'] = hydration.map((row) => this.medicationDocumentRow(row));
-    }
-
     const sectionKeys: Record<MedicationSectionId, string> = {
       ANALGESIA: 'ANALGESIA',
       SYMPTOMATICS: 'SINTOMATICOS',
@@ -1614,6 +1577,8 @@ export class App implements OnInit {
     this.nursingCarePreview.set(null);
     this.monitoringDraft = this.emptyMonitoringDraft();
     this.monitoringPreview.set(null);
+    this.therapeuticSupportDraft = this.emptyTherapeuticSupportDraft();
+    this.therapeuticSupportPreview.set(null);
     this.ventilatorySupportDraft = this.emptyVentilatorySupportDraft();
     this.ventilatorySupportPreview.set(null);
     this.rehabilitationDraft = this.emptyRehabilitationDraft();
@@ -1622,8 +1587,6 @@ export class App implements OnInit {
     this.isolationPrecautionPreview.set(null);
     this.observationRows = [];
     this.abnormalityRows = [];
-    this.hydrationRow = this.emptyHydrationRow();
-    this.selectedHydrationPreset = '';
     this.medicationGroups = [];
     this.selectedTemplateId = '';
     this.prescriptionReady.set(false);
@@ -1705,6 +1668,21 @@ export class App implements OnInit {
 
   private emptyIsolationPrecautionDraft(): IsolationPrecautionDraft {
     return { selectedTemplate: '', items: [] };
+  }
+
+  private emptyTherapeuticSupportDraft(): TherapeuticSupportDraft {
+    return {
+      clinicalContext: '',
+      hydrationSolutions: [],
+      glucoseControl: {
+        frequency: '',
+        hypoglycemiaProtocolActive: false,
+        correctionScaleActive: false,
+        insulinType: '',
+        continuousPump: false,
+      },
+      bloodProducts: [],
+    };
   }
 
   private prepareEvolution(patient: Patient): void {
@@ -2004,10 +1982,6 @@ export class App implements OnInit {
       }));
   }
 
-  private emptyHydrationRow(): PrescriptionDraftRow {
-    return { description: '', route: 'EV', frequency: '', scheduling: 'FIXO' };
-  }
-
   private emptyMedicationRow(route: string): PrescriptionDraftRow {
     return { description: '', route, frequency: '', scheduling: 'FIXO' };
   }
@@ -2021,6 +1995,9 @@ export class App implements OnInit {
     this.monitoringDraft = this.emptyMonitoringDraft();
     this.monitoringPreview.set(null);
     this.monitoringComponent()?.reset();
+    this.therapeuticSupportDraft = this.emptyTherapeuticSupportDraft();
+    this.therapeuticSupportPreview.set(null);
+    this.therapeuticSupportComponent()?.reset();
     this.ventilatorySupportDraft = this.emptyVentilatorySupportDraft();
     this.ventilatorySupportPreview.set(null);
     this.ventilatorySupportComponent()?.reset();
@@ -2030,8 +2007,6 @@ export class App implements OnInit {
     this.isolationPrecautionDraft = this.emptyIsolationPrecautionDraft();
     this.isolationPrecautionPreview.set(null);
     this.isolationPrecautionComponent()?.reset();
-    this.hydrationRow = this.emptyHydrationRow();
-    this.selectedHydrationPreset = '';
     this.medicationGroups = this.buildMedicationGroups();
     this.observationRows = [''];
     this.abnormalityRows = [''];

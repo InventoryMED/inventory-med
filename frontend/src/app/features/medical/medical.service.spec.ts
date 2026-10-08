@@ -8,6 +8,7 @@ import {
   MonitoringPrescriptionDraft,
   NursingCarePrescriptionDraft,
   RehabilitationDraft,
+  TherapeuticSupportDraft,
   VentilatorySupportDraft,
 } from './medical.models';
 import { MedicalService } from './medical.service';
@@ -362,5 +363,55 @@ describe('MedicalService', () => {
       billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
     });
     expect((await previewPromise).structuredIsolation.orderRows).toHaveLength(1);
+  });
+
+  it('loads and validates hydration, glucose control and blood products in the backend', async () => {
+    const catalogPromise = service.therapeuticSupportCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/therapeutic-support/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      clinicalContexts: [{ code: 'ICU', label: 'UTI' }],
+      baseSolutions: [{ code: 'SF09_500', label: 'SORO FISIOLÓGICO 0,9% 500 ML' }],
+      electrolyteAdditives: [],
+      hydrationFrequencies: [],
+      infusionModes: [],
+      rateUnits: [],
+      schedulingOptions: [],
+      glucoseFrequencies: [],
+      insulinTypes: [],
+      bloodProducts: [],
+      bloodProductModifications: [],
+      transfusionRoutes: [],
+      quantityUnits: [],
+      preMedications: [],
+    });
+    expect((await catalogPromise).clinicalContexts[0].code).toBe('ICU');
+
+    const draft: TherapeuticSupportDraft = {
+      clinicalContext: 'ICU',
+      hydrationSolutions: [],
+      glucoseControl: {
+        frequency: 'EVERY_4_HOURS',
+        hypoglycemiaProtocolActive: true,
+        correctionScaleActive: true,
+        insulinType: 'REGULAR',
+        continuousPump: false,
+      },
+      bloodProducts: [],
+    };
+    const previewPromise = service.previewTherapeuticSupport(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/therapeutic-support/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredTherapeuticSupport: {
+        summaryLine: 'DXT 4/4H COM PROTOCOLO E ESCALA SC.',
+        prescriptionDetails: '8. CONTROLE GLICÊMICO E INSULINOTERAPIA.',
+        orderRows: [],
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
+    });
+    expect((await previewPromise).structuredTherapeuticSupport.summaryLine).toContain('DXT');
   });
 });

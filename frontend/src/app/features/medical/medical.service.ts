@@ -22,6 +22,9 @@ import {
   RehabilitationCatalog,
   RehabilitationDraft,
   RehabilitationResponse,
+  TherapeuticSupportCatalog,
+  TherapeuticSupportDraft,
+  TherapeuticSupportResponse,
   VentilatorySupportCatalog,
   VentilatorySupportDraft,
   VentilatorySupportResponse,
@@ -146,6 +149,21 @@ export class MedicalService {
     return firstValueFrom(
       this.http.post<IsolationPrecautionResponse>(
         `${this.baseUrl}/isolation-precautions/preview`,
+        draft,
+      ),
+    );
+  }
+
+  therapeuticSupportCatalog(): Promise<TherapeuticSupportCatalog> {
+    return firstValueFrom(
+      this.http.get<TherapeuticSupportCatalog>(`${this.baseUrl}/therapeutic-support/catalog`),
+    );
+  }
+
+  previewTherapeuticSupport(draft: TherapeuticSupportDraft): Promise<TherapeuticSupportResponse> {
+    return firstValueFrom(
+      this.http.post<TherapeuticSupportResponse>(
+        `${this.baseUrl}/therapeutic-support/preview`,
         draft,
       ),
     );

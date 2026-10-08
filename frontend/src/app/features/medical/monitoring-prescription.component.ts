@@ -74,10 +74,6 @@ export class MonitoringPrescriptionComponent implements OnInit {
       value.vitalSigns.painScale,
       value.vitalSigns.consciousnessSedationScale,
       value.vitalSigns.fallRiskScale,
-      value.glucoseMonitoring.frequency,
-      value.glucoseMonitoring.hypoglycemiaProtocol,
-      value.glucoseMonitoring.slidingScale,
-      value.glucoseMonitoring.insulinType,
       value.fluidBalanceOutputs.fluidBalance,
       value.fluidBalanceOutputs.urineOutput,
       ...value.fluidBalanceOutputs.drainsTubes,
@@ -103,12 +99,6 @@ export class MonitoringPrescriptionComponent implements OnInit {
 
   protected selected(control: FormControl<string[]>, option: string): boolean {
     return control.value.includes(option);
-  }
-
-  protected toggleSlidingScale(checked: boolean): void {
-    const group = this.form.controls.glucoseMonitoring.controls;
-    group.slidingScale.setValue(checked);
-    if (!checked) group.insulinType.setValue('');
   }
 
   protected async generatePreview(): Promise<boolean> {

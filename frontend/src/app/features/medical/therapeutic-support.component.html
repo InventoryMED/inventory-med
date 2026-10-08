@@ -1,0 +1,345 @@
+<section class="therapeutic-field" [class.print-empty-section]="!hasSelection()">
+  <header class="therapeutic-header">
+    <div>
+      <p class="eyebrow">DOMÍNIO 2 • SUPORTE TERAPÊUTICO</p>
+      <h2>HIDRATAÇÃO, CONTROLE GLICÊMICO E HEMOTERAPIA</h2>
+      <p>AS TRAVAS DE SEGURANÇA E O TEXTO FINAL SÃO VALIDADOS PELA API.</p>
+    </div>
+    @if (hasSelection()) {
+      <button type="button" class="ghost-button" (click)="reset()">LIMPAR DOMÍNIO</button>
+    }
+  </header>
+
+  @if (busy() && !catalog()) {
+    <p class="therapeutic-state">CARREGANDO CATÁLOGO TERAPÊUTICO...</p>
+  } @else if (catalog(); as options) {
+    <label class="context-field">
+      <span>CONTEXTO CLÍNICO</span>
+      <select [formControl]="clinicalContext">
+        <option value="">SELECIONE</option>
+        @for (option of options.clinicalContexts; track option.code) {
+          <option [value]="option.code">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <section class="domain-block">
+      <header class="domain-heading">
+        <div>
+          <span>07</span>
+          <h3>HIDRATAÇÃO E SOLUÇÕES</h3>
+        </div>
+        <button
+          type="button"
+          class="add-button"
+          (click)="addHydration()"
+          [disabled]="hydrationSolutions.length >= 8"
+        >
+          + ADICIONAR SOLUÇÃO
+        </button>
+      </header>
+      @if (!hydrationSolutions.length) {
+        <p class="empty-state">NENHUMA SOLUÇÃO SELECIONADA.</p>
+      }
+      <div class="item-list">
+        @for (
+          group of hydrationSolutions.controls;
+          track group.controls.id.value;
+          let index = $index
+        ) {
+          <fieldset [formGroup]="group" class="therapy-item">
+            <legend>SOLUÇÃO {{ index + 1 }}</legend>
+            <button type="button" class="remove-button" (click)="removeHydration(index)">
+              REMOVER
+            </button>
+            <div class="control-grid">
+              <label class="field field--wide"
+                ><span>SOLUÇÃO BASE E VOLUME</span>
+                <select formControlName="baseSolution">
+                  <option value="">SELECIONE</option>
+                  @for (option of options.baseSolutions; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field"
+                ><span>FREQUÊNCIA</span>
+                <select formControlName="frequency">
+                  <option value="">SELECIONE</option>
+                  @for (option of options.hydrationFrequencies; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field"
+                ><span>MODALIDADE DE INFUSÃO</span>
+                <select
+                  formControlName="infusionMode"
+                  (change)="selectInfusionMode(group, $any($event.target).value)"
+                >
+                  <option value="">SELECIONE</option>
+                  @for (option of options.infusionModes; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+              @if (
+                group.controls.infusionMode.value === 'PUMP' ||
+                group.controls.infusionMode.value === 'MACRODRIP'
+              ) {
+                <label class="field"
+                  ><span>VAZÃO</span>
+                  <div class="rate-field">
+                    <input
+                      formControlName="rateValue"
+                      type="number"
+                      min="0.1"
+                      max="2000"
+                      step="0.1"
+                    />
+                    <strong>{{
+                      group.controls.rateUnit.value === 'ML_H' ? 'ML/H' : 'GOTAS/MIN'
+                    }}</strong>
+                  </div>
+                </label>
+              }
+              <label class="field"
+                ><span>APRAZAMENTO</span>
+                <select formControlName="scheduling">
+                  @for (option of options.schedulingOptions; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <div class="choice-grid">
+              <strong>ADITIVOS ELETROLÍTICOS</strong>
+              @for (option of options.electrolyteAdditives; track option.code) {
+                <label>
+                  <input
+                    type="checkbox"
+                    [checked]="selected(group.controls.additives, option.code)"
+                    (change)="
+                      toggleList(group.controls.additives, option.code, $any($event.target).checked)
+                    "
+                  />
+                  <span>{{ option.label }}</span>
+                </label>
+              }
+            </div>
+          </fieldset>
+        }
+      </div>
+    </section>
+
+    <section class="domain-block">
+      <header class="domain-heading">
+        <div>
+          <span>08</span>
+          <h3>CONTROLE GLICÊMICO E INSULINOTERAPIA</h3>
+        </div>
+      </header>
+      <div class="glucose-grid" [formGroup]="glucoseControl">
+        <label class="field"
+          ><span>FREQUÊNCIA DO DXT</span>
+          <select
+            formControlName="frequency"
+            (change)="selectGlucoseFrequency($any($event.target).value)"
+          >
+            <option value="">NÃO PRESCREVER DXT NESTE BLOCO</option>
+            @for (option of options.glucoseFrequencies; track option.code) {
+              <option [value]="option.code">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="field"
+          ><span>INSULINA DA ESCALA</span>
+          <select
+            formControlName="insulinType"
+            [disabled]="!glucoseControl.controls.frequency.value"
+          >
+            <option value="">SELECIONE</option>
+            @for (option of options.insulinTypes; track option.code) {
+              <option [value]="option.code">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="pump-card">
+          <input
+            type="checkbox"
+            formControlName="continuousPump"
+            (change)="toggleContinuousPump($any($event.target).checked)"
+          />
+          <span
+            ><strong>BOMBA CONTÍNUA DE INSULINA</strong
+            ><small>INSULINA REGULAR 1 UI/ML E DXT 1/1H.</small></span
+          >
+        </label>
+      </div>
+      @if (glucoseControl.controls.frequency.value) {
+        <div class="safety-strip">
+          <strong>PROTOCOLOS OBRIGATÓRIOS ATIVOS</strong>
+          <span>HIPOGLICEMIA DXT &lt; 70 MG/DL</span>
+          <span>ESCALA DE CORREÇÃO SC</span>
+          <span>DUPLA CHECAGEM DE INSULINA</span>
+        </div>
+      }
+    </section>
+
+    <section class="domain-block">
+      <header class="domain-heading">
+        <div>
+          <span>10</span>
+          <h3>HEMODERIVADOS E TRANSFUSÕES</h3>
+        </div>
+        <button
+          type="button"
+          class="add-button"
+          (click)="addBloodProduct()"
+          [disabled]="bloodProducts.length >= 8"
+        >
+          + ADICIONAR PRODUTO
+        </button>
+      </header>
+      @if (!bloodProducts.length) {
+        <p class="empty-state">NENHUM HEMOCOMPONENTE OU HEMODERIVADO SELECIONADO.</p>
+      }
+      <div class="item-list">
+        @for (group of bloodProducts.controls; track group.controls.id.value; let index = $index) {
+          <fieldset [formGroup]="group" class="therapy-item">
+            <legend>PRODUTO {{ index + 1 }}</legend>
+            <button type="button" class="remove-button" (click)="removeBloodProduct(index)">
+              REMOVER
+            </button>
+            <div class="control-grid control-grid--blood">
+              <label class="field field--wide"
+                ><span>HEMOCOMPONENTE / HEMODERIVADO</span>
+                <select
+                  formControlName="product"
+                  (change)="selectBloodProduct(group, $any($event.target).value)"
+                >
+                  <option value="">SELECIONE</option>
+                  @for (option of options.bloodProducts; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field"
+                ><span>QUANTIDADE</span
+                ><input
+                  formControlName="quantity"
+                  type="number"
+                  min="1"
+                  [max]="group.controls.quantityUnit.value === 'ML' ? 1000 : 20"
+              /></label>
+              <label class="field"
+                ><span>UNIDADE</span>
+                <select formControlName="quantityUnit">
+                  @for (option of options.quantityUnits; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field"
+                ><span>VIA / ACESSO</span>
+                <select formControlName="route">
+                  @for (option of options.transfusionRoutes; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field"
+                ><span>TEMPO DE INFUSÃO (MINUTOS)</span
+                ><input formControlName="infusionMinutes" type="number" min="15" max="240"
+              /></label>
+              <label class="field"
+                ><span>APRAZAMENTO</span>
+                <select formControlName="scheduling">
+                  @for (option of options.schedulingOptions; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            @if (
+              group.controls.product.value &&
+              productCategory(group.controls.product.value) !== 'PLASMA_DERIVATIVE'
+            ) {
+              <div class="choice-grid choice-grid--four">
+                <strong>MODIFICAÇÕES DA BOLSA</strong>
+                @for (option of options.bloodProductModifications; track option.code) {
+                  <label
+                    ><input
+                      type="checkbox"
+                      [checked]="selected(group.controls.modifications, option.code)"
+                      (change)="
+                        toggleList(
+                          group.controls.modifications,
+                          option.code,
+                          $any($event.target).checked
+                        )
+                      "
+                    /><span>{{ option.label }}</span></label
+                  >
+                }
+              </div>
+            }
+            <div class="choice-grid choice-grid--three">
+              <strong>PRÉ-MEDICAÇÃO — SOMENTE SE CLINICAMENTE INDICADA</strong>
+              @for (option of options.preMedications; track option.code) {
+                <label
+                  ><input
+                    type="checkbox"
+                    [checked]="selected(group.controls.preMedications, option.code)"
+                    (change)="
+                      toggleList(
+                        group.controls.preMedications,
+                        option.code,
+                        $any($event.target).checked
+                      )
+                    "
+                  /><span>{{ option.label }}</span></label
+                >
+              }
+            </div>
+          </fieldset>
+        }
+      </div>
+    </section>
+
+    <div class="therapeutic-actions">
+      <button
+        type="button"
+        class="primary-button"
+        (click)="generatePreview()"
+        [disabled]="busy() || !hasSelection()"
+      >
+        {{ busy() ? 'VALIDANDO...' : 'VALIDAR SUPORTE TERAPÊUTICO' }}
+      </button>
+      <span>NENHUM ITEM É FATURADO AUTOMATICAMENTE.</span>
+    </div>
+  }
+
+  @if (error(); as message) {
+    <p class="therapeutic-error" role="alert">{{ message }}</p>
+  }
+  @if (preview(); as result) {
+    <section class="therapeutic-preview" aria-live="polite">
+      <article>
+        <h3>PRÉVIA CLÍNICA</h3>
+        <pre>{{ result.structuredTherapeuticSupport.prescriptionDetails }}</pre>
+      </article>
+      <article class="audit-preview">
+        <h3>CONFERÊNCIA DE AUDITORIA E SEGURANÇA</h3>
+        <ul>
+          @for (item of result.billingAudit.suppliesEquipmentForReview; track item) {
+            <li>{{ item }}</li>
+          }
+          @for (item of result.billingAudit.auditAlerts; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </article>
+    </section>
+  }
+</section>

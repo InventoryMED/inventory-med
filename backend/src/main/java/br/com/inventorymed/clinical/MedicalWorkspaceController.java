@@ -45,6 +45,7 @@ public class MedicalWorkspaceController {
     private final VentilatorySupportService ventilatorySupportService;
     private final RehabilitationPrescriptionService rehabilitationPrescriptionService;
     private final IsolationPrecautionService isolationPrecautionService;
+    private final TherapeuticSupportService therapeuticSupportService;
 
     public MedicalWorkspaceController(
         HospitalSessionContext sessionContext,
@@ -55,7 +56,8 @@ public class MedicalWorkspaceController {
         MonitoringPrescriptionService monitoringPrescriptionService,
         VentilatorySupportService ventilatorySupportService,
         RehabilitationPrescriptionService rehabilitationPrescriptionService,
-        IsolationPrecautionService isolationPrecautionService
+        IsolationPrecautionService isolationPrecautionService,
+        TherapeuticSupportService therapeuticSupportService
     ) {
         this.sessionContext = sessionContext;
         this.workspaceService = workspaceService;
@@ -66,6 +68,7 @@ public class MedicalWorkspaceController {
         this.ventilatorySupportService = ventilatorySupportService;
         this.rehabilitationPrescriptionService = rehabilitationPrescriptionService;
         this.isolationPrecautionService = isolationPrecautionService;
+        this.therapeuticSupportService = therapeuticSupportService;
     }
 
     @GetMapping("/workspace")
@@ -226,6 +229,21 @@ public class MedicalWorkspaceController {
     ) {
         sessionContext.require(session, MEDICAL_ROLES);
         return isolationPrecautionService.preview(body);
+    }
+
+    @GetMapping("/therapeutic-support/catalog")
+    public TherapeuticSupportCatalog therapeuticSupportCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return therapeuticSupportService.catalog();
+    }
+
+    @PostMapping("/therapeutic-support/preview")
+    public TherapeuticSupportResponse previewTherapeuticSupport(
+        HttpSession session,
+        @Valid @RequestBody TherapeuticSupportRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return therapeuticSupportService.preview(body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")

@@ -62,7 +62,8 @@ export type ClinicalFieldType =
   | 'MONITORING_PLAN'
   | 'VENTILATORY_SUPPORT_PLAN'
   | 'REHABILITATION_PLAN'
-  | 'ISOLATION_PRECAUTIONS_PLAN';
+  | 'ISOLATION_PRECAUTIONS_PLAN'
+  | 'THERAPEUTIC_SUPPORT_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -431,6 +432,83 @@ export interface IsolationPrecautionResponse {
 export interface IsolationPrecautionSelection {
   draft: IsolationPrecautionDraft;
   response: IsolationPrecautionResponse | null;
+}
+
+export interface TherapeuticHydrationDraft {
+  id: number;
+  baseSolution: string;
+  additives: string[];
+  route: string;
+  frequency: string;
+  infusionMode: string;
+  rateValue: number | null;
+  rateUnit: string;
+  scheduling: string;
+}
+
+export interface TherapeuticBloodProductDraft {
+  id: number;
+  product: string;
+  modifications: string[];
+  quantity: number | null;
+  quantityUnit: string;
+  route: string;
+  infusionMinutes: number | null;
+  preMedications: string[];
+  scheduling: string;
+}
+
+export interface TherapeuticSupportDraft {
+  clinicalContext: string;
+  hydrationSolutions: TherapeuticHydrationDraft[];
+  glucoseControl: {
+    frequency: string;
+    hypoglycemiaProtocolActive: boolean;
+    correctionScaleActive: boolean;
+    insulinType: string;
+    continuousPump: boolean;
+  };
+  bloodProducts: TherapeuticBloodProductDraft[];
+}
+
+export interface TherapeuticSupportCatalog {
+  clinicalContexts: VentilatorySupportOption[];
+  baseSolutions: VentilatorySupportOption[];
+  electrolyteAdditives: VentilatorySupportOption[];
+  hydrationFrequencies: VentilatorySupportOption[];
+  infusionModes: VentilatorySupportOption[];
+  rateUnits: VentilatorySupportOption[];
+  schedulingOptions: VentilatorySupportOption[];
+  glucoseFrequencies: VentilatorySupportOption[];
+  insulinTypes: VentilatorySupportOption[];
+  bloodProducts: Array<VentilatorySupportOption & { category: string }>;
+  bloodProductModifications: VentilatorySupportOption[];
+  transfusionRoutes: VentilatorySupportOption[];
+  quantityUnits: VentilatorySupportOption[];
+  preMedications: VentilatorySupportOption[];
+}
+
+export interface TherapeuticSupportResponse {
+  structuredTherapeuticSupport: {
+    summaryLine: string;
+    prescriptionDetails: string;
+    orderRows: Array<{
+      section: string;
+      description: string;
+      route: string;
+      frequency: string;
+      scheduling: string;
+    }>;
+  };
+  billingAudit: {
+    suppliesEquipmentForReview: string[];
+    auditAlerts: string[];
+  };
+}
+
+export interface TherapeuticSupportSelection {
+  draft: TherapeuticSupportDraft;
+  response: TherapeuticSupportResponse | null;
 }
 
 export interface ClinicalFormOption {

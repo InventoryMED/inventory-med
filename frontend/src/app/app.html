@@ -584,6 +584,9 @@
                 (selectionChange)="updateNursingCareSelection($event)"
               />
               <app-monitoring-prescription (selectionChange)="updateMonitoringSelection($event)" />
+              <app-therapeutic-support
+                (selectionChange)="updateTherapeuticSupportSelection($event)"
+              />
               <app-isolation-precautions
                 (selectionChange)="updateIsolationPrecautionSelection($event)"
               />
@@ -593,75 +596,6 @@
               <app-rehabilitation-prescription
                 (selectionChange)="updateRehabilitationSelection($event)"
               />
-              <section
-                class="clinical-order-section"
-                [class.print-empty-section]="!hydrationRow.description.trim()"
-                aria-labelledby="hydration-title"
-              >
-                <header class="clinical-order-header">
-                  <div>
-                    <p class="eyebrow">Soluções</p>
-                    <h2 id="hydration-title">Hidratação</h2>
-                  </div>
-                  <span>Preencha via, frequência e aprazamento</span>
-                </header>
-                <label class="order-preset-field" for="hydration-preset">
-                  <span>Modelo de hidratação</span>
-                  <select
-                    id="hydration-preset"
-                    [(ngModel)]="selectedHydrationPreset"
-                    (ngModelChange)="selectHydrationPreset($event)"
-                  >
-                    <option value="">Selecione uma opção</option>
-                    @for (preset of hydrationPresets; track preset.description) {
-                      <option [value]="preset.description">
-                        {{ preset.description }} • {{ preset.route }} • {{ preset.frequency }} •
-                        {{ preset.scheduling }}
-                      </option>
-                    }
-                  </select>
-                </label>
-                <div class="prescription-table-wrap">
-                  <table class="prescription-table hydration-table">
-                    <thead>
-                      <tr>
-                        <th class="description-column">Hidratação</th>
-                        <th class="route-column">Via</th>
-                        <th class="frequency-column">Frequência</th>
-                        <th class="scheduling-column">Aprazamento</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>
-                          <input
-                            [(ngModel)]="hydrationRow.description"
-                            placeholder="Selecione um modelo ou digite a solução"
-                          />
-                        </td>
-                        <td>
-                          <select [(ngModel)]="hydrationRow.route">
-                            <option>EV</option>
-                            <option>VO</option>
-                            <option>SC</option>
-                            <option>OUTRA</option>
-                          </select>
-                        </td>
-                        <td>
-                          <input [(ngModel)]="hydrationRow.frequency" placeholder="Ex.: 12/12h" />
-                        </td>
-                        <td>
-                          <select [(ngModel)]="hydrationRow.scheduling" aria-label="Aprazamento">
-                            <option>ACM</option>
-                            <option>SN</option>
-                            <option>FIXO</option>
-                          </select>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </section>
               @for (group of medicationGroups; track group.id) {
                 <section
                   class="clinical-order-section"
@@ -942,7 +876,16 @@
                   <strong>MONITORIZAÇÃO E CONTROLES</strong>
                   <div class="print-monitoring-content">
                     <span>{{ preview.structuredMonitoring.prescriptionDetails }}</span>
-                    @if (monitoringDraft.glucoseMonitoring.frequency) {
+                  </div>
+                </section>
+              }
+
+              @if (therapeuticSupportPreview(); as preview) {
+                <section class="print-diet-prescription print-monitoring">
+                  <strong>HIDRATAÇÃO, CONTROLE GLICÊMICO E HEMOTERAPIA</strong>
+                  <div class="print-monitoring-content">
+                    <span>{{ preview.structuredTherapeuticSupport.prescriptionDetails }}</span>
+                    @if (therapeuticSupportDraft.glucoseControl.frequency) {
                       <div class="print-check-in"><strong>CHECK-IN</strong></div>
                     }
                   </div>
