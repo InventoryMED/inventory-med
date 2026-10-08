@@ -715,7 +715,7 @@ class CoreSecurityIntegrationTests {
         List<String> structuredSectionOrder = tenantJdbc.read(firstHospital.getId(), jdbc ->
             jdbc.queryForList(
                 "SELECT section_key FROM dbo.form_section WHERE version_id = ? " +
-                    "AND section_key IN ('REABILITACAO', 'PRECAUCOES_ISOLAMENTO', 'SUPORTE_TERAPEUTICO') " +
+                    "AND section_key IN ('REABILITACAO', 'PRECAUCOES_ISOLAMENTO', 'SUPORTE_TERAPEUTICO', 'CUIDADOS_CRITICOS') " +
                     "ORDER BY display_order",
                 String.class,
                 templateVersionId
@@ -724,7 +724,8 @@ class CoreSecurityIntegrationTests {
         assertThat(structuredSectionOrder).containsExactly(
             "REABILITACAO",
             "PRECAUCOES_ISOLAMENTO",
-            "SUPORTE_TERAPEUTICO"
+            "SUPORTE_TERAPEUTICO",
+            "CUIDADOS_CRITICOS"
         );
         MvcResult finalized = mockMvc
             .perform(
@@ -841,6 +842,23 @@ class CoreSecurityIntegrationTests {
                                 "preMedications":[],
                                 "scheduling":"URGENT"
                               }]
+                            },
+                            "CUIDADOS_CRITICOS.PLANO":{
+                              "clinicalContext":"ICU",
+                              "vasoactiveDrugs":[{
+                                "id":1,
+                                "drug":"NOREPINEPHRINE",
+                                "dilution":"16 MG EM SG 5%% 250 ML",
+                                "finalConcentration":"64 MCG/ML",
+                                "initialRate":10,
+                                "rateUnit":"ML_H",
+                                "vascularAccess":"CVC",
+                                "bloodPressureMonitoring":"INVASIVE_ARTERIAL",
+                                "therapeuticGoal":"TITULAR PARA MANTER PAM ≥ 65 MMHG",
+                                "scheduling":"CONTINUOUS"
+                              }],
+                              "sedationAnalgesiaBnm":[],
+                              "emergencyMedications":[]
                             }
                           },
                           "finalizeDocument":true
@@ -881,6 +899,14 @@ class CoreSecurityIntegrationTests {
             .andExpect(
                 jsonPath("$.values['SUPORTE_TERAPEUTICO.PLANO'].billingAudit.auditAlerts[0]")
                     .value(org.hamcrest.Matchers.containsString("KCL CONCENTRADO"))
+            )
+            .andExpect(
+                jsonPath("$.values['CUIDADOS_CRITICOS.PLANO'].structuredCriticalCare.prescriptionDetails")
+                    .value(org.hamcrest.Matchers.containsString("14. DROGAS VASOATIVAS E INOTRÓPICOS"))
+            )
+            .andExpect(
+                jsonPath("$.values['CUIDADOS_CRITICOS.PLANO'].billingAudit.auditAlerts[0]")
+                    .value(org.hamcrest.Matchers.containsString("ALTA VIGILÂNCIA"))
             )
             .andReturn();
         UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");

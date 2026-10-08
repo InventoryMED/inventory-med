@@ -6,6 +6,7 @@ import { environment } from '../environments/environment';
 import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
 import { AdministrationComponent } from './features/administration/administration.component';
+import { CriticalCarePrescriptionComponent } from './features/medical/critical-care-prescription.component';
 import { DietPrescriptionComponent } from './features/medical/diet-prescription.component';
 import { IsolationPrecautionsComponent } from './features/medical/isolation-precautions.component';
 import { MonitoringPrescriptionComponent } from './features/medical/monitoring-prescription.component';
@@ -16,6 +17,9 @@ import { VentilatorySupportComponent } from './features/medical/ventilatory-supp
 import {
   ClinicalFormKind,
   ClinicalFormTemplate,
+  CriticalCareDraft,
+  CriticalCareResponse,
+  CriticalCareSelection,
   DietPrescriptionDraft,
   DietPrescriptionResponse,
   DietPrescriptionSelection,
@@ -207,6 +211,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
     RehabilitationPrescriptionComponent,
     IsolationPrecautionsComponent,
     TherapeuticSupportComponent,
+    CriticalCarePrescriptionComponent,
   ],
   selector: 'app-root',
   styleUrl: './app.scss',
@@ -243,6 +248,8 @@ export class App implements OnInit {
   private readonly isolationPrecautionComponent = viewChild(IsolationPrecautionsComponent);
   protected readonly therapeuticSupportPreview = signal<TherapeuticSupportResponse | null>(null);
   private readonly therapeuticSupportComponent = viewChild(TherapeuticSupportComponent);
+  protected readonly criticalCarePreview = signal<CriticalCareResponse | null>(null);
+  private readonly criticalCareComponent = viewChild(CriticalCarePrescriptionComponent);
 
   protected loginEmail = '';
   protected loginPassword = '';
@@ -267,6 +274,7 @@ export class App implements OnInit {
   protected isolationPrecautionDraft: IsolationPrecautionDraft =
     this.emptyIsolationPrecautionDraft();
   protected therapeuticSupportDraft: TherapeuticSupportDraft = this.emptyTherapeuticSupportDraft();
+  protected criticalCareDraft: CriticalCareDraft = this.emptyCriticalCareDraft();
   protected evolutionDiet = '';
   protected evolutionAdmission = '';
   protected evolutionText = '';
@@ -1071,6 +1079,7 @@ export class App implements OnInit {
     this.therapeuticSupportPreview()?.structuredTherapeuticSupport.orderRows.forEach((row) =>
       rows.push(row),
     );
+    this.criticalCarePreview()?.structuredCriticalCare.orderRows.forEach((row) => rows.push(row));
     this.medicationGroups.forEach((group) =>
       group.rows
         .filter((row) => row.description.trim())
@@ -1149,6 +1158,8 @@ export class App implements OnInit {
     const therapeuticSupportIsValid =
       await this.therapeuticSupportComponent()?.validateAndPreview();
     if (therapeuticSupportIsValid === false) return;
+    const criticalCareIsValid = await this.criticalCareComponent()?.validateAndPreview();
+    if (criticalCareIsValid === false) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
     const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
     const validMedicationSections: MedicationSectionDraft[] = this.medicationGroups
@@ -1166,6 +1177,7 @@ export class App implements OnInit {
         !this.nursingCareComponent()?.hasSelection() &&
         !this.monitoringComponent()?.hasSelection() &&
         !this.therapeuticSupportComponent()?.hasSelection() &&
+        !this.criticalCareComponent()?.hasSelection() &&
         !this.ventilatorySupportComponent()?.hasSelection() &&
         !this.rehabilitationComponent()?.hasSelection() &&
         !this.isolationPrecautionComponent()?.hasSelection())
@@ -1248,6 +1260,11 @@ export class App implements OnInit {
   protected updateTherapeuticSupportSelection(selection: TherapeuticSupportSelection): void {
     this.therapeuticSupportDraft = selection.draft;
     this.therapeuticSupportPreview.set(selection.response);
+  }
+
+  protected updateCriticalCareSelection(selection: CriticalCareSelection): void {
+    this.criticalCareDraft = selection.draft;
+    this.criticalCarePreview.set(selection.response);
   }
 
   protected updateVentilatorySupportSelection(selection: VentilatorySupportSelection): void {
@@ -1515,6 +1532,9 @@ export class App implements OnInit {
     if (this.therapeuticSupportComponent()?.hasSelection()) {
       values['SUPORTE_TERAPEUTICO.PLANO'] = this.therapeuticSupportDraft;
     }
+    if (this.criticalCareComponent()?.hasSelection()) {
+      values['CUIDADOS_CRITICOS.PLANO'] = this.criticalCareDraft;
+    }
     const sectionKeys: Record<MedicationSectionId, string> = {
       ANALGESIA: 'ANALGESIA',
       SYMPTOMATICS: 'SINTOMATICOS',
@@ -1579,6 +1599,8 @@ export class App implements OnInit {
     this.monitoringPreview.set(null);
     this.therapeuticSupportDraft = this.emptyTherapeuticSupportDraft();
     this.therapeuticSupportPreview.set(null);
+    this.criticalCareDraft = this.emptyCriticalCareDraft();
+    this.criticalCarePreview.set(null);
     this.ventilatorySupportDraft = this.emptyVentilatorySupportDraft();
     this.ventilatorySupportPreview.set(null);
     this.rehabilitationDraft = this.emptyRehabilitationDraft();
@@ -1682,6 +1704,15 @@ export class App implements OnInit {
         continuousPump: false,
       },
       bloodProducts: [],
+    };
+  }
+
+  private emptyCriticalCareDraft(): CriticalCareDraft {
+    return {
+      clinicalContext: '',
+      vasoactiveDrugs: [],
+      sedationAnalgesiaBnm: [],
+      emergencyMedications: [],
     };
   }
 
@@ -1998,6 +2029,9 @@ export class App implements OnInit {
     this.therapeuticSupportDraft = this.emptyTherapeuticSupportDraft();
     this.therapeuticSupportPreview.set(null);
     this.therapeuticSupportComponent()?.reset();
+    this.criticalCareDraft = this.emptyCriticalCareDraft();
+    this.criticalCarePreview.set(null);
+    this.criticalCareComponent()?.reset();
     this.ventilatorySupportDraft = this.emptyVentilatorySupportDraft();
     this.ventilatorySupportPreview.set(null);
     this.ventilatorySupportComponent()?.reset();

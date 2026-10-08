@@ -5,6 +5,9 @@ import { environment } from '../../../environments/environment';
 import {
   ClinicalFormKind,
   ClinicalFormTemplate,
+  CriticalCareCatalog,
+  CriticalCareDraft,
+  CriticalCareResponse,
   DietPrescriptionCatalog,
   DietPrescriptionDraft,
   DietPrescriptionResponse,
@@ -166,6 +169,18 @@ export class MedicalService {
         `${this.baseUrl}/therapeutic-support/preview`,
         draft,
       ),
+    );
+  }
+
+  criticalCareCatalog(): Promise<CriticalCareCatalog> {
+    return firstValueFrom(
+      this.http.get<CriticalCareCatalog>(`${this.baseUrl}/critical-care/catalog`),
+    );
+  }
+
+  previewCriticalCare(draft: CriticalCareDraft): Promise<CriticalCareResponse> {
+    return firstValueFrom(
+      this.http.post<CriticalCareResponse>(`${this.baseUrl}/critical-care/preview`, draft),
     );
   }
 

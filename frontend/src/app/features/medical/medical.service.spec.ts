@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { authInterceptor } from '../../auth/auth.interceptor';
 import {
+  CriticalCareDraft,
   DietPrescriptionDraft,
   IsolationPrecautionDraft,
   MonitoringPrescriptionDraft,
@@ -413,5 +414,58 @@ describe('MedicalService', () => {
       billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
     });
     expect((await previewPromise).structuredTherapeuticSupport.summaryLine).toContain('DXT');
+  });
+
+  it('loads and validates critical care orders in the backend', async () => {
+    const catalogPromise = service.criticalCareCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/critical-care/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      clinicalContexts: [{ code: 'ICU', label: 'UTI' }],
+      vasoactiveDrugs: [],
+      sedationDrugs: [],
+      emergencyDrugs: [],
+      vascularAccesses: [],
+      bloodPressureMonitoring: [],
+      vasoactiveRateUnits: [],
+      administrationModes: [],
+      sedationRateUnits: [],
+      sedationTargets: [],
+      ventilatoryStatuses: [],
+      sedationRoutes: [],
+      emergencyRoutes: [],
+      emergencyScheduling: [],
+    });
+    expect((await catalogPromise).clinicalContexts[0].code).toBe('ICU');
+
+    const draft: CriticalCareDraft = {
+      clinicalContext: 'ADULT_EMERGENCY',
+      vasoactiveDrugs: [],
+      sedationAnalgesiaBnm: [],
+      emergencyMedications: [
+        {
+          id: 1,
+          drug: 'EPINEPHRINE_BOLUS',
+          doseAdministration: '1 MG EM BOLUS',
+          route: 'IO',
+          emergencyIndication: 'PCR',
+          scheduling: 'EMERGENCY',
+        },
+      ],
+    };
+    const previewPromise = service.previewCriticalCare(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/critical-care/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredCriticalCare: {
+        summaryLine: 'ADRENALINA — EMERGÊNCIA.',
+        prescriptionDetails: '16. ANTÍDOTOS, REVERSORES E EMERGÊNCIA (PCR):',
+        orderRows: [],
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
+    });
+    expect((await previewPromise).structuredCriticalCare.prescriptionDetails).toContain('16.');
   });
 });

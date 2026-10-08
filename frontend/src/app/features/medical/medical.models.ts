@@ -63,7 +63,8 @@ export type ClinicalFieldType =
   | 'VENTILATORY_SUPPORT_PLAN'
   | 'REHABILITATION_PLAN'
   | 'ISOLATION_PRECAUTIONS_PLAN'
-  | 'THERAPEUTIC_SUPPORT_PLAN';
+  | 'THERAPEUTIC_SUPPORT_PLAN'
+  | 'CRITICAL_CARE_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -509,6 +510,90 @@ export interface TherapeuticSupportResponse {
 export interface TherapeuticSupportSelection {
   draft: TherapeuticSupportDraft;
   response: TherapeuticSupportResponse | null;
+}
+
+export interface CriticalCareVasoactiveDraft {
+  id: number;
+  drug: string;
+  dilution: string;
+  finalConcentration: string;
+  initialRate: number | null;
+  rateUnit: string;
+  vascularAccess: string;
+  bloodPressureMonitoring: string;
+  therapeuticGoal: string;
+  scheduling: string;
+}
+
+export interface CriticalCareSedationDraft {
+  id: number;
+  drug: string;
+  preparation: string;
+  administrationMode: string;
+  rateDoseValue: number | null;
+  rateDoseUnit: string;
+  sedationTarget: string;
+  ventilatoryStatus: string;
+  route: string;
+  scheduling: string;
+}
+
+export interface CriticalCareEmergencyDraft {
+  id: number;
+  drug: string;
+  doseAdministration: string;
+  route: string;
+  emergencyIndication: string;
+  scheduling: string;
+}
+
+export interface CriticalCareDraft {
+  clinicalContext: string;
+  vasoactiveDrugs: CriticalCareVasoactiveDraft[];
+  sedationAnalgesiaBnm: CriticalCareSedationDraft[];
+  emergencyMedications: CriticalCareEmergencyDraft[];
+}
+
+export interface CriticalCareCatalog {
+  clinicalContexts: VentilatorySupportOption[];
+  vasoactiveDrugs: Array<
+    VentilatorySupportOption & { centralAccessRequired: boolean; specialTubing: string }
+  >;
+  sedationDrugs: Array<VentilatorySupportOption & { category: string; allowedModes: string[] }>;
+  emergencyDrugs: Array<VentilatorySupportOption & { highCost: boolean }>;
+  vascularAccesses: VentilatorySupportOption[];
+  bloodPressureMonitoring: VentilatorySupportOption[];
+  vasoactiveRateUnits: VentilatorySupportOption[];
+  administrationModes: VentilatorySupportOption[];
+  sedationRateUnits: VentilatorySupportOption[];
+  sedationTargets: VentilatorySupportOption[];
+  ventilatoryStatuses: VentilatorySupportOption[];
+  sedationRoutes: VentilatorySupportOption[];
+  emergencyRoutes: VentilatorySupportOption[];
+  emergencyScheduling: VentilatorySupportOption[];
+}
+
+export interface CriticalCareResponse {
+  structuredCriticalCare: {
+    summaryLine: string;
+    prescriptionDetails: string;
+    orderRows: Array<{
+      section: string;
+      description: string;
+      route: string;
+      frequency: string;
+      scheduling: string;
+    }>;
+  };
+  billingAudit: {
+    suppliesEquipmentForReview: string[];
+    auditAlerts: string[];
+  };
+}
+
+export interface CriticalCareSelection {
+  draft: CriticalCareDraft;
+  response: CriticalCareResponse | null;
 }
 
 export interface ClinicalFormOption {

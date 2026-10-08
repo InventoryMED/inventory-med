@@ -94,6 +94,12 @@ describe('App', () => {
       },
       bloodProducts: [],
     });
+    expect(app.criticalCareDraft).toEqual({
+      clinicalContext: '',
+      vasoactiveDrugs: [],
+      sedationAnalgesiaBnm: [],
+      emergencyMedications: [],
+    });
     expect(app.observationRows).toEqual(['']);
     expect(app.abnormalityRows).toEqual(['']);
   });
@@ -167,6 +173,22 @@ describe('App', () => {
       },
       billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
     });
+    app.criticalCarePreview.set({
+      structuredCriticalCare: {
+        summaryLine: 'NORADRENALINA EM BIC.',
+        prescriptionDetails: '14. DROGAS VASOATIVAS E INOTRÓPICOS.',
+        orderRows: [
+          {
+            section: 'DROGAS VASOATIVAS / INOTRÓPICOS',
+            description: 'NORADRENALINA — META PAM ≥ 65 MMHG',
+            route: 'CVC',
+            frequency: '10 ML/H',
+            scheduling: 'CONTÍNUO',
+          },
+        ],
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
+    });
 
     expect(symptomatics.rows[0]).toMatchObject({
       route: 'EV',
@@ -209,6 +231,11 @@ describe('App', () => {
           frequency: 'DURANTE TODA A INTERNAÇÃO',
           scheduling: 'CONTÍNUO',
         }),
+        expect.objectContaining({
+          section: 'DROGAS VASOATIVAS / INOTRÓPICOS',
+          route: 'CVC',
+          frequency: '10 ML/H',
+        }),
       ]),
     );
     const printedSections = printRows.map((row: any) => row.section);
@@ -217,6 +244,9 @@ describe('App', () => {
     );
     expect(printedSections.indexOf('PRECAUÇÕES / ISOLAMENTO')).toBeLessThan(
       printedSections.indexOf('CONTROLE GLICÊMICO'),
+    );
+    expect(printedSections.indexOf('CONTROLE GLICÊMICO')).toBeLessThan(
+      printedSections.indexOf('DROGAS VASOATIVAS / INOTRÓPICOS'),
     );
     expect(app.printHours).toHaveLength(24);
   });

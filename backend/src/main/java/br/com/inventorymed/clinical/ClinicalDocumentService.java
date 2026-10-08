@@ -34,6 +34,7 @@ public class ClinicalDocumentService {
     private final RehabilitationPrescriptionService rehabilitationPrescriptionService;
     private final IsolationPrecautionService isolationPrecautionService;
     private final TherapeuticSupportService therapeuticSupportService;
+    private final CriticalCarePrescriptionService criticalCarePrescriptionService;
     private final ObjectMapper objectMapper;
 
     public ClinicalDocumentService(
@@ -47,6 +48,7 @@ public class ClinicalDocumentService {
         RehabilitationPrescriptionService rehabilitationPrescriptionService,
         IsolationPrecautionService isolationPrecautionService,
         TherapeuticSupportService therapeuticSupportService,
+        CriticalCarePrescriptionService criticalCarePrescriptionService,
         ObjectMapper objectMapper
     ) {
         this.tenantJdbc = tenantJdbc;
@@ -59,6 +61,7 @@ public class ClinicalDocumentService {
         this.rehabilitationPrescriptionService = rehabilitationPrescriptionService;
         this.isolationPrecautionService = isolationPrecautionService;
         this.therapeuticSupportService = therapeuticSupportService;
+        this.criticalCarePrescriptionService = criticalCarePrescriptionService;
         this.objectMapper = objectMapper;
     }
 
@@ -256,6 +259,9 @@ public class ClinicalDocumentService {
         }
         if (field.type() == FormFieldType.THERAPEUTIC_SUPPORT_PLAN) {
             return therapeuticSupportService.normalizeForClinicalDocument(value);
+        }
+        if (field.type() == FormFieldType.CRITICAL_CARE_PLAN) {
+            return criticalCarePrescriptionService.normalizeForClinicalDocument(value);
         }
         validateType(field, value);
         return value;

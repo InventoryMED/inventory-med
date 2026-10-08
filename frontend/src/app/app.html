@@ -596,6 +596,9 @@
               <app-therapeutic-support
                 (selectionChange)="updateTherapeuticSupportSelection($event)"
               />
+              <app-critical-care-prescription
+                (selectionChange)="updateCriticalCareSelection($event)"
+              />
               @for (group of medicationGroups; track group.id) {
                 <section
                   class="clinical-order-section"
@@ -902,6 +905,15 @@
                     @if (therapeuticSupportDraft.glucoseControl.frequency) {
                       <div class="print-check-in"><strong>CHECK-IN</strong></div>
                     }
+                  </div>
+                </section>
+              }
+
+              @if (criticalCarePreview(); as preview) {
+                <section class="print-diet-prescription print-monitoring">
+                  <strong>DROGAS VASOATIVAS, SEDAÇÃO E EMERGÊNCIA</strong>
+                  <div class="print-monitoring-content">
+                    <span>{{ preview.structuredCriticalCare.prescriptionDetails }}</span>
                   </div>
                 </section>
               }

@@ -46,6 +46,7 @@ public class MedicalWorkspaceController {
     private final RehabilitationPrescriptionService rehabilitationPrescriptionService;
     private final IsolationPrecautionService isolationPrecautionService;
     private final TherapeuticSupportService therapeuticSupportService;
+    private final CriticalCarePrescriptionService criticalCarePrescriptionService;
 
     public MedicalWorkspaceController(
         HospitalSessionContext sessionContext,
@@ -57,7 +58,8 @@ public class MedicalWorkspaceController {
         VentilatorySupportService ventilatorySupportService,
         RehabilitationPrescriptionService rehabilitationPrescriptionService,
         IsolationPrecautionService isolationPrecautionService,
-        TherapeuticSupportService therapeuticSupportService
+        TherapeuticSupportService therapeuticSupportService,
+        CriticalCarePrescriptionService criticalCarePrescriptionService
     ) {
         this.sessionContext = sessionContext;
         this.workspaceService = workspaceService;
@@ -69,6 +71,7 @@ public class MedicalWorkspaceController {
         this.rehabilitationPrescriptionService = rehabilitationPrescriptionService;
         this.isolationPrecautionService = isolationPrecautionService;
         this.therapeuticSupportService = therapeuticSupportService;
+        this.criticalCarePrescriptionService = criticalCarePrescriptionService;
     }
 
     @GetMapping("/workspace")
@@ -244,6 +247,21 @@ public class MedicalWorkspaceController {
     ) {
         sessionContext.require(session, MEDICAL_ROLES);
         return therapeuticSupportService.preview(body);
+    }
+
+    @GetMapping("/critical-care/catalog")
+    public CriticalCareCatalog criticalCareCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return criticalCarePrescriptionService.catalog();
+    }
+
+    @PostMapping("/critical-care/preview")
+    public CriticalCarePrescriptionResponse previewCriticalCare(
+        HttpSession session,
+        @Valid @RequestBody CriticalCarePrescriptionRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return criticalCarePrescriptionService.preview(body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")

@@ -1,0 +1,338 @@
+<section class="critical-field" [class.print-empty-section]="!hasSelection()">
+  <header class="critical-header">
+    <div>
+      <p class="eyebrow">DOMÍNIO 3 • CUIDADOS CRÍTICOS</p>
+      <h2>DROGAS VASOATIVAS, SEDAÇÃO E EMERGÊNCIA</h2>
+      <p>VIAS, MONITORIZAÇÃO E TRAVAS DE SEGURANÇA SÃO VALIDADAS PELA API.</p>
+    </div>
+    @if (hasSelection()) {
+      <button type="button" class="ghost-button" (click)="reset()">LIMPAR DOMÍNIO</button>
+    }
+  </header>
+
+  @if (busy() && !catalog()) {
+    <p class="critical-state">CARREGANDO CATÁLOGO DE CUIDADOS CRÍTICOS...</p>
+  } @else if (catalog(); as options) {
+    <label class="context-field">
+      <span>CONTEXTO CLÍNICO</span>
+      <select [formControl]="clinicalContext">
+        <option value="">SELECIONE</option>
+        @for (option of options.clinicalContexts; track option.code) {
+          <option [value]="option.code">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <section class="domain-block">
+      <header class="domain-heading">
+        <div>
+          <span>14</span>
+          <h3>DROGAS VASOATIVAS E INOTRÓPICOS</h3>
+        </div>
+        <button
+          type="button"
+          class="add-button"
+          (click)="addVasoactive()"
+          [disabled]="vasoactiveDrugs.length >= 8"
+        >
+          + ADICIONAR DROGA
+        </button>
+      </header>
+      @if (!vasoactiveDrugs.length) {
+        <p class="empty-state">NENHUMA DROGA VASOATIVA SELECIONADA.</p>
+      }
+      <div class="item-list">
+        @for (
+          group of vasoactiveDrugs.controls;
+          track group.controls.id.value;
+          let index = $index
+        ) {
+          <fieldset [formGroup]="group" class="critical-item">
+            <legend>DROGA VASOATIVA {{ index + 1 }}</legend>
+            <button type="button" class="remove-button" (click)="removeVasoactive(index)">
+              REMOVER
+            </button>
+            <div class="control-grid">
+              <label class="field field--wide"
+                ><span>FÁRMACO</span>
+                <select
+                  formControlName="drug"
+                  (change)="selectVasoactive(group, $any($event.target).value)"
+                >
+                  <option value="">SELECIONE</option>
+                  @for (option of options.vasoactiveDrugs; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field field--wide"
+                ><span>DILUIÇÃO</span
+                ><input formControlName="dilution" placeholder="AMPOLAS, DILUENTE E VOLUME FINAL"
+              /></label>
+              <label class="field"
+                ><span>CONCENTRAÇÃO FINAL</span
+                ><input formControlName="finalConcentration" placeholder="EX.: 64 MCG/ML"
+              /></label>
+              <label class="field"
+                ><span>VAZÃO INICIAL</span
+                ><input
+                  formControlName="initialRate"
+                  type="number"
+                  min="0.01"
+                  max="5000"
+                  step="0.01"
+              /></label>
+              <label class="field"
+                ><span>UNIDADE DA VAZÃO</span
+                ><select formControlName="rateUnit">
+                  @for (option of options.vasoactiveRateUnits; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>ACESSO VASCULAR</span
+                ><select formControlName="vascularAccess">
+                  @for (option of options.vascularAccesses; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field field--wide"
+                ><span>MONITORIZAÇÃO PRESSÓRICA</span
+                ><select formControlName="bloodPressureMonitoring">
+                  @for (option of options.bloodPressureMonitoring; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field field--wide"
+                ><span>META TERAPÊUTICA / TITULAÇÃO</span><input formControlName="therapeuticGoal"
+              /></label>
+            </div>
+            <div class="safety-strip">
+              <strong>INFUSÃO CONTÍNUA</strong><span>BIC EM CANAL DEDICADO</span
+              ><span>DUPLA CHECAGEM</span><span>META OBRIGATÓRIA</span>
+            </div>
+          </fieldset>
+        }
+      </div>
+    </section>
+
+    <section class="domain-block">
+      <header class="domain-heading">
+        <div>
+          <span>15</span>
+          <h3>SEDAÇÃO, ANALGESIA CONTÍNUA E BNM</h3>
+        </div>
+        <button
+          type="button"
+          class="add-button"
+          (click)="addSedation()"
+          [disabled]="sedationAnalgesiaBnm.length >= 8"
+        >
+          + ADICIONAR MEDICAMENTO
+        </button>
+      </header>
+      @if (!sedationAnalgesiaBnm.length) {
+        <p class="empty-state">NENHUM ITEM DE SEDAÇÃO, ANALGESIA OU BNM SELECIONADO.</p>
+      }
+      <div class="item-list">
+        @for (
+          group of sedationAnalgesiaBnm.controls;
+          track group.controls.id.value;
+          let index = $index
+        ) {
+          <fieldset [formGroup]="group" class="critical-item">
+            <legend>SEDAÇÃO / ANALGESIA / BNM {{ index + 1 }}</legend>
+            <button type="button" class="remove-button" (click)="removeSedation(index)">
+              REMOVER
+            </button>
+            <div class="control-grid">
+              <label class="field field--wide"
+                ><span>FÁRMACO</span
+                ><select
+                  formControlName="drug"
+                  (change)="selectSedationDrug(group, $any($event.target).value)"
+                >
+                  <option value="">SELECIONE</option>
+                  @for (option of options.sedationDrugs; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field field--wide"
+                ><span>DILUIÇÃO / APRESENTAÇÃO</span
+                ><input
+                  formControlName="preparation"
+                  placeholder="DESCREVA O PREPARO OU A APRESENTAÇÃO"
+              /></label>
+              <label class="field"
+                ><span>MODALIDADE</span
+                ><select
+                  formControlName="administrationMode"
+                  (change)="selectSedationMode(group, $any($event.target).value)"
+                >
+                  @for (option of options.administrationModes; track option.code) {
+                    @if (allowedSedationModes(group.controls.drug.value).includes(option.code)) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>VAZÃO / DOSE</span
+                ><input
+                  formControlName="rateDoseValue"
+                  type="number"
+                  min="0.01"
+                  max="5000"
+                  step="0.01"
+              /></label>
+              <label class="field"
+                ><span>UNIDADE</span
+                ><select formControlName="rateDoseUnit">
+                  @for (option of options.sedationRateUnits; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>META RASS / BIS</span
+                ><select formControlName="sedationTarget">
+                  @for (option of options.sedationTargets; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field field--wide"
+                ><span>VENTILAÇÃO MECÂNICA INVASIVA</span
+                ><select formControlName="ventilatoryStatus">
+                  @for (option of options.ventilatoryStatuses; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>VIA</span
+                ><select formControlName="route">
+                  @for (option of options.sedationRoutes; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+            </div>
+            <div class="safety-strip">
+              <strong>TRAVA ASSISTENCIAL</strong><span>VMI TOT/TQT OBRIGATÓRIA</span
+              ><span>BNM EXIGE SEDAÇÃO PROFUNDA ASSOCIADA</span>
+            </div>
+          </fieldset>
+        }
+      </div>
+    </section>
+
+    <section class="domain-block">
+      <header class="domain-heading">
+        <div>
+          <span>16</span>
+          <h3>ANTÍDOTOS, REVERSORES E EMERGÊNCIA (PCR)</h3>
+        </div>
+        <button
+          type="button"
+          class="add-button"
+          (click)="addEmergency()"
+          [disabled]="emergencyMedications.length >= 8"
+        >
+          + ADICIONAR MEDICAMENTO
+        </button>
+      </header>
+      @if (!emergencyMedications.length) {
+        <p class="empty-state">NENHUM ANTÍDOTO OU MEDICAMENTO DE EMERGÊNCIA SELECIONADO.</p>
+      }
+      <div class="item-list">
+        @for (
+          group of emergencyMedications.controls;
+          track group.controls.id.value;
+          let index = $index
+        ) {
+          <fieldset [formGroup]="group" class="critical-item">
+            <legend>ANTÍDOTO / EMERGÊNCIA {{ index + 1 }}</legend>
+            <button type="button" class="remove-button" (click)="removeEmergency(index)">
+              REMOVER
+            </button>
+            <div class="control-grid">
+              <label class="field field--wide"
+                ><span>FÁRMACO</span
+                ><select formControlName="drug">
+                  <option value="">SELECIONE</option>
+                  @for (option of options.emergencyDrugs; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field field--wide"
+                ><span>DOSE E ADMINISTRAÇÃO</span
+                ><input formControlName="doseAdministration" placeholder="EX.: 1 MG EM BOLUS"
+              /></label>
+              <label class="field"
+                ><span>VIA</span
+                ><select formControlName="route">
+                  @for (option of options.emergencyRoutes; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field field--wide"
+                ><span>INDICAÇÃO / MOTIVO DA REVERSÃO</span
+                ><input formControlName="emergencyIndication" placeholder="REGISTRO OBRIGATÓRIO"
+              /></label>
+              <label class="field"
+                ><span>APRAZAMENTO</span
+                ><select formControlName="scheduling">
+                  @for (option of options.emergencyScheduling; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+            </div>
+          </fieldset>
+        }
+      </div>
+    </section>
+
+    <div class="critical-actions">
+      <button
+        type="button"
+        class="primary-button"
+        (click)="generatePreview()"
+        [disabled]="busy() || !hasSelection()"
+      >
+        {{ busy() ? 'VALIDANDO...' : 'VALIDAR CUIDADOS CRÍTICOS' }}
+      </button>
+      <span>INSUMOS E EQUIPAMENTOS SÃO LISTADOS PARA CONFERÊNCIA, SEM FATURAMENTO AUTOMÁTICO.</span>
+    </div>
+  }
+
+  @if (error(); as message) {
+    <p class="critical-error" role="alert">{{ message }}</p>
+  }
+  @if (preview(); as result) {
+    <section class="critical-preview" aria-live="polite">
+      <article>
+        <h3>PRÉVIA CLÍNICA</h3>
+        <pre>{{ result.structuredCriticalCare.prescriptionDetails }}</pre>
+      </article>
+      <article class="audit-preview">
+        <h3>CONFERÊNCIA DE AUDITORIA E SEGURANÇA</h3>
+        <ul>
+          @for (item of result.billingAudit.suppliesEquipmentForReview; track item) {
+            <li>{{ item }}</li>
+          }
+          @for (item of result.billingAudit.auditAlerts; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </article>
+    </section>
+  }
+</section>
