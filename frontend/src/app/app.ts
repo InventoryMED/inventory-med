@@ -6,9 +6,11 @@ import { environment } from '../environments/environment';
 import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
 import { AdministrationComponent } from './features/administration/administration.component';
+import { BedsideProcedureWorkspaceComponent } from './features/medical/bedside-procedure-workspace.component';
 import { CriticalCarePrescriptionComponent } from './features/medical/critical-care-prescription.component';
 import { DietPrescriptionComponent } from './features/medical/diet-prescription.component';
 import { IsolationPrecautionsComponent } from './features/medical/isolation-precautions.component';
+import { MedicationTherapyComponent } from './features/medical/medication-therapy.component';
 import { MonitoringPrescriptionComponent } from './features/medical/monitoring-prescription.component';
 import { NursingCarePrescriptionComponent } from './features/medical/nursing-care-prescription.component';
 import { RehabilitationPrescriptionComponent } from './features/medical/rehabilitation-prescription.component';
@@ -26,6 +28,9 @@ import {
   IsolationPrecautionDraft,
   IsolationPrecautionResponse,
   IsolationPrecautionSelection,
+  MedicationTherapyDraft,
+  MedicationTherapyResponse,
+  MedicationTherapySelection,
   MonitoringPrescriptionDraft,
   MonitoringPrescriptionResponse,
   MonitoringPrescriptionSelection,
@@ -127,83 +132,12 @@ const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
   },
 ];
 
-const ANALGESIA_PRESETS: PrescriptionRowPreset[] = [
-  {
-    description: 'DIPIRONA 1 AMPOLA + 18ML DE SF 0,9%',
-    route: 'EV',
-    frequency: '6/6HR',
-    scheduling: 'FIXO',
-  },
-  {
-    description: 'PARACETAMOL 500MG 1 COMPRIMIDO',
-    route: 'VO',
-    frequency: '6/6HR',
-    scheduling: 'FIXO',
-  },
-  {
-    description: 'TRAMAL 1 AMPOLA + 100ML DE SF 0,9%',
-    route: 'EV',
-    frequency: '8/8HR',
-    scheduling: 'SN',
-  },
-];
-
-const SYMPTOMATIC_PRESETS: PrescriptionRowPreset[] = [
-  {
-    description: 'PLASIL 1 AMPOLA + 18ML DE ABD',
-    route: 'EV',
-    frequency: '8/8HR',
-    scheduling: 'SN',
-  },
-  {
-    description: 'ONDANSETRONA 1 AMPOLA + 100ML DE SF 0,9%',
-    route: 'EV',
-    frequency: '8/8HR',
-    scheduling: 'SN',
-  },
-];
-
-const PROPHYLAXIS_PRESETS: PrescriptionRowPreset[] = [
-  {
-    description: 'OMEPRAZOL 1 AMPOLA — FAZER DE MANHÃ',
-    route: 'EV',
-    frequency: '24/24HR',
-    scheduling: 'FIXO',
-  },
-  {
-    description: 'ENOXAPARINA 40MG',
-    route: 'SC',
-    frequency: '24/24HR',
-    scheduling: 'FIXO',
-  },
-  {
-    description: 'HNF 5000UI',
-    route: 'EV',
-    frequency: '12/12HR',
-    scheduling: 'FIXO',
-  },
-];
-
-const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
-  {
-    description: 'CEFTRIAXONA 1G + 100ML DE SF 0,9%',
-    route: 'EV',
-    frequency: '12/12HR',
-    scheduling: 'FIXO',
-  },
-  {
-    description: 'AZITROMICINA 500MG',
-    route: 'VO',
-    frequency: '24/24HR',
-    scheduling: 'FIXO',
-  },
-];
-
 @Component({
   imports: [
     CommonModule,
     FormsModule,
     AdministrationComponent,
+    BedsideProcedureWorkspaceComponent,
     DietPrescriptionComponent,
     NursingCarePrescriptionComponent,
     MonitoringPrescriptionComponent,
@@ -212,6 +146,7 @@ const ANTIBIOTIC_PRESETS: PrescriptionRowPreset[] = [
     IsolationPrecautionsComponent,
     TherapeuticSupportComponent,
     CriticalCarePrescriptionComponent,
+    MedicationTherapyComponent,
   ],
   selector: 'app-root',
   styleUrl: './app.scss',
@@ -250,6 +185,8 @@ export class App implements OnInit {
   private readonly therapeuticSupportComponent = viewChild(TherapeuticSupportComponent);
   protected readonly criticalCarePreview = signal<CriticalCareResponse | null>(null);
   private readonly criticalCareComponent = viewChild(CriticalCarePrescriptionComponent);
+  protected readonly medicationTherapyPreview = signal<MedicationTherapyResponse | null>(null);
+  private readonly medicationTherapyComponent = viewChild(MedicationTherapyComponent);
 
   protected loginEmail = '';
   protected loginPassword = '';
@@ -275,6 +212,7 @@ export class App implements OnInit {
     this.emptyIsolationPrecautionDraft();
   protected therapeuticSupportDraft: TherapeuticSupportDraft = this.emptyTherapeuticSupportDraft();
   protected criticalCareDraft: CriticalCareDraft = this.emptyCriticalCareDraft();
+  protected medicationTherapyDraft: MedicationTherapyDraft = this.emptyMedicationTherapyDraft();
   protected evolutionDiet = '';
   protected evolutionAdmission = '';
   protected evolutionText = '';
@@ -713,6 +651,11 @@ export class App implements OnInit {
     this.openEvolutionTab(bed.id);
   }
 
+  protected openProcedures(bed: Bed): void {
+    if (!bed.patient) return;
+    this.openProcedureTab(bed.id);
+  }
+
   protected openDischarge(bed: Bed): void {
     if (!bed.patient) return;
     this.selectedBedId.set(bed.id);
@@ -1080,6 +1023,9 @@ export class App implements OnInit {
       rows.push(row),
     );
     this.criticalCarePreview()?.structuredCriticalCare.orderRows.forEach((row) => rows.push(row));
+    this.medicationTherapyPreview()?.structuredMedicationTherapy.orderRows.forEach((row) =>
+      rows.push(row),
+    );
     this.medicationGroups.forEach((group) =>
       group.rows
         .filter((row) => row.description.trim())
@@ -1160,6 +1106,8 @@ export class App implements OnInit {
     if (therapeuticSupportIsValid === false) return;
     const criticalCareIsValid = await this.criticalCareComponent()?.validateAndPreview();
     if (criticalCareIsValid === false) return;
+    const medicationTherapyIsValid = await this.medicationTherapyComponent()?.validateAndPreview();
+    if (medicationTherapyIsValid === false) return;
     const observations = this.observationRows.map((row) => row.trim()).filter(Boolean);
     const abnormalities = this.abnormalityRows.map((row) => row.trim()).filter(Boolean);
     const validMedicationSections: MedicationSectionDraft[] = this.medicationGroups
@@ -1178,6 +1126,7 @@ export class App implements OnInit {
         !this.monitoringComponent()?.hasSelection() &&
         !this.therapeuticSupportComponent()?.hasSelection() &&
         !this.criticalCareComponent()?.hasSelection() &&
+        !this.medicationTherapyComponent()?.hasSelection() &&
         !this.ventilatorySupportComponent()?.hasSelection() &&
         !this.rehabilitationComponent()?.hasSelection() &&
         !this.isolationPrecautionComponent()?.hasSelection())
@@ -1265,6 +1214,11 @@ export class App implements OnInit {
   protected updateCriticalCareSelection(selection: CriticalCareSelection): void {
     this.criticalCareDraft = selection.draft;
     this.criticalCarePreview.set(selection.response);
+  }
+
+  protected updateMedicationTherapySelection(selection: MedicationTherapySelection): void {
+    this.medicationTherapyDraft = selection.draft;
+    this.medicationTherapyPreview.set(selection.response);
   }
 
   protected updateVentilatorySupportSelection(selection: VentilatorySupportSelection): void {
@@ -1535,6 +1489,9 @@ export class App implements OnInit {
     if (this.criticalCareComponent()?.hasSelection()) {
       values['CUIDADOS_CRITICOS.PLANO'] = this.criticalCareDraft;
     }
+    if (this.medicationTherapyComponent()?.hasSelection()) {
+      values['TERAPIA_MEDICAMENTOSA.PLANO'] = this.medicationTherapyDraft;
+    }
     const sectionKeys: Record<MedicationSectionId, string> = {
       ANALGESIA: 'ANALGESIA',
       SYMPTOMATICS: 'SINTOMATICOS',
@@ -1601,6 +1558,8 @@ export class App implements OnInit {
     this.therapeuticSupportPreview.set(null);
     this.criticalCareDraft = this.emptyCriticalCareDraft();
     this.criticalCarePreview.set(null);
+    this.medicationTherapyDraft = this.emptyMedicationTherapyDraft();
+    this.medicationTherapyPreview.set(null);
     this.ventilatorySupportDraft = this.emptyVentilatorySupportDraft();
     this.ventilatorySupportPreview.set(null);
     this.rehabilitationDraft = this.emptyRehabilitationDraft();
@@ -1713,6 +1672,18 @@ export class App implements OnInit {
       vasoactiveDrugs: [],
       sedationAnalgesiaBnm: [],
       emergencyMedications: [],
+    };
+  }
+
+  private emptyMedicationTherapyDraft(): MedicationTherapyDraft {
+    return {
+      clinicalContext: '',
+      renalFunction: null,
+      bleedingRisk: null,
+      antimicrobials: [],
+      prophylaxes: [],
+      continuousMedications: [],
+      analgesiaSymptomatics: [],
     };
   }
 
@@ -2032,6 +2003,9 @@ export class App implements OnInit {
     this.criticalCareDraft = this.emptyCriticalCareDraft();
     this.criticalCarePreview.set(null);
     this.criticalCareComponent()?.reset();
+    this.medicationTherapyDraft = this.emptyMedicationTherapyDraft();
+    this.medicationTherapyPreview.set(null);
+    this.medicationTherapyComponent()?.reset();
     this.ventilatorySupportDraft = this.emptyVentilatorySupportDraft();
     this.ventilatorySupportPreview.set(null);
     this.ventilatorySupportComponent()?.reset();
@@ -2048,56 +2022,6 @@ export class App implements OnInit {
 
   private buildMedicationGroups(): MedicationOrderGroup[] {
     return [
-      {
-        id: 'ANALGESIA',
-        eyebrow: 'CONTROLE DA DOR',
-        title: 'ANALGESIA',
-        helper: 'PREENCHA VIA, FREQUÊNCIA E APRAZAMENTO',
-        defaultRoute: 'EV',
-        presets: ANALGESIA_PRESETS,
-        selectedPreset: '',
-        rows: [this.emptyMedicationRow('EV')],
-      },
-      {
-        id: 'SYMPTOMATICS',
-        eyebrow: 'CONTROLE DE SINTOMAS',
-        title: 'SINTOMÁTICOS',
-        helper: 'SELECIONE UM MODELO OU PREENCHA LIVREMENTE',
-        defaultRoute: 'EV',
-        presets: SYMPTOMATIC_PRESETS,
-        selectedPreset: '',
-        rows: [this.emptyMedicationRow('EV')],
-      },
-      {
-        id: 'PROPHYLAXIS',
-        eyebrow: 'PREVENÇÃO',
-        title: 'PROFILAXIA',
-        helper: 'OMEPRAZOL INICIAL PODE SER EDITADO OU REMOVIDO',
-        defaultRoute: 'EV',
-        presets: PROPHYLAXIS_PRESETS,
-        selectedPreset: '',
-        rows: [{ ...PROPHYLAXIS_PRESETS[0] }],
-      },
-      {
-        id: 'ANTIBIOTICS',
-        eyebrow: 'ANTIMICROBIANOS',
-        title: 'ATB',
-        helper: 'TÓPICO OPCIONAL — ADICIONE SOMENTE QUANDO NECESSÁRIO',
-        defaultRoute: 'EV',
-        presets: ANTIBIOTIC_PRESETS,
-        selectedPreset: '',
-        rows: [this.emptyMedicationRow('EV')],
-      },
-      {
-        id: 'CONTINUOUS_USE',
-        eyebrow: 'TRATAMENTO HABITUAL',
-        title: 'MEDICAÇÕES DE USO CONTÍNUO',
-        helper: 'PREENCHIMENTO LIVRE',
-        defaultRoute: 'VO',
-        presets: [],
-        selectedPreset: '',
-        rows: [this.emptyMedicationRow('VO')],
-      },
       {
         id: 'OTHER_MEDICATIONS',
         eyebrow: 'ITENS ADICIONAIS',
@@ -2139,6 +2063,20 @@ export class App implements OnInit {
     window.open(url.toString(), '_blank', 'noopener');
   }
 
+  private openProcedureTab(bedId: string): void {
+    const hospitalId = this.store.activeHospitalId();
+    if (!hospitalId) return;
+
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('hospital', hospitalId);
+    url.searchParams.set('bed', bedId);
+    url.searchParams.set('flow', 'procedure');
+
+    window.open(url.toString(), '_blank', 'noopener');
+  }
+
   private openRequestedView(): boolean {
     const params = new URLSearchParams(window.location.search);
     const hospitalId = params.get('hospital');
@@ -2164,6 +2102,10 @@ export class App implements OnInit {
     if (flow === 'evolution' && bed.status === 'OCCUPIED' && bed.patient) {
       this.prepareEvolution(bed.patient);
       this.screen.set('evolution');
+      return true;
+    }
+    if (flow === 'procedure' && bed.status === 'OCCUPIED' && bed.patient) {
+      this.screen.set('procedure');
       return true;
     }
     return false;

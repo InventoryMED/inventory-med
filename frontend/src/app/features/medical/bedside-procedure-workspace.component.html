@@ -1,0 +1,489 @@
+<div class="procedure-page">
+  <header class="procedure-appbar no-print">
+    <div class="procedure-brand">
+      <img src="inventory-med-logo.png" alt="INVENTORY MED" />
+    </div>
+    <div class="procedure-title">
+      <span>PROCEDIMENTOS E INTERVENÇÕES BEIRA-LEITO</span>
+      <strong>{{ hospitalName }}</strong>
+    </div>
+    <div class="procedure-professional">
+      <small>PROFISSIONAL RESPONSÁVEL</small>
+      <strong>{{ professionalName }}</strong>
+    </div>
+  </header>
+
+  <main class="procedure-workspace">
+    <div class="procedure-toolbar no-print">
+      <button type="button" class="back-button" (click)="back.emit()">← VOLTAR AOS QUARTOS</button>
+      <span>DOCUMENTO CLÍNICO AUDITÁVEL</span>
+    </div>
+
+    <section class="patient-summary no-print">
+      <div>
+        <span>PACIENTE</span><strong>{{ patient.name }}</strong>
+      </div>
+      <div>
+        <span>UNIDADE</span><strong>{{ unitName }}</strong>
+      </div>
+      <div>
+        <span>QUARTO / LEITO</span><strong>{{ roomName }} • {{ bedCode }}</strong>
+      </div>
+      <div>
+        <span>DIAGNÓSTICO</span><strong>{{ patient.diagnosis || 'NÃO INFORMADO' }}</strong>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <section class="state-card no-print">
+        CARREGANDO CATÁLOGO E HISTÓRICO DE PROCEDIMENTOS...
+      </section>
+    } @else if (!catalog()) {
+      <section class="state-card state-card--error no-print" role="alert">
+        <strong>{{ message() }}</strong>
+        <button type="button" class="secondary-button" (click)="retry()">TENTAR NOVAMENTE</button>
+      </section>
+    } @else if (catalog(); as options) {
+      <section class="procedure-card history-card no-print">
+        <header>
+          <div>
+            <span>HISTÓRICO DA INTERNAÇÃO</span>
+            <h2>REGISTROS FINALIZADOS</h2>
+          </div>
+          <b>{{ documents().length }}</b>
+        </header>
+        @if (documents().length) {
+          <div class="history-list">
+            @for (document of documents(); track document.id) {
+              <button type="button" (click)="openDocument(document)">
+                <span>PROCEDIMENTO • VERSÃO {{ document.versionNumber }}</span>
+                <strong>{{ formatDate(document.finalizedAt || document.createdAt) }}</strong>
+                <small>ABRIR PARA VISUALIZAÇÃO E IMPRESSÃO</small>
+              </button>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">NENHUM REGISTRO DE PROCEDIMENTO NESTA INTERNAÇÃO.</p>
+        }
+      </section>
+
+      <section class="procedure-card no-print" [formGroup]="form">
+        <header>
+          <div>
+            <span>NOVO DOCUMENTO</span>
+            <h2>PROCEDIMENTOS E INTERVENÇÕES BEIRA-LEITO</h2>
+          </div>
+        </header>
+
+        <div class="template-row">
+          <label>
+            <span>MODELO PRÉ-PREENCHIDO</span>
+            <select formControlName="selectedTemplate" (change)="selectTemplate()">
+              <option value="">SELECIONE UM MODELO OU PREENCHA MANUALMENTE</option>
+              @for (template of options.templates; track template.code) {
+                <option [value]="template.code">{{ template.label }}</option>
+              }
+            </select>
+          </label>
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="addProcedure()"
+            [disabled]="items.length >= 10"
+          >
+            + ADICIONAR PROCEDIMENTO
+          </button>
+        </div>
+
+        <div class="compliance-note">
+          <strong>SEGURANÇA DO REGISTRO</strong>
+          <p>
+            ITENS SOLICITADOS SÃO UM PLANO. SOMENTE ITENS MARCADOS COMO REALIZADOS EXIGEM DATA,
+            TÉCNICA, RESULTADO E RASTREABILIDADE.
+          </p>
+        </div>
+
+        <div formArrayName="items">
+          @for (group of items.controls; track group.controls.id.value; let index = $index) {
+            <fieldset class="procedure-item" [formGroup]="group">
+              <legend>PROCEDIMENTO {{ index + 1 }}</legend>
+              <div class="item-actions">
+                <button
+                  type="button"
+                  (click)="duplicateProcedure(group.getRawValue())"
+                  [disabled]="items.length >= 10"
+                >
+                  DUPLICAR
+                </button>
+                <button type="button" class="remove" (click)="removeProcedure(index)">
+                  REMOVER
+                </button>
+              </div>
+
+              <div class="form-grid form-grid--four">
+                <label
+                  ><span>SITUAÇÃO DO REGISTRO *</span>
+                  <select formControlName="recordType" (change)="recordTypeChanged(group)">
+                    @for (option of options.recordTypes; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="span-two"
+                  ><span>PROCEDIMENTO *</span>
+                  <select formControlName="procedureCode" (change)="procedureChanged(group)">
+                    <option value="">SELECIONE</option>
+                    @for (procedure of options.procedures; track procedure.code) {
+                      <option [value]="procedure.code">{{ procedure.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label
+                  ><span>PRIORIDADE *</span>
+                  <select formControlName="urgency">
+                    @for (option of options.urgencyOptions; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+
+              @if (group.controls.procedureCode.value === 'OTHER') {
+                <label class="full-field"
+                  ><span>NOME DO PROCEDIMENTO *</span
+                  ><input formControlName="customProcedure" maxlength="200"
+                /></label>
+              }
+
+              <div class="form-grid form-grid--two">
+                <label
+                  ><span>INDICAÇÃO CLÍNICA / JUSTIFICATIVA *</span
+                  ><textarea
+                    formControlName="clinicalIndication"
+                    maxlength="1000"
+                    rows="3"
+                  ></textarea>
+                </label>
+                <label
+                  ><span>CID-10 RELACIONADO *</span
+                  ><input formControlName="cid10Reference" maxlength="40" placeholder="EX.: Z45.2"
+                /></label>
+              </div>
+
+              <div class="form-grid form-grid--two">
+                <label
+                  ><span>SÍTIO ANATÔMICO *</span
+                  ><input formControlName="anatomicalSite" maxlength="300"
+                /></label>
+                <label
+                  ><span>LATERALIDADE *</span>
+                  <select formControlName="laterality">
+                    @for (option of options.lateralities; track option.code) {
+                      <option [value]="option.code">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+
+              <details open>
+                <summary>PREPARO, TÉCNICA E BARREIRAS DE SEGURANÇA</summary>
+                <div class="form-grid form-grid--two details-grid">
+                  <label
+                    ><span>ASSEPSIA E ANTISSEPSIA *</span
+                    ><textarea
+                      formControlName="asepsisAntisepsis"
+                      maxlength="1000"
+                      rows="3"
+                    ></textarea>
+                  </label>
+                  <label
+                    ><span>BARREIRA ESTÉRIL *</span
+                    ><textarea
+                      formControlName="sterileBarrier"
+                      maxlength="1000"
+                      rows="3"
+                    ></textarea>
+                  </label>
+                  <label
+                    ><span>ANESTESIA LOCAL</span
+                    ><textarea
+                      formControlName="localAnesthesia"
+                      maxlength="1000"
+                      rows="2"
+                    ></textarea>
+                  </label>
+                  <label
+                    ><span>GUIAGEM POR IMAGEM / POCUS</span
+                    ><textarea formControlName="imageGuidance" maxlength="1000" rows="2"></textarea>
+                  </label>
+                </div>
+              </details>
+
+              <details open>
+                <summary>DISPOSITIVO, OPME E RASTREABILIDADE</summary>
+                <div class="form-grid form-grid--three details-grid">
+                  <label class="span-two"
+                    ><span>DISPOSITIVO / KIT</span
+                    ><input formControlName="deviceName" maxlength="300"
+                  /></label>
+                  <label
+                    ><span>CALIBRE / TAMANHO</span
+                    ><input formControlName="deviceCaliber" maxlength="100"
+                  /></label>
+                  <label
+                    ><span
+                      >MARCA
+                      @if (requiresTraceability(group)) {
+                        *
+                      }</span
+                    ><input formControlName="deviceBrand" maxlength="200"
+                  /></label>
+                  <label
+                    ><span
+                      >LOTE
+                      @if (requiresTraceability(group)) {
+                        *
+                      }</span
+                    ><input formControlName="deviceLot" maxlength="160"
+                  /></label>
+                  <label
+                    ><span
+                      >REGISTRO ANVISA
+                      @if (requiresTraceability(group)) {
+                        *
+                      }</span
+                    ><input formControlName="anvisaRegistration" maxlength="160"
+                  /></label>
+                  <label class="span-three"
+                    ><span>FIXAÇÃO, CURATIVO E CONEXÕES</span
+                    ><textarea
+                      formControlName="fixationDressingConnections"
+                      maxlength="1000"
+                      rows="2"
+                    ></textarea>
+                  </label>
+                </div>
+                @if (group.controls.recordType.value === 'REQUESTED') {
+                  <p class="field-guidance">
+                    MARCA, LOTE E REGISTRO ANVISA SERÃO OBRIGATÓRIOS AO REGISTRAR O PROCEDIMENTO
+                    COMO REALIZADO.
+                  </p>
+                }
+              </details>
+
+              <details open>
+                <summary>COLETAS, CONTROLE E ASSISTÊNCIA</summary>
+                <div class="form-grid form-grid--two details-grid">
+                  <label
+                    ><span>AMOSTRAS / EXAMES LABORATORIAIS</span
+                    ><textarea
+                      formControlName="samplesLaboratory"
+                      maxlength="1000"
+                      rows="3"
+                    ></textarea>
+                  </label>
+                  <label
+                    ><span
+                      >CONTROLE PÓS-PROCEDIMENTO
+                      @if (requiresPostControl(group)) {
+                        *
+                      }
+                    </span>
+                    <select formControlName="postProcedureControl">
+                      @for (option of options.postProcedureControls; track option.code) {
+                        <option [value]="option.code">{{ option.label }}</option>
+                      }
+                    </select>
+                  </label>
+                  @if (
+                    group.controls.postProcedureControl.value === 'OTHER_IMAGE' ||
+                    group.controls.postProcedureControl.value === 'CLINICAL_JUSTIFICATION'
+                  ) {
+                    <label class="span-two"
+                      ><span>DETALHAMENTO / JUSTIFICATIVA *</span
+                      ><textarea
+                        formControlName="postProcedureDetails"
+                        maxlength="1000"
+                        rows="2"
+                      ></textarea>
+                    </label>
+                  }
+                  <label class="span-two"
+                    ><span>MONITORIZAÇÃO E ASSISTÊNCIA *</span
+                    ><textarea
+                      formControlName="monitoringAssistance"
+                      maxlength="1000"
+                      rows="2"
+                    ></textarea>
+                  </label>
+                </div>
+              </details>
+
+              @if (group.controls.recordType.value === 'PERFORMED') {
+                <details open class="performed-block">
+                  <summary>EXECUÇÃO E RESULTADO DO PROCEDIMENTO</summary>
+                  <div class="form-grid form-grid--two details-grid">
+                    <label
+                      ><span>DATA E HORA DA EXECUÇÃO *</span
+                      ><input type="datetime-local" formControlName="performedAt"
+                    /></label>
+                    <label
+                      ><span>INTERCORRÊNCIAS / COMPLICAÇÕES</span
+                      ><textarea
+                        formControlName="complications"
+                        maxlength="1000"
+                        rows="2"
+                        placeholder="INFORME OU REGISTRE NENHUMA"
+                      ></textarea>
+                    </label>
+                    <label class="span-two"
+                      ><span>TÉCNICA EXECUTADA E RESULTADO *</span
+                      ><textarea
+                        formControlName="techniqueOutcome"
+                        maxlength="3000"
+                        rows="5"
+                      ></textarea>
+                    </label>
+                  </div>
+                </details>
+              }
+            </fieldset>
+          }
+        </div>
+
+        @if (!items.length) {
+          <p class="empty-state">ADICIONE AO MENOS UM PROCEDIMENTO.</p>
+        }
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="generatePreview()"
+            [disabled]="busy() || !items.length"
+          >
+            GERAR PRÉVIA
+          </button>
+          <button
+            type="button"
+            class="primary-button"
+            (click)="finalizeDocument()"
+            [disabled]="busy() || !items.length"
+          >
+            FINALIZAR REGISTRO
+          </button>
+        </div>
+        @if (message()) {
+          <p class="form-message" role="status">{{ message() }}</p>
+        }
+      </section>
+    }
+
+    @if (preview(); as result) {
+      <section class="procedure-card procedure-preview no-print">
+        <header>
+          <div>
+            <span>PRÉVIA VALIDADA PELA API</span>
+            <h2>DOCUMENTO PARA IMPRESSÃO</h2>
+          </div>
+          <button type="button" class="primary-button" (click)="print()">
+            IMPRIMIR / SALVAR PDF
+          </button>
+        </header>
+        <strong>{{ result.structuredProcedures.summaryLine }}</strong>
+        <pre>{{ result.structuredProcedures.prescriptionDetails }}</pre>
+        <div class="audit-grid">
+          <div>
+            <h3>INSUMOS E EQUIPAMENTOS PARA CONFERÊNCIA</h3>
+            <ul>
+              @for (item of result.billingAudit.suppliesEquipmentForReview; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </div>
+          <div>
+            <h3>ALERTAS DE AUDITORIA</h3>
+            <ul>
+              @for (alert of result.billingAudit.auditAlerts; track alert) {
+                <li>{{ alert }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <article class="procedure-print-sheet print-only">
+        <header class="print-header">
+          <img src="inventory-med-logo.png" alt="INVENTORY MED" />
+          <div>
+            <span>{{ hospitalName }}</span>
+            <h1>PROCEDIMENTOS E INTERVENÇÕES BEIRA-LEITO</h1>
+            <small>{{ unitName }} • {{ roomName }} • LEITO {{ bedCode }}</small>
+          </div>
+          <div class="print-status">
+            <span>DOCUMENTO CLÍNICO</span><strong>{{ printStatus() }}</strong>
+          </div>
+        </header>
+        <section class="print-patient-grid">
+          <div class="wide">
+            <span>PACIENTE</span><strong>{{ patient.name }}</strong>
+          </div>
+          <div>
+            <span>SEXO</span><strong>{{ patient.sex || 'NÃO INFORMADO' }}</strong>
+          </div>
+          <div>
+            <span>DATA DE NASCIMENTO</span
+            ><strong>{{
+              patient.birthDate ? (patient.birthDate | date: 'dd/MM/yyyy') : 'NÃO INFORMADA'
+            }}</strong>
+          </div>
+          <div class="wide">
+            <span>DIAGNÓSTICO</span><strong>{{ patient.diagnosis || 'NÃO INFORMADO' }}</strong>
+          </div>
+          <div>
+            <span>PESO</span
+            ><strong>{{ patient.weightKg ? patient.weightKg + ' KG' : 'NÃO INFORMADO' }}</strong>
+          </div>
+          <div>
+            <span>DATA DO DOCUMENTO</span
+            ><strong>{{ printDocumentDate() | date: 'dd/MM/yyyy HH:mm' }}</strong>
+          </div>
+          <div class="wide">
+            <span>COMORBIDADES</span
+            ><strong>{{ patient.comorbidities || 'NÃO INFORMADAS' }}</strong>
+          </div>
+          <div class="wide">
+            <span>ALERGIAS</span><strong>{{ patient.allergies || 'NÃO INFORMADAS' }}</strong>
+          </div>
+        </section>
+        <section class="print-procedure-body">
+          <p class="print-summary">{{ result.structuredProcedures.summaryLine }}</p>
+          <pre>{{ result.structuredProcedures.prescriptionDetails }}</pre>
+        </section>
+        <section class="print-audit">
+          <h2>CONFERÊNCIA DE INSUMOS, EQUIPAMENTOS E AUDITORIA</h2>
+          <ul>
+            @for (item of result.billingAudit.suppliesEquipmentForReview; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+          <ul>
+            @for (alert of result.billingAudit.auditAlerts; track alert) {
+              <li>{{ alert }}</li>
+            }
+          </ul>
+        </section>
+        <footer class="print-footer">
+          <span>INVENTORY MED • REGISTRO GERADO EM AMBIENTE AUTENTICADO</span>
+          <div class="signature">
+            <i></i><strong>{{ professionalName }}</strong
+            ><small>MÉDICO RESPONSÁVEL</small>
+          </div>
+          <div class="signature">
+            <i></i><strong>ENFERMEIRO(A)</strong><small>ASSINATURA E IDENTIFICAÇÃO</small>
+          </div>
+        </footer>
+      </article>
+    }
+  </main>
+</div>

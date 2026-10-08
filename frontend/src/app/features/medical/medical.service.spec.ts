@@ -3,7 +3,9 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { authInterceptor } from '../../auth/auth.interceptor';
 import {
+  BedsideProcedureDraft,
   CriticalCareDraft,
+  MedicationTherapyDraft,
   DietPrescriptionDraft,
   IsolationPrecautionDraft,
   MonitoringPrescriptionDraft,
@@ -467,5 +469,107 @@ describe('MedicalService', () => {
       billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
     });
     expect((await previewPromise).structuredCriticalCare.prescriptionDetails).toContain('16.');
+  });
+
+  it('loads and validates structured medication therapy in the backend', async () => {
+    const catalogPromise = service.medicationTherapyCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/medication-therapy/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      clinicalContexts: [{ code: 'WARD_HOSPITAL', label: 'CLÍNICA MÉDICA / HOSPITAL' }],
+      antimicrobials: [],
+      antimicrobialRoutes: [],
+      antimicrobialAdministrationModes: [],
+      diluents: [],
+      infusionSets: [],
+      antimicrobialScheduling: [],
+      ccihStatuses: [],
+      renalFunctionMeasures: [],
+      renalDoseAssessments: [],
+      prophylaxisOptions: [],
+      prophylaxisRoutes: [],
+      prophylaxisScheduling: [],
+      reconciliationStatuses: [],
+      continuousMedicationScheduling: [],
+      symptomaticMedications: [],
+      medicationRoutes: [],
+      symptomaticScheduling: [],
+    });
+    expect((await catalogPromise).clinicalContexts[0].code).toBe('WARD_HOSPITAL');
+
+    const draft: MedicationTherapyDraft = {
+      clinicalContext: 'WARD_HOSPITAL',
+      renalFunction: null,
+      bleedingRisk: null,
+      antimicrobials: [],
+      prophylaxes: [],
+      continuousMedications: [
+        {
+          id: 1,
+          medication: 'LEVOTIROXINA',
+          dosePreparation: '50 MCG',
+          route: 'VO',
+          frequency: '1X/DIA EM JEJUM',
+          reconciliationStatus: 'MAINTAINED_HOME',
+          scheduling: 'FIXED',
+          conditionalTrigger: '',
+          suspensionReason: '',
+        },
+      ],
+      analgesiaSymptomatics: [],
+    };
+    const previewPromise = service.previewMedicationTherapy(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/medication-therapy/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredMedicationTherapy: {
+        summaryLine: 'LEVOTIROXINA.',
+        prescriptionDetails: '13. MEDICAMENTOS DE USO CONTÍNUO E ROTINA:',
+        orderRows: [],
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
+    });
+    expect((await previewPromise).structuredMedicationTherapy.prescriptionDetails).toContain('13.');
+  });
+
+  it('loads the procedure catalog, validates a preview and lists admission documents', async () => {
+    const catalogPromise = service.bedsideProcedureCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/procedures/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      recordTypes: [{ code: 'REQUESTED', label: 'SOLICITADO / PLANEJADO' }],
+      procedures: [],
+      lateralities: [],
+      urgencyOptions: [],
+      postProcedureControls: [],
+      templates: [],
+    });
+    expect((await catalogPromise).recordTypes[0].code).toBe('REQUESTED');
+
+    const draft: BedsideProcedureDraft = {
+      selectedTemplate: 'CVC',
+      items: [],
+    };
+    const previewPromise = service.previewBedsideProcedure(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/procedures/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredProcedures: {
+        summaryLine: 'CVC — SOLICITADO.',
+        prescriptionDetails: '11. PROCEDIMENTOS E INTERVENÇÕES BEIRA-LEITO:',
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
+    });
+    expect((await previewPromise).structuredProcedures.prescriptionDetails).toContain('11.');
+
+    const documentsPromise = service.documents('admission-1');
+    const documentsRequest = http.expectOne('/api/v1/clinical/admissions/admission-1/documents');
+    expect(documentsRequest.request.method).toBe('GET');
+    documentsRequest.flush([]);
+    expect(await documentsPromise).toEqual([]);
   });
 });

@@ -3,6 +3,10 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  BedsideProcedureCatalog,
+  BedsideProcedureDraft,
+  BedsideProcedureResponse,
+  ClinicalDocument,
   ClinicalFormKind,
   ClinicalFormTemplate,
   CriticalCareCatalog,
@@ -16,6 +20,9 @@ import {
   IsolationPrecautionResponse,
   MedicalAdmission,
   MedicalWorkspace,
+  MedicationTherapyCatalog,
+  MedicationTherapyDraft,
+  MedicationTherapyResponse,
   MonitoringPrescriptionCatalog,
   MonitoringPrescriptionDraft,
   MonitoringPrescriptionResponse,
@@ -184,14 +191,47 @@ export class MedicalService {
     );
   }
 
+  medicationTherapyCatalog(): Promise<MedicationTherapyCatalog> {
+    return firstValueFrom(
+      this.http.get<MedicationTherapyCatalog>(`${this.baseUrl}/medication-therapy/catalog`),
+    );
+  }
+
+  previewMedicationTherapy(draft: MedicationTherapyDraft): Promise<MedicationTherapyResponse> {
+    return firstValueFrom(
+      this.http.post<MedicationTherapyResponse>(
+        `${this.baseUrl}/medication-therapy/preview`,
+        draft,
+      ),
+    );
+  }
+
+  bedsideProcedureCatalog(): Promise<BedsideProcedureCatalog> {
+    return firstValueFrom(
+      this.http.get<BedsideProcedureCatalog>(`${this.baseUrl}/procedures/catalog`),
+    );
+  }
+
+  previewBedsideProcedure(draft: BedsideProcedureDraft): Promise<BedsideProcedureResponse> {
+    return firstValueFrom(
+      this.http.post<BedsideProcedureResponse>(`${this.baseUrl}/procedures/preview`, draft),
+    );
+  }
+
+  documents(admissionId: string): Promise<ClinicalDocument[]> {
+    return firstValueFrom(
+      this.http.get<ClinicalDocument[]>(`${this.baseUrl}/admissions/${admissionId}/documents`),
+    );
+  }
+
   createDocument(
     admissionId: string,
     template: ClinicalFormTemplate,
     values: Record<string, unknown>,
     finalizeDocument: boolean,
-  ): Promise<unknown> {
+  ): Promise<ClinicalDocument> {
     return firstValueFrom(
-      this.http.post(`${this.baseUrl}/admissions/${admissionId}/documents`, {
+      this.http.post<ClinicalDocument>(`${this.baseUrl}/admissions/${admissionId}/documents`, {
         templateVersionId: template.versionId,
         kind: template.kind,
         values,

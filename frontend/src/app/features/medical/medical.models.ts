@@ -44,7 +44,7 @@ export interface MedicalWorkspace {
   careUnits: MedicalCareUnit[];
 }
 
-export type ClinicalFormKind = 'PRESCRIPTION' | 'EVOLUTION';
+export type ClinicalFormKind = 'PRESCRIPTION' | 'EVOLUTION' | 'PROCEDURE';
 export type ClinicalFieldType =
   | 'SHORT_TEXT'
   | 'LONG_TEXT'
@@ -64,7 +64,9 @@ export type ClinicalFieldType =
   | 'REHABILITATION_PLAN'
   | 'ISOLATION_PRECAUTIONS_PLAN'
   | 'THERAPEUTIC_SUPPORT_PLAN'
-  | 'CRITICAL_CARE_PLAN';
+  | 'CRITICAL_CARE_PLAN'
+  | 'MEDICATION_THERAPY_PLAN'
+  | 'PROCEDURE_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -594,6 +596,232 @@ export interface CriticalCareResponse {
 export interface CriticalCareSelection {
   draft: CriticalCareDraft;
   response: CriticalCareResponse | null;
+}
+
+export interface MedicationTherapyAntimicrobialDraft {
+  id: number;
+  drug: string;
+  customDrug: string;
+  dosePreparation: string;
+  route: string;
+  administrationMode: string;
+  diluent: string;
+  infusionSet: string;
+  frequency: string;
+  scheduling: string;
+  loadingDose: string;
+  conditionalTrigger: string;
+  treatmentDay: number | null;
+  infectionFocus: string;
+  ccihStatus: string;
+  ccihOpinion: string;
+  renalDoseAssessment: string;
+}
+
+export interface MedicationTherapyProphylaxisDraft {
+  id: number;
+  intervention: string;
+  dosePreparation: string;
+  route: string;
+  frequency: string;
+  scheduling: string;
+  conditionalTrigger: string;
+  suspensionReason: string;
+}
+
+export interface MedicationTherapyContinuousDraft {
+  id: number;
+  medication: string;
+  dosePreparation: string;
+  route: string;
+  frequency: string;
+  reconciliationStatus: string;
+  scheduling: string;
+  conditionalTrigger: string;
+  suspensionReason: string;
+}
+
+export interface MedicationTherapySymptomaticDraft {
+  id: number;
+  drug: string;
+  customDrug: string;
+  dosePreparation: string;
+  route: string;
+  frequency: string;
+  scheduling: string;
+  trigger: string;
+  minimumInterval: string;
+}
+
+export interface MedicationTherapyDraft {
+  clinicalContext: string;
+  renalFunction: { measure: string; valueMlMin: number | null } | null;
+  bleedingRisk: { plateletCount: number | null; activeBleeding: boolean | null } | null;
+  antimicrobials: MedicationTherapyAntimicrobialDraft[];
+  prophylaxes: MedicationTherapyProphylaxisDraft[];
+  continuousMedications: MedicationTherapyContinuousDraft[];
+  analgesiaSymptomatics: MedicationTherapySymptomaticDraft[];
+}
+
+export interface MedicationTherapyCatalog {
+  clinicalContexts: VentilatorySupportOption[];
+  antimicrobials: VentilatorySupportOption[];
+  antimicrobialRoutes: VentilatorySupportOption[];
+  antimicrobialAdministrationModes: VentilatorySupportOption[];
+  diluents: VentilatorySupportOption[];
+  infusionSets: VentilatorySupportOption[];
+  antimicrobialScheduling: VentilatorySupportOption[];
+  ccihStatuses: VentilatorySupportOption[];
+  renalFunctionMeasures: VentilatorySupportOption[];
+  renalDoseAssessments: VentilatorySupportOption[];
+  prophylaxisOptions: Array<
+    VentilatorySupportOption & {
+      category: string;
+      anticoagulant: boolean;
+      filledSyringe: boolean;
+      equipment: boolean;
+    }
+  >;
+  prophylaxisRoutes: VentilatorySupportOption[];
+  prophylaxisScheduling: VentilatorySupportOption[];
+  reconciliationStatuses: VentilatorySupportOption[];
+  continuousMedicationScheduling: VentilatorySupportOption[];
+  symptomaticMedications: VentilatorySupportOption[];
+  medicationRoutes: VentilatorySupportOption[];
+  symptomaticScheduling: VentilatorySupportOption[];
+}
+
+export interface MedicationTherapyResponse {
+  structuredMedicationTherapy: {
+    summaryLine: string;
+    prescriptionDetails: string;
+    orderRows: Array<{
+      section: string;
+      description: string;
+      route: string;
+      frequency: string;
+      scheduling: string;
+    }>;
+  };
+  billingAudit: {
+    suppliesEquipmentForReview: string[];
+    auditAlerts: string[];
+  };
+}
+
+export interface MedicationTherapySelection {
+  draft: MedicationTherapyDraft;
+  response: MedicationTherapyResponse | null;
+}
+
+export type ProcedureRecordType = 'REQUESTED' | 'PERFORMED';
+
+export interface BedsideProcedureItemDraft {
+  id: number;
+  recordType: ProcedureRecordType;
+  procedureCode: string;
+  customProcedure: string;
+  clinicalIndication: string;
+  cid10Reference: string;
+  anatomicalSite: string;
+  laterality: string;
+  asepsisAntisepsis: string;
+  sterileBarrier: string;
+  localAnesthesia: string;
+  imageGuidance: string;
+  deviceName: string;
+  deviceBrand: string;
+  deviceCaliber: string;
+  deviceLot: string;
+  anvisaRegistration: string;
+  fixationDressingConnections: string;
+  samplesLaboratory: string;
+  postProcedureControl: string;
+  postProcedureDetails: string;
+  monitoringAssistance: string;
+  urgency: string;
+  techniqueOutcome: string;
+  complications: string;
+  performedAt: string | null;
+}
+
+export interface BedsideProcedureDraft {
+  selectedTemplate: string;
+  items: BedsideProcedureItemDraft[];
+}
+
+export interface BedsideProcedureOption {
+  code: string;
+  label: string;
+}
+
+export interface BedsideProcedureDefinition extends BedsideProcedureOption {
+  billingReference: string;
+  pairedSite: boolean;
+  deviceTraceabilityRequired: boolean;
+  postProcedureControlRequired: boolean;
+  defaultSite: string;
+  defaultAsepsis: string;
+  defaultSterileBarrier: string;
+  defaultAnesthesia: string;
+  defaultImageGuidance: string;
+  defaultDevice: string;
+  defaultCaliber: string;
+  defaultFixation: string;
+  defaultSamples: string;
+  defaultPostProcedureControl: string;
+  defaultMonitoring: string;
+}
+
+export interface BedsideProcedureCatalog {
+  recordTypes: BedsideProcedureOption[];
+  procedures: BedsideProcedureDefinition[];
+  lateralities: BedsideProcedureOption[];
+  urgencyOptions: BedsideProcedureOption[];
+  postProcedureControls: BedsideProcedureOption[];
+  templates: Array<{
+    code: string;
+    label: string;
+    item: Omit<
+      BedsideProcedureItemDraft,
+      | 'id'
+      | 'recordType'
+      | 'customProcedure'
+      | 'clinicalIndication'
+      | 'cid10Reference'
+      | 'deviceBrand'
+      | 'deviceLot'
+      | 'anvisaRegistration'
+      | 'postProcedureDetails'
+      | 'techniqueOutcome'
+      | 'complications'
+      | 'performedAt'
+    >;
+  }>;
+}
+
+export interface BedsideProcedureResponse {
+  structuredProcedures: {
+    summaryLine: string;
+    prescriptionDetails: string;
+  };
+  billingAudit: {
+    suppliesEquipmentForReview: string[];
+    auditAlerts: string[];
+  };
+}
+
+export interface ClinicalDocument {
+  id: string;
+  admissionId: string;
+  kind: ClinicalFormKind;
+  templateVersionId: string;
+  status: string;
+  versionNumber: number;
+  authorUserId: string;
+  values: Record<string, unknown>;
+  createdAt: string;
+  finalizedAt: string | null;
 }
 
 export interface ClinicalFormOption {

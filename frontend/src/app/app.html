@@ -380,6 +380,13 @@
                           <button
                             type="button"
                             class="bed-action-button"
+                            (click)="openProcedures(bed)"
+                          >
+                            Procedimentos
+                          </button>
+                          <button
+                            type="button"
+                            class="bed-action-button"
                             (click)="openTransfer(bed)"
                           >
                             Transferir paciente
@@ -598,6 +605,9 @@
               />
               <app-critical-care-prescription
                 (selectionChange)="updateCriticalCareSelection($event)"
+              />
+              <app-medication-therapy
+                (selectionChange)="updateMedicationTherapySelection($event)"
               />
               @for (group of medicationGroups; track group.id) {
                 <section
@@ -914,6 +924,15 @@
                   <strong>DROGAS VASOATIVAS, SEDAÇÃO E EMERGÊNCIA</strong>
                   <div class="print-monitoring-content">
                     <span>{{ preview.structuredCriticalCare.prescriptionDetails }}</span>
+                  </div>
+                </section>
+              }
+
+              @if (medicationTherapyPreview(); as preview) {
+                <section class="print-diet-prescription print-monitoring">
+                  <strong>TERAPIA MEDICAMENTOSA E RECONCILIAÇÃO</strong>
+                  <div class="print-monitoring-content">
+                    <span>{{ preview.structuredMedicationTherapy.prescriptionDetails }}</span>
                   </div>
                 </section>
               }
@@ -2175,6 +2194,23 @@
       </form>
     </section>
   </div>
+}
+
+@if (screen() === 'procedure' && activeHospital(); as hospital) {
+  @if (selectedBed(); as bed) {
+    @if (bed.patient; as patient) {
+      <app-bedside-procedure-workspace
+        [hospitalName]="hospital.name"
+        [unitName]="selectedRoom()?.unit || 'UNIDADE DE INTERNAÇÃO'"
+        [roomName]="selectedRoom()?.name || 'QUARTO'"
+        [bedCode]="bed.code"
+        [admissionId]="patient.admissionId || ''"
+        [patient]="patient"
+        [professionalName]="professionalName()"
+        (back)="backToRooms()"
+      />
+    }
+  }
 }
 
 @if (dischargeOpen() && selectedBed(); as bed) {

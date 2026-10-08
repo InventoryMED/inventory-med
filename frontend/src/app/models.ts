@@ -5,7 +5,8 @@ export type AppScreen =
   | 'administration'
   | 'rooms'
   | 'prescription'
-  | 'evolution';
+  | 'evolution'
+  | 'procedure';
 
 export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE';
 export type DischargeReason = 'ÓBITO' | 'TRANSFERÊNCIA' | 'ALTA MELHORA';

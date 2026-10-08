@@ -704,6 +704,56 @@ class CoreSecurityIntegrationTests {
         );
         assertThat(patientNameAfterForbiddenUpdate).isEqualTo("PACIENTE ATUALIZADO");
 
+        mockMvc
+            .perform(
+                post("/clinical/medication-therapy/preview")
+                    .cookie(receptionSession, receptionCsrf)
+                    .header("X-XSRF-TOKEN", receptionCsrf.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "clinicalContext":"WARD_HOSPITAL",
+                          "antimicrobials":[],
+                          "prophylaxes":[],
+                          "continuousMedications":[],
+                          "analgesiaSymptomatics":[]
+                        }
+                        """
+                    )
+            )
+            .andExpect(status().isForbidden());
+
+        mockMvc
+            .perform(
+                post("/clinical/procedures/preview")
+                    .cookie(receptionSession, receptionCsrf)
+                    .header("X-XSRF-TOKEN", receptionCsrf.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "selectedTemplate":"THORACENTESIS",
+                          "items":[{
+                            "id":1,
+                            "recordType":"REQUESTED",
+                            "procedureCode":"THORACENTESIS",
+                            "clinicalIndication":"DERRAME PLEURAL",
+                            "cid10Reference":"J90",
+                            "anatomicalSite":"HEMITÓRAX",
+                            "laterality":"RIGHT",
+                            "asepsisAntisepsis":"CLOREXIDINA",
+                            "sterileBarrier":"BARREIRA ESTÉRIL MÁXIMA",
+                            "postProcedureControl":"NOT_APPLICABLE",
+                            "monitoringAssistance":"ECG, SPO2 E PANI",
+                            "urgency":"URGENT"
+                          }]
+                        }
+                        """
+                    )
+            )
+            .andExpect(status().isForbidden());
+
         UUID templateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
             jdbc.queryForObject(
                 "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
@@ -715,7 +765,7 @@ class CoreSecurityIntegrationTests {
         List<String> structuredSectionOrder = tenantJdbc.read(firstHospital.getId(), jdbc ->
             jdbc.queryForList(
                 "SELECT section_key FROM dbo.form_section WHERE version_id = ? " +
-                    "AND section_key IN ('REABILITACAO', 'PRECAUCOES_ISOLAMENTO', 'SUPORTE_TERAPEUTICO', 'CUIDADOS_CRITICOS') " +
+                    "AND section_key IN ('REABILITACAO', 'PRECAUCOES_ISOLAMENTO', 'SUPORTE_TERAPEUTICO', 'CUIDADOS_CRITICOS', 'TERAPIA_MEDICAMENTOSA') " +
                     "ORDER BY display_order",
                 String.class,
                 templateVersionId
@@ -725,8 +775,21 @@ class CoreSecurityIntegrationTests {
             "REABILITACAO",
             "PRECAUCOES_ISOLAMENTO",
             "SUPORTE_TERAPEUTICO",
-            "CUIDADOS_CRITICOS"
+            "CUIDADOS_CRITICOS",
+            "TERAPIA_MEDICAMENTOSA"
         );
+        Integer activeLegacyMedicationFields = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.form_field f " +
+                    "JOIN dbo.form_section s ON s.id = f.section_id " +
+                    "WHERE s.version_id = ? AND s.section_key = 'MEDICAMENTOS' " +
+                    "AND f.field_key IN ('ANALGESIA', 'SINTOMATICOS', 'PROFILAXIA', 'ATB', 'USO_CONTINUO') " +
+                    "AND f.active = 1",
+                Integer.class,
+                templateVersionId
+            )
+        );
+        assertThat(activeLegacyMedicationFields).isZero();
         MvcResult finalized = mockMvc
             .perform(
                 post("/clinical/admissions/" + admissionId + "/documents")
@@ -859,6 +922,48 @@ class CoreSecurityIntegrationTests {
                               }],
                               "sedationAnalgesiaBnm":[],
                               "emergencyMedications":[]
+                            },
+                            "TERAPIA_MEDICAMENTOSA.PLANO":{
+                              "clinicalContext":"ICU",
+                              "renalFunction":{
+                                "measure":"CREATININE_CLEARANCE",
+                                "valueMlMin":72
+                              },
+                              "bleedingRisk":{
+                                "plateletCount":180000,
+                                "activeBleeding":false
+                              },
+                              "antimicrobials":[{
+                                "id":1,
+                                "drug":"CEFTRIAXONE",
+                                "customDrug":"",
+                                "dosePreparation":"1 G + 100 ML DE SF 0,9%%",
+                                "route":"EV",
+                                "administrationMode":"RAPID_INFUSION",
+                                "diluent":"SF_09_100",
+                                "infusionSet":"MACRODRIP",
+                                "frequency":"12/12H",
+                                "scheduling":"FIXED",
+                                "loadingDose":"",
+                                "conditionalTrigger":"",
+                                "treatmentDay":2,
+                                "infectionFocus":"PNEUMONIA",
+                                "ccihStatus":"AUTHORIZED",
+                                "ccihOpinion":"PARECER CCIH 123",
+                                "renalDoseAssessment":"NO_ADJUSTMENT_REQUIRED"
+                              }],
+                              "prophylaxes":[{
+                                "id":1,
+                                "intervention":"ENOXAPARIN",
+                                "dosePreparation":"40 MG",
+                                "route":"SC",
+                                "frequency":"24/24H",
+                                "scheduling":"FIXED",
+                                "conditionalTrigger":"",
+                                "suspensionReason":""
+                              }],
+                              "continuousMedications":[],
+                              "analgesiaSymptomatics":[]
                             }
                           },
                           "finalizeDocument":true
@@ -907,6 +1012,14 @@ class CoreSecurityIntegrationTests {
             .andExpect(
                 jsonPath("$.values['CUIDADOS_CRITICOS.PLANO'].billingAudit.auditAlerts[0]")
                     .value(org.hamcrest.Matchers.containsString("ALTA VIGILÂNCIA"))
+            )
+            .andExpect(
+                jsonPath("$.values['TERAPIA_MEDICAMENTOSA.PLANO'].structuredMedicationTherapy.prescriptionDetails")
+                    .value(org.hamcrest.Matchers.containsString("11. ANTIMICROBIANOS E ANTIBIOTICOTERAPIA"))
+            )
+            .andExpect(
+                jsonPath("$.values['TERAPIA_MEDICAMENTOSA.PLANO'].billingAudit.suppliesEquipmentForReview[0]")
+                    .value(org.hamcrest.Matchers.containsString("SERINGA"))
             )
             .andReturn();
         UUID documentId = firstUuid(finalized.getResponse().getContentAsString(), "id");
@@ -1003,6 +1116,99 @@ class CoreSecurityIntegrationTests {
                     )
             )
             .andExpect(status().isBadRequest());
+
+        UUID procedureTemplateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
+                    "JOIN dbo.form_template t ON t.id = v.template_id " +
+                    "WHERE t.kind = 'PROCEDURE' AND v.status = 'PUBLISHED'",
+                UUID.class
+            )
+        );
+        String procedureFieldType = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT f.field_type FROM dbo.form_field f " +
+                    "JOIN dbo.form_section s ON s.id = f.section_id " +
+                    "WHERE s.version_id = ? AND s.section_key = 'PROCEDURE' AND f.field_key = 'RECORD'",
+                String.class,
+                procedureTemplateVersionId
+            )
+        );
+        assertThat(procedureFieldType).isEqualTo("PROCEDURE_PLAN");
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"PROCEDURE",
+                          "values":{
+                            "PROCEDURE.RECORD":{
+                              "selectedTemplate":"CVC",
+                              "items":[{
+                                "id":1,
+                                "recordType":"REQUESTED",
+                                "procedureCode":"CVC",
+                                "customProcedure":"",
+                                "clinicalIndication":"ACESSO VASCULAR PARA TERAPIA ENDOVENOSA",
+                                "cid10Reference":"Z45.2",
+                                "anatomicalSite":"VEIA JUGULAR INTERNA",
+                                "laterality":"RIGHT",
+                                "asepsisAntisepsis":"CLOREXIDINA DEGERMANTE 2%% E ALCOÓLICA 0,5%%",
+                                "sterileBarrier":"BARREIRA ESTÉRIL MÁXIMA",
+                                "localAnesthesia":"LIDOCAÍNA 2%%",
+                                "imageGuidance":"POCUS EM TEMPO REAL",
+                                "deviceName":"KIT CVC DUPLO LÚMEN",
+                                "deviceBrand":"",
+                                "deviceCaliber":"7 FR X 20 CM",
+                                "deviceLot":"",
+                                "anvisaRegistration":"",
+                                "fixationDressingConnections":"MONONYLON E FILME TRANSPARENTE",
+                                "samplesLaboratory":"SEM AMOSTRAS",
+                                "postProcedureControl":"CHEST_XRAY",
+                                "postProcedureDetails":"",
+                                "monitoringAssistance":"ECG, SPO2, PANI E ENFERMAGEM",
+                                "urgency":"URGENT",
+                                "techniqueOutcome":"",
+                                "complications":"",
+                                "performedAt":null
+                              }]
+                            }
+                          },
+                          "finalizeDocument":true
+                        }
+                        """.formatted(procedureTemplateVersionId)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.kind").value("PROCEDURE"))
+            .andExpect(jsonPath("$.status").value("FINALIZED"))
+            .andExpect(
+                jsonPath("$.values['PROCEDURE.RECORD'].structuredProcedures.prescriptionDetails")
+                    .value(org.hamcrest.Matchers.startsWith(
+                        "11. PROCEDIMENTOS E INTERVENÇÕES BEIRA-LEITO:"
+                    ))
+            );
+
+        Integer firstHospitalProcedures = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'PROCEDURE'",
+                Integer.class
+            )
+        );
+        Integer secondHospitalProcedures = tenantJdbc.read(secondHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'PROCEDURE'",
+                Integer.class
+            )
+        );
+        assertThat(firstHospitalProcedures).isEqualTo(1);
+        assertThat(secondHospitalProcedures).isZero();
 
         Integer firstHospitalPatients = tenantJdbc.read(firstHospital.getId(), jdbc ->
             jdbc.queryForObject("SELECT COUNT(*) FROM dbo.patient", Integer.class)

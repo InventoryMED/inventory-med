@@ -1,0 +1,270 @@
+:host {
+  display: block;
+}
+
+.medication-therapy {
+  border-top: 1px solid #cad5e2;
+  padding: 28px 0 8px;
+}
+
+.therapy-header,
+.block-heading,
+.therapy-actions {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.therapy-header h2,
+.block-heading h3 {
+  color: #081f3b;
+  margin: 4px 0;
+}
+.therapy-header p {
+  color: #53647a;
+  margin: 0;
+}
+.eyebrow {
+  color: #006aa6 !important;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.context-field,
+.field,
+.safety-panel label {
+  display: grid;
+  gap: 7px;
+}
+
+.context-field {
+  margin: 22px 0;
+  max-width: 420px;
+}
+.context-field span,
+.field span,
+.safety-panel label span {
+  color: #243b58;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+input,
+select {
+  background: #fff;
+  border: 1px solid #b9c8d8;
+  border-radius: 7px;
+  box-sizing: border-box;
+  color: #071c35;
+  font: inherit;
+  min-height: 42px;
+  padding: 9px 11px;
+  width: 100%;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 3px solid rgba(0, 106, 166, 0.22);
+  outline-offset: 2px;
+}
+
+.therapy-block {
+  border: 1px solid #cbd6e2;
+  margin: 18px 0;
+}
+.block-heading {
+  background: #eef4f9;
+  border-bottom: 1px solid #cbd6e2;
+  padding: 13px 16px;
+}
+.block-heading div {
+  align-items: center;
+  display: flex;
+  gap: 11px;
+}
+.block-heading div > span {
+  background: #081f3b;
+  border-radius: 5px;
+  color: #fff;
+  font-weight: 800;
+  padding: 6px 8px;
+}
+.block-heading h3 {
+  font-size: 0.96rem;
+}
+
+.item-list {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+.therapy-item {
+  border: 1px solid #aebdcd;
+  margin: 0;
+  padding: 16px;
+  position: relative;
+}
+.therapy-item legend {
+  color: #071c35;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0 7px;
+}
+.control-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.field--wide {
+  grid-column: span 2;
+}
+
+.safety-panel {
+  align-items: end;
+  background: #edf7fb;
+  border-bottom: 1px solid #b8d8e6;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(180px, 1fr) repeat(2, minmax(180px, 1fr));
+  padding: 14px 16px;
+}
+.safety-panel > strong {
+  align-self: center;
+  color: #005d8f;
+  font-size: 0.76rem;
+}
+.safety-panel--warning {
+  background: #fff8df;
+  border-color: #dfca79;
+}
+.safety-panel--warning > strong {
+  color: #705400;
+}
+
+.input-prefix {
+  align-items: stretch;
+  display: flex;
+}
+.input-prefix > span {
+  align-items: center;
+  background: #e8eef5;
+  border: 1px solid #b9c8d8;
+  border-right: 0;
+  border-radius: 7px 0 0 7px;
+  display: flex;
+  padding: 0 11px;
+}
+.input-prefix input {
+  border-radius: 0 7px 7px 0;
+}
+
+button {
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.add-button,
+.ghost-button,
+.primary-button,
+.remove-button {
+  border-radius: 7px;
+  min-height: 38px;
+  padding: 9px 13px;
+}
+.add-button,
+.ghost-button {
+  background: #fff;
+  border: 1px solid #356183;
+  color: #0a365a;
+}
+.primary-button {
+  background: #08223f;
+  border: 1px solid #08223f;
+  color: #fff;
+}
+.remove-button {
+  background: #fff;
+  border: 1px solid #d18c8c;
+  color: #9d1919;
+  position: absolute;
+  right: 12px;
+  top: -12px;
+}
+
+.empty-state,
+.therapy-state {
+  color: #68798c;
+  margin: 0;
+  padding: 17px;
+}
+.therapy-error {
+  background: #fff0f0;
+  border: 1px solid #ecb5b5;
+  color: #a20f0f;
+  font-weight: 700;
+  padding: 12px;
+}
+.therapy-load-error {
+  align-items: center;
+  background: #fff7f7;
+  border: 1px solid #d73a3a;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+.therapy-actions {
+  justify-content: flex-end;
+  margin: 16px 0;
+}
+.validated-preview {
+  background: #f5f8fb;
+  border-left: 4px solid #087aaa;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+.validated-preview > strong,
+.validated-preview div > span {
+  color: #08223f;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+.validated-preview pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font: inherit;
+}
+.validated-preview ul {
+  margin: 7px 0 0;
+  padding-left: 20px;
+}
+
+@media (max-width: 900px) {
+  .control-grid,
+  .safety-panel {
+    grid-template-columns: 1fr;
+  }
+  .field--wide {
+    grid-column: auto;
+  }
+  .therapy-header,
+  .block-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media print {
+  .medication-therapy {
+    display: none;
+  }
+}

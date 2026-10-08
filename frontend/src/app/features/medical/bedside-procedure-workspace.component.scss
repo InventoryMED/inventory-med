@@ -1,0 +1,681 @@
+:host {
+  --navy: #08233f;
+  --blue: #0f5f9b;
+  --line: #ced8e4;
+  --soft: #f3f6fa;
+  display: block;
+  min-height: 100vh;
+  color: #0d2035;
+  background: #eef2f6;
+  text-transform: uppercase;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.procedure-appbar {
+  display: grid;
+  min-height: 72px;
+  grid-template-columns: 220px 1fr 260px;
+  align-items: center;
+  gap: 24px;
+  padding: 0 4vw;
+  color: #fff;
+  background: var(--navy);
+}
+
+.procedure-brand {
+  display: flex;
+  width: 190px;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.procedure-brand img {
+  width: 170px;
+  max-height: 44px;
+  object-fit: contain;
+}
+
+.procedure-title,
+.procedure-professional {
+  display: flex;
+  flex-direction: column;
+}
+
+.procedure-title span,
+.procedure-professional small {
+  margin-bottom: 3px;
+  color: #9ec8e9;
+  font-size: 0.67rem;
+  letter-spacing: 0.11em;
+}
+
+.procedure-title strong {
+  font-size: 1rem;
+}
+
+.procedure-professional {
+  text-align: right;
+}
+
+.procedure-workspace {
+  width: min(1240px, 92vw);
+  margin: 0 auto;
+  padding: 26px 0 64px;
+}
+
+.procedure-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  color: #55677a;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.back-button,
+.secondary-button,
+.primary-button {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid #9badc0;
+  border-radius: 7px;
+  color: var(--navy);
+  background: #fff;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.primary-button {
+  border-color: var(--blue);
+  color: #fff;
+  background: var(--blue);
+}
+
+.patient-summary {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1.6fr;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.patient-summary > div {
+  display: flex;
+  min-height: 70px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 18px;
+  border-right: 1px solid var(--line);
+}
+
+.patient-summary > div:last-child {
+  border-right: 0;
+}
+
+.patient-summary span,
+label > span {
+  margin-bottom: 6px;
+  color: #53667a;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.patient-summary strong {
+  font-size: 0.83rem;
+}
+
+.procedure-card,
+.state-card {
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgb(8 35 63 / 5%);
+}
+
+.state-card {
+  padding: 28px;
+  text-align: center;
+}
+
+.state-card--error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #a61b1b;
+}
+
+.procedure-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.procedure-card > header span {
+  color: var(--blue);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.procedure-card h2 {
+  margin: 4px 0 0;
+  font-size: 1.15rem;
+}
+
+.history-card > header b {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--navy);
+}
+
+.history-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px 20px 20px;
+}
+
+.history-list button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--navy);
+  background: #fff;
+  text-align: left;
+}
+
+.history-list button:hover {
+  border-color: var(--blue);
+}
+
+.history-list span,
+.history-list small {
+  color: #607387;
+  font-size: 0.62rem;
+}
+
+.history-list strong {
+  margin: 5px 0;
+  font-size: 0.82rem;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 24px;
+  color: #6a7b8c;
+  text-align: center;
+}
+
+.template-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 14px;
+  padding: 20px 22px 12px;
+}
+
+label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+input,
+select,
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #aebdcb;
+  border-radius: 6px;
+  outline: none;
+  color: #12283f;
+  background: #fff;
+  text-transform: uppercase;
+}
+
+input,
+select {
+  min-height: 42px;
+  padding: 0 11px;
+}
+
+textarea {
+  padding: 10px 11px;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgb(15 95 155 / 10%);
+}
+
+.compliance-note {
+  margin: 4px 22px 18px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--blue);
+  color: #27435e;
+  background: #edf5fb;
+}
+
+.compliance-note strong {
+  font-size: 0.7rem;
+}
+
+.compliance-note p {
+  margin: 4px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.procedure-item {
+  position: relative;
+  margin: 0 22px 18px;
+  padding: 22px 18px 18px;
+  border: 1px solid #b9c7d5;
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+
+.procedure-item legend {
+  padding: 0 8px;
+  color: var(--navy);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.item-actions {
+  position: absolute;
+  top: -15px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.item-actions button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #9fb0c2;
+  border-radius: 5px;
+  color: var(--navy);
+  background: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.item-actions .remove {
+  border-color: #e3aaaa;
+  color: #9b1c1c;
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.form-grid--four {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.form-grid--three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.form-grid--two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.span-two {
+  grid-column: span 2;
+}
+
+.span-three {
+  grid-column: span 3;
+}
+
+.full-field {
+  margin-bottom: 14px;
+}
+
+details {
+  margin: 12px 0;
+  border: 1px solid #d5dee7;
+  border-radius: 7px;
+  background: #fff;
+}
+
+summary {
+  padding: 12px 14px;
+  color: var(--navy);
+  background: #f0f4f8;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.details-grid {
+  margin: 0;
+  padding: 15px;
+}
+
+.performed-block {
+  border-color: #7daaca;
+}
+
+.performed-block summary {
+  color: #fff;
+  background: var(--blue);
+}
+
+.field-guidance {
+  margin: -4px 15px 14px;
+  color: #5a6f83;
+  font-size: 0.64rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 4px 22px 22px;
+}
+
+.form-message {
+  margin: -8px 22px 22px;
+  padding: 12px;
+  border: 1px solid #a8c6df;
+  border-radius: 6px;
+  color: var(--navy);
+  background: #edf5fb;
+  font-size: 0.73rem;
+  font-weight: 800;
+}
+
+.procedure-preview {
+  padding-bottom: 20px;
+}
+
+.procedure-preview > strong,
+.procedure-preview > pre,
+.audit-grid {
+  margin-right: 22px;
+  margin-left: 22px;
+}
+
+.procedure-preview > strong {
+  display: block;
+  margin-top: 18px;
+}
+
+pre {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: #182b3e;
+  background: #f8fafc;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.77rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.audit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.audit-grid > div {
+  padding: 14px;
+  border: 1px solid var(--line);
+}
+
+.audit-grid h3 {
+  margin: 0 0 9px;
+  font-size: 0.68rem;
+}
+
+.audit-grid ul,
+.print-audit ul {
+  margin: 0;
+  padding-left: 17px;
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.print-only {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .procedure-appbar {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 14px 4vw;
+  }
+
+  .procedure-professional {
+    text-align: left;
+  }
+
+  .patient-summary,
+  .form-grid--four,
+  .form-grid--three,
+  .form-grid--two,
+  .history-list,
+  .audit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .span-two,
+  .span-three {
+    grid-column: auto;
+  }
+}
+
+@media print {
+  @page procedure {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  :host {
+    background: #fff;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .procedure-workspace {
+    width: 100%;
+    padding: 0;
+  }
+
+  .print-only {
+    display: flex;
+  }
+
+  .procedure-print-sheet {
+    box-sizing: border-box;
+    min-height: 277mm;
+    flex-direction: column;
+    color: #111827;
+    page: procedure;
+    font-family: Arial, Helvetica, sans-serif;
+    text-transform: uppercase;
+  }
+
+  .print-header {
+    display: grid;
+    grid-template-columns: 38mm 1fr 37mm;
+    align-items: center;
+    gap: 3mm;
+    padding-bottom: 2mm;
+    border-bottom: 0.8pt solid #193b5c;
+    text-align: center;
+  }
+
+  .print-header img {
+    width: 36mm;
+  }
+
+  .print-header span,
+  .print-status span {
+    font-size: 6pt;
+  }
+
+  .print-header h1 {
+    margin: 1mm 0;
+    font-size: 12pt;
+  }
+
+  .print-header small,
+  .print-status strong {
+    font-size: 5.5pt;
+  }
+
+  .print-status {
+    display: flex;
+    min-height: 14mm;
+    flex-direction: column;
+    justify-content: center;
+    border: 0.6pt solid #667085;
+  }
+
+  .print-patient-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-left: 0.6pt solid #667085;
+  }
+
+  .print-patient-grid > div {
+    display: flex;
+    min-height: 7mm;
+    flex-direction: column;
+    padding: 0.7mm 1mm;
+    border-right: 0.6pt solid #667085;
+    border-bottom: 0.6pt solid #667085;
+  }
+
+  .print-patient-grid .wide {
+    grid-column: span 2;
+  }
+
+  .print-patient-grid span {
+    font-size: 4.5pt;
+  }
+
+  .print-patient-grid strong {
+    margin-top: 0.5mm;
+    font-size: 6pt;
+  }
+
+  .print-procedure-body {
+    margin-top: 2mm;
+    border: 0.6pt solid #667085;
+  }
+
+  .print-summary {
+    margin: 0;
+    padding: 1.2mm;
+    border-bottom: 0.6pt solid #667085;
+    background: #e8eef5;
+    font-size: 6pt;
+    font-weight: 700;
+  }
+
+  .print-procedure-body pre {
+    margin: 0;
+    padding: 1.6mm;
+    border: 0;
+    background: #fff;
+    font-size: 6pt;
+    line-height: 1.35;
+  }
+
+  .print-audit {
+    margin-top: 2mm;
+    border: 0.6pt solid #667085;
+    break-inside: avoid;
+  }
+
+  .print-audit h2 {
+    margin: 0;
+    padding: 0.8mm 1mm;
+    border-bottom: 0.6pt solid #667085;
+    background: #e8eef5;
+    font-size: 6pt;
+  }
+
+  .print-audit ul {
+    padding: 1mm 2mm 1mm 5mm;
+    font-size: 5.3pt;
+  }
+
+  .print-footer {
+    display: grid;
+    grid-template-columns: 1fr 55mm 55mm;
+    align-items: end;
+    gap: 8mm;
+    margin-top: auto;
+    padding-top: 7mm;
+    font-size: 5pt;
+  }
+
+  .signature {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .signature i {
+    margin-bottom: 1mm;
+    border-top: 0.6pt solid #111827;
+  }
+
+  .signature strong {
+    font-size: 6pt;
+  }
+
+  .signature small {
+    font-size: 5pt;
+  }
+}

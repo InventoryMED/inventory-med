@@ -1,0 +1,533 @@
+<section class="medication-therapy" [class.print-empty-section]="!hasSelection()">
+  <header class="therapy-header">
+    <div>
+      <p class="eyebrow">DOMÍNIO 4 • TERAPIA MEDICAMENTOSA</p>
+      <h2>ANTIMICROBIANOS, PROFILAXIAS, RECONCILIAÇÃO E SINTOMÁTICOS</h2>
+      <p>AS BARREIRAS DE SEGURANÇA E O CONTEÚDO IMPRESSO SÃO VALIDADOS PELA API.</p>
+    </div>
+    @if (hasSelection()) {
+      <button type="button" class="ghost-button" (click)="reset()">LIMPAR DOMÍNIO</button>
+    }
+  </header>
+
+  @if (busy() && !catalog()) {
+    <p class="therapy-state">CARREGANDO CATÁLOGO DE TERAPIA MEDICAMENTOSA...</p>
+  } @else if (!catalog()) {
+    <div class="therapy-load-error" role="alert">
+      <p class="therapy-error">{{ error() }}</p>
+      <button type="button" class="ghost-button" (click)="retryCatalog()">TENTAR NOVAMENTE</button>
+    </div>
+  } @else if (catalog(); as options) {
+    <label class="context-field">
+      <span>CONTEXTO CLÍNICO</span>
+      <select [formControl]="clinicalContext">
+        <option value="">SELECIONE</option>
+        @for (option of options.clinicalContexts; track option.code) {
+          <option [value]="option.code">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <section class="therapy-block">
+      <header class="block-heading">
+        <div>
+          <span>11</span>
+          <h3>ANTIMICROBIANOS E ANTIBIOTICOTERAPIA</h3>
+        </div>
+        <button
+          type="button"
+          class="add-button"
+          (click)="addAntimicrobial()"
+          [disabled]="antimicrobials.length >= 12"
+        >
+          + ADICIONAR ANTIMICROBIANO
+        </button>
+      </header>
+
+      @if (antimicrobials.length) {
+        <div class="safety-panel">
+          <strong>FUNÇÃO RENAL OBRIGATÓRIA</strong>
+          <label
+            ><span>MEDIDA</span
+            ><select [formControl]="renalMeasure">
+              <option value="">SELECIONE</option>
+              @for (option of options.renalFunctionMeasures; track option.code) {
+                <option [value]="option.code">{{ option.label }}</option>
+              }
+            </select></label
+          >
+          <label
+            ><span>VALOR</span
+            ><input
+              [formControl]="renalValueMlMin"
+              type="number"
+              min="1"
+              max="200"
+              step="0.1"
+              placeholder="ML/MIN"
+          /></label>
+        </div>
+      } @else {
+        <p class="empty-state">NENHUM ANTIMICROBIANO SELECIONADO.</p>
+      }
+
+      <div class="item-list">
+        @for (group of antimicrobials.controls; track group.controls.id.value; let index = $index) {
+          <fieldset [formGroup]="group" class="therapy-item">
+            <legend>ANTIMICROBIANO {{ index + 1 }}</legend>
+            <button type="button" class="remove-button" (click)="removeAntimicrobial(index)">
+              REMOVER
+            </button>
+            <div class="control-grid">
+              <label class="field"
+                ><span>FÁRMACO</span
+                ><select formControlName="drug">
+                  <option value="">SELECIONE</option>
+                  @for (option of options.antimicrobials; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              @if (group.controls.drug.value === 'OTHER') {
+                <label class="field"
+                  ><span>NOME DO ANTIMICROBIANO</span><input formControlName="customDrug"
+                /></label>
+              }
+              <label class="field field--wide"
+                ><span>DOSE, APRESENTAÇÃO E PREPARO</span
+                ><input
+                  formControlName="dosePreparation"
+                  placeholder="EX.: 1 G + 100 ML DE SF 0,9%"
+              /></label>
+              <label class="field"
+                ><span>VIA</span
+                ><select
+                  formControlName="route"
+                  (change)="selectAntimicrobialRoute(group, $any($event.target).value)"
+                >
+                  @for (option of options.antimicrobialRoutes; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>ADMINISTRAÇÃO</span
+                ><select formControlName="administrationMode">
+                  @for (option of options.antimicrobialAdministrationModes; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>DILUENTE</span
+                ><select formControlName="diluent">
+                  @for (option of options.diluents; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>EQUIPO</span
+                ><select formControlName="infusionSet">
+                  @for (option of options.infusionSets; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>APRAZAMENTO</span
+                ><select formControlName="scheduling">
+                  @for (option of options.antimicrobialScheduling; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              @if (
+                group.controls.scheduling.value === 'FIXED' ||
+                group.controls.scheduling.value === 'LOADING_FIXED'
+              ) {
+                <label class="field"
+                  ><span>FREQUÊNCIA</span
+                  ><input formControlName="frequency" placeholder="EX.: 12/12H"
+                /></label>
+              }
+              @if (group.controls.scheduling.value === 'LOADING_FIXED') {
+                <label class="field field--wide"
+                  ><span>DOSE DE ATAQUE</span><input formControlName="loadingDose"
+                /></label>
+              }
+              @if (group.controls.scheduling.value === 'ACM') {
+                <label class="field field--wide"
+                  ><span>CRITÉRIO CLÍNICO ACM</span><input formControlName="conditionalTrigger"
+                /></label>
+              }
+              <label class="field"
+                ><span>DIA DO TRATAMENTO</span>
+                <div class="input-prefix">
+                  <span>D</span
+                  ><input formControlName="treatmentDay" type="number" min="1" max="999" /></div
+              ></label>
+              <label class="field field--wide"
+                ><span>FOCO INFECCIOSO</span><input formControlName="infectionFocus"
+              /></label>
+              <label class="field"
+                ><span>SITUAÇÃO CCIH</span
+                ><select formControlName="ccihStatus">
+                  @for (option of options.ccihStatuses; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              @if (group.controls.ccihStatus.value !== 'NOT_APPLICABLE') {
+                <label class="field field--wide"
+                  ><span>REFERÊNCIA / PARECER CCIH</span
+                  ><input
+                    formControlName="ccihOpinion"
+                    placeholder="PROTOCOLO, SOLICITAÇÃO OU PARECER"
+                /></label>
+              }
+              <label class="field field--wide"
+                ><span>REVISÃO DO AJUSTE RENAL</span
+                ><select formControlName="renalDoseAssessment">
+                  <option value="">SELECIONE</option>
+                  @for (option of options.renalDoseAssessments; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+            </div>
+          </fieldset>
+        }
+      </div>
+    </section>
+
+    <section class="therapy-block">
+      <header class="block-heading">
+        <div>
+          <span>12</span>
+          <h3>PROFILAXIAS HOSPITALARES — TEV E LAMG</h3>
+        </div>
+        <button
+          type="button"
+          class="add-button"
+          (click)="addProphylaxis()"
+          [disabled]="prophylaxes.length >= 12"
+        >
+          + ADICIONAR PROFILAXIA
+        </button>
+      </header>
+      @if (hasAnticoagulantProphylaxis()) {
+        <div class="safety-panel safety-panel--warning">
+          <strong>RISCO HEMORRÁGICO OBRIGATÓRIO</strong>
+          <label
+            ><span>PLAQUETAS / MM³</span
+            ><input [formControl]="plateletCount" type="number" min="0" max="2000000"
+          /></label>
+          <label
+            ><span>SANGRAMENTO ATIVO</span
+            ><select [formControl]="activeBleeding">
+              <option [ngValue]="null">SELECIONE</option>
+              <option [ngValue]="false">NÃO</option>
+              <option [ngValue]="true">SIM</option>
+            </select></label
+          >
+        </div>
+      }
+      @if (!prophylaxes.length) {
+        <p class="empty-state">NENHUMA PROFILAXIA SELECIONADA.</p>
+      }
+      <div class="item-list">
+        @for (group of prophylaxes.controls; track group.controls.id.value; let index = $index) {
+          <fieldset [formGroup]="group" class="therapy-item">
+            <legend>PROFILAXIA {{ index + 1 }}</legend>
+            <button type="button" class="remove-button" (click)="removeProphylaxis(index)">
+              REMOVER
+            </button>
+            <div class="control-grid">
+              <label class="field field--wide"
+                ><span>FÁRMACO OU DISPOSITIVO</span
+                ><select
+                  formControlName="intervention"
+                  (change)="selectProphylaxis(group, $any($event.target).value)"
+                >
+                  <option value="">SELECIONE</option>
+                  @for (option of options.prophylaxisOptions; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field field--wide"
+                ><span>DOSE, APRESENTAÇÃO OU MODO DE USO</span
+                ><input formControlName="dosePreparation"
+              /></label>
+              <label class="field"
+                ><span>VIA / DISPOSITIVO</span
+                ><select formControlName="route">
+                  @for (option of options.prophylaxisRoutes; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>APRAZAMENTO</span
+                ><select formControlName="scheduling">
+                  @for (option of options.prophylaxisScheduling; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              @if (group.controls.scheduling.value === 'FIXED') {
+                <label class="field"
+                  ><span>FREQUÊNCIA</span
+                  ><input formControlName="frequency" placeholder="EX.: 24/24H"
+                /></label>
+              }
+              @if (group.controls.scheduling.value === 'ACM') {
+                <label class="field field--wide"
+                  ><span>CRITÉRIO ACM</span
+                  ><input
+                    formControlName="conditionalTrigger"
+                    placeholder="EX.: ENQUANTO NPO OU SOB VMI"
+                /></label>
+              }
+              @if (group.controls.scheduling.value === 'SUSPEND') {
+                <label class="field field--wide"
+                  ><span>MOTIVO DA SUSPENSÃO</span
+                  ><input
+                    formControlName="suspensionReason"
+                    placeholder="CONTRAINDICAÇÃO OU DEAMBULAÇÃO"
+                /></label>
+              }
+            </div>
+          </fieldset>
+        }
+      </div>
+    </section>
+
+    <section class="therapy-block">
+      <header class="block-heading">
+        <div>
+          <span>13</span>
+          <h3>MEDICAMENTOS DE USO CONTÍNUO E ROTINA</h3>
+        </div>
+        <button
+          type="button"
+          class="add-button"
+          (click)="addContinuousMedication()"
+          [disabled]="continuousMedications.length >= 20"
+        >
+          + ADICIONAR MEDICAMENTO
+        </button>
+      </header>
+      @if (!continuousMedications.length) {
+        <p class="empty-state">NENHUM MEDICAMENTO DE USO CONTÍNUO INFORMADO.</p>
+      }
+      <div class="item-list">
+        @for (
+          group of continuousMedications.controls;
+          track group.controls.id.value;
+          let index = $index
+        ) {
+          <fieldset [formGroup]="group" class="therapy-item">
+            <legend>RECONCILIAÇÃO {{ index + 1 }}</legend>
+            <button type="button" class="remove-button" (click)="removeContinuous(index)">
+              REMOVER
+            </button>
+            <div class="control-grid">
+              <label class="field field--wide"
+                ><span>MEDICAMENTO</span
+                ><input formControlName="medication" placeholder="NOME DO MEDICAMENTO"
+              /></label>
+              <label class="field field--wide"
+                ><span>DOSE / APRESENTAÇÃO</span><input formControlName="dosePreparation"
+              /></label>
+              <label class="field"
+                ><span>VIA</span
+                ><select formControlName="route">
+                  @for (option of options.medicationRoutes; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>RECONCILIAÇÃO</span
+                ><select formControlName="reconciliationStatus">
+                  @for (option of options.reconciliationStatuses; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>APRAZAMENTO</span
+                ><select
+                  formControlName="scheduling"
+                  (change)="selectContinuousScheduling(group, $any($event.target).value)"
+                >
+                  @for (option of options.continuousMedicationScheduling; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              @if (group.controls.scheduling.value === 'FIXED') {
+                <label class="field"
+                  ><span>FREQUÊNCIA</span
+                  ><input formControlName="frequency" placeholder="EX.: 1X/DIA PELA MANHÃ"
+                /></label>
+              }
+              @if (group.controls.scheduling.value === 'ACM') {
+                <label class="field field--wide"
+                  ><span>PARÂMETRO CLÍNICO ACM</span
+                  ><input
+                    formControlName="conditionalTrigger"
+                    placeholder="EX.: CONFORME PA OU GLICEMIA"
+                /></label>
+              }
+              @if (group.controls.scheduling.value === 'TEMPORARILY_SUSPENDED') {
+                <label class="field field--wide"
+                  ><span>MOTIVO DA SUSPENSÃO</span><input formControlName="suspensionReason"
+                /></label>
+              }
+            </div>
+          </fieldset>
+        }
+      </div>
+    </section>
+
+    <section class="therapy-block">
+      <header class="block-heading">
+        <div>
+          <span>14</span>
+          <h3>ANALGESIA, ANTI-INFLAMATÓRIOS E SINTOMÁTICOS</h3>
+        </div>
+        <button
+          type="button"
+          class="add-button"
+          (click)="addSymptomatic()"
+          [disabled]="analgesiaSymptomatics.length >= 20"
+        >
+          + ADICIONAR MEDICAMENTO
+        </button>
+      </header>
+      @if (!analgesiaSymptomatics.length) {
+        <p class="empty-state">NENHUM MEDICAMENTO SINTOMÁTICO SELECIONADO.</p>
+      }
+      <div class="item-list">
+        @for (
+          group of analgesiaSymptomatics.controls;
+          track group.controls.id.value;
+          let index = $index
+        ) {
+          <fieldset [formGroup]="group" class="therapy-item">
+            <legend>ANALGESIA / SINTOMÁTICO {{ index + 1 }}</legend>
+            <button type="button" class="remove-button" (click)="removeSymptomatic(index)">
+              REMOVER
+            </button>
+            <div class="control-grid">
+              <label class="field"
+                ><span>FÁRMACO</span
+                ><select formControlName="drug">
+                  <option value="">SELECIONE</option>
+                  @for (option of options.symptomaticMedications; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              @if (group.controls.drug.value === 'OTHER') {
+                <label class="field"
+                  ><span>NOME DO MEDICAMENTO</span><input formControlName="customDrug"
+                /></label>
+              }
+              <label class="field field--wide"
+                ><span>DOSE, APRESENTAÇÃO E PREPARO</span><input formControlName="dosePreparation"
+              /></label>
+              <label class="field"
+                ><span>VIA</span
+                ><select formControlName="route">
+                  @for (option of options.medicationRoutes; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              <label class="field"
+                ><span>APRAZAMENTO</span
+                ><select formControlName="scheduling">
+                  @for (option of options.symptomaticScheduling; track option.code) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                </select></label
+              >
+              @if (
+                group.controls.scheduling.value === 'FIXED' ||
+                group.controls.scheduling.value === 'PRN_FIXED'
+              ) {
+                <label class="field"
+                  ><span>FREQUÊNCIA FIXA</span
+                  ><input formControlName="frequency" placeholder="EX.: 6/6H"
+                /></label>
+              }
+              @if (
+                group.controls.scheduling.value === 'PRN' ||
+                group.controls.scheduling.value === 'PRN_FIXED'
+              ) {
+                <label class="field field--wide"
+                  ><span>GATILHO DE DISPARO SN</span
+                  ><input formControlName="trigger" placeholder="EX.: SE DOR OU FEBRE > 37,8 °C"
+                /></label>
+                <label class="field"
+                  ><span>INTERVALO MÍNIMO</span
+                  ><input formControlName="minimumInterval" placeholder="EX.: 6/6H"
+                /></label>
+              }
+              @if (group.controls.scheduling.value === 'ACM') {
+                <label class="field field--wide"
+                  ><span>CRITÉRIO MÉDICO</span><input formControlName="trigger"
+                /></label>
+              }
+            </div>
+          </fieldset>
+        }
+      </div>
+    </section>
+
+    @if (error()) {
+      <p class="therapy-error" role="alert">{{ error() }}</p>
+    }
+    <div class="therapy-actions">
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="busy() || !hasSelection()"
+        (click)="generatePreview()"
+      >
+        {{ busy() ? 'VALIDANDO...' : 'VALIDAR TERAPIA MEDICAMENTOSA' }}
+      </button>
+    </div>
+
+    @if (preview(); as result) {
+      <section class="validated-preview" aria-live="polite">
+        <strong>PLANO VALIDADO PELA API</strong>
+        <pre>{{ result.structuredMedicationTherapy.prescriptionDetails }}</pre>
+        @if (result.billingAudit.auditAlerts.length) {
+          <div>
+            <span>CONFERÊNCIAS DE SEGURANÇA</span>
+            <ul>
+              @for (alert of result.billingAudit.auditAlerts; track alert) {
+                <li>{{ alert }}</li>
+              }
+            </ul>
+          </div>
+        }
+        @if (result.billingAudit.suppliesEquipmentForReview.length) {
+          <div>
+            <span>INSUMOS E EQUIPAMENTOS PARA CONFERÊNCIA</span>
+            <ul>
+              @for (item of result.billingAudit.suppliesEquipmentForReview; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </section>
+    }
+  }
+</section>

@@ -67,16 +67,7 @@ describe('App', () => {
 
     app.startBlankPrescription();
 
-    expect(app.medicationGroups.map((group: any) => group.title)).toEqual([
-      'ANALGESIA',
-      'SINTOMÁTICOS',
-      'PROFILAXIA',
-      'ATB',
-      'MEDICAÇÕES DE USO CONTÍNUO',
-      'DEMAIS MEDICAMENTOS',
-    ]);
-    const prophylaxis = app.medicationGroups.find((group: any) => group.id === 'PROPHYLAXIS');
-    expect(prophylaxis.rows[0].description).toContain('OMEPRAZOL');
+    expect(app.medicationGroups.map((group: any) => group.title)).toEqual(['DEMAIS MEDICAMENTOS']);
     expect(app.monitoringDraft.vitalSigns.frequency).toBe('');
     expect(app.monitoringDraft.glucoseMonitoring.hypoglycemiaProtocol).toBe(false);
     expect(app.ventilatorySupportDraft).toEqual({ selectedTemplate: '', items: [] });
@@ -100,18 +91,33 @@ describe('App', () => {
       sedationAnalgesiaBnm: [],
       emergencyMedications: [],
     });
+    expect(app.medicationTherapyDraft).toEqual({
+      clinicalContext: '',
+      renalFunction: null,
+      bleedingRisk: null,
+      antimicrobials: [],
+      prophylaxes: [],
+      continuousMedications: [],
+      analgesiaSymptomatics: [],
+    });
     expect(app.observationRows).toEqual(['']);
     expect(app.abnormalityRows).toEqual(['']);
   });
 
-  it('should fill a medication row from a preset and allow another row', () => {
+  it('should combine structured orders with an additional free medication row', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance as any;
     app.startBlankPrescription();
-    const symptomatics = app.medicationGroups.find((group: any) => group.id === 'SYMPTOMATICS');
-
-    app.selectMedicationPreset(symptomatics, 'ONDANSETRONA 1 AMPOLA + 100ML DE SF 0,9%');
-    app.addMedicationRow(symptomatics);
+    const otherMedications = app.medicationGroups.find(
+      (group: any) => group.id === 'OTHER_MEDICATIONS',
+    );
+    otherMedications.rows[0] = {
+      description: 'MEDICAMENTO NÃO PADRONIZADO',
+      route: 'VO',
+      frequency: '24/24H',
+      scheduling: 'FIXO',
+    };
+    app.addMedicationRow(otherMedications);
     app.monitoringDraft.vitalSigns.frequency = '6/6H';
     app.therapeuticSupportPreview.set({
       structuredTherapeuticSupport: {
@@ -189,19 +195,30 @@ describe('App', () => {
       },
       billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
     });
-
-    expect(symptomatics.rows[0]).toMatchObject({
-      route: 'EV',
-      frequency: '8/8HR',
-      scheduling: 'SN',
+    app.medicationTherapyPreview.set({
+      structuredMedicationTherapy: {
+        summaryLine: 'D1 CEFTRIAXONA.',
+        prescriptionDetails: '11. ANTIMICROBIANOS E ANTIBIOTICOTERAPIA.',
+        orderRows: [
+          {
+            section: 'ANTIMICROBIANOS',
+            description: 'D1 — CEFTRIAXONA 1 G',
+            route: 'ENDOVENOSA (EV)',
+            frequency: '12/12H',
+            scheduling: 'FIXO',
+          },
+        ],
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
     });
-    expect(symptomatics.rows).toHaveLength(2);
+
+    expect(otherMedications.rows).toHaveLength(2);
     const printRows = app.printOrderRows();
     expect(printRows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          section: 'SINTOMÁTICOS',
-          description: 'ONDANSETRONA 1 AMPOLA + 100ML DE SF 0,9%',
+          section: 'DEMAIS MEDICAMENTOS',
+          description: 'MEDICAMENTO NÃO PADRONIZADO',
         }),
         expect.objectContaining({
           section: 'MONITORIZAÇÃO',
@@ -236,6 +253,11 @@ describe('App', () => {
           route: 'CVC',
           frequency: '10 ML/H',
         }),
+        expect.objectContaining({
+          section: 'ANTIMICROBIANOS',
+          description: 'D1 — CEFTRIAXONA 1 G',
+          scheduling: 'FIXO',
+        }),
       ]),
     );
     const printedSections = printRows.map((row: any) => row.section);
@@ -247,6 +269,9 @@ describe('App', () => {
     );
     expect(printedSections.indexOf('CONTROLE GLICÊMICO')).toBeLessThan(
       printedSections.indexOf('DROGAS VASOATIVAS / INOTRÓPICOS'),
+    );
+    expect(printedSections.indexOf('DROGAS VASOATIVAS / INOTRÓPICOS')).toBeLessThan(
+      printedSections.indexOf('ANTIMICROBIANOS'),
     );
     expect(app.printHours).toHaveLength(24);
   });
@@ -380,6 +405,25 @@ describe('App', () => {
     );
     expect(compiled.querySelector('.evolution-print-sheet')).toBeTruthy();
     openSpy.mockRestore();
+  });
+
+  it('should open the bedside procedures page from an occupied bed', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    const store = app.store;
+    store.resetDemo();
+    store.selectHospital(INITIAL_HOSPITALS[0].id);
+    const bed = store.activeHospital().rooms[0].beds[0];
+    store.admitPatient(bed.id, { name: 'Paciente procedimento' });
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    app.openProcedures(store.findBed(bed.id));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining('flow=procedure'),
+      '_blank',
+      'noopener',
+    );
   });
 
   it('should convert evolution choices into the published template contract', () => {

@@ -47,6 +47,8 @@ public class MedicalWorkspaceController {
     private final IsolationPrecautionService isolationPrecautionService;
     private final TherapeuticSupportService therapeuticSupportService;
     private final CriticalCarePrescriptionService criticalCarePrescriptionService;
+    private final MedicationTherapyService medicationTherapyService;
+    private final BedsideProcedureService bedsideProcedureService;
 
     public MedicalWorkspaceController(
         HospitalSessionContext sessionContext,
@@ -59,7 +61,9 @@ public class MedicalWorkspaceController {
         RehabilitationPrescriptionService rehabilitationPrescriptionService,
         IsolationPrecautionService isolationPrecautionService,
         TherapeuticSupportService therapeuticSupportService,
-        CriticalCarePrescriptionService criticalCarePrescriptionService
+        CriticalCarePrescriptionService criticalCarePrescriptionService,
+        MedicationTherapyService medicationTherapyService,
+        BedsideProcedureService bedsideProcedureService
     ) {
         this.sessionContext = sessionContext;
         this.workspaceService = workspaceService;
@@ -72,6 +76,8 @@ public class MedicalWorkspaceController {
         this.isolationPrecautionService = isolationPrecautionService;
         this.therapeuticSupportService = therapeuticSupportService;
         this.criticalCarePrescriptionService = criticalCarePrescriptionService;
+        this.medicationTherapyService = medicationTherapyService;
+        this.bedsideProcedureService = bedsideProcedureService;
     }
 
     @GetMapping("/workspace")
@@ -262,6 +268,36 @@ public class MedicalWorkspaceController {
     ) {
         sessionContext.require(session, MEDICAL_ROLES);
         return criticalCarePrescriptionService.preview(body);
+    }
+
+    @GetMapping("/medication-therapy/catalog")
+    public MedicationTherapyCatalog medicationTherapyCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return medicationTherapyService.catalog();
+    }
+
+    @PostMapping("/medication-therapy/preview")
+    public MedicationTherapyResponse previewMedicationTherapy(
+        HttpSession session,
+        @Valid @RequestBody MedicationTherapyRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return medicationTherapyService.preview(body);
+    }
+
+    @GetMapping("/procedures/catalog")
+    public BedsideProcedureCatalog bedsideProcedureCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return bedsideProcedureService.catalog();
+    }
+
+    @PostMapping("/procedures/preview")
+    public BedsideProcedureResponse previewBedsideProcedure(
+        HttpSession session,
+        @Valid @RequestBody BedsideProcedureRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return bedsideProcedureService.preview(body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")
