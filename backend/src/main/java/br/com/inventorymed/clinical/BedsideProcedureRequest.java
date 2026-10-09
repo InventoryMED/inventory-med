@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 public record BedsideProcedureRequest(
+    @Size(max = 60) String clinicalContext,
     @Size(max = 60) String selectedTemplate,
     @NotNull @Size(min = 1, max = 10) List<@Valid Item> items
 ) {
@@ -23,6 +24,8 @@ public record BedsideProcedureRequest(
         @Size(max = 1000) String asepsisAntisepsis,
         @Size(max = 1000) String sterileBarrier,
         @Size(max = 1000) String localAnesthesia,
+        Boolean imageGuided,
+        @Size(max = 300) String imageAttachmentReference,
         @Size(max = 1000) String imageGuidance,
         @Size(max = 300) String deviceName,
         @Size(max = 200) String deviceBrand,

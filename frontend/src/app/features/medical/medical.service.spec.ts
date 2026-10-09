@@ -560,16 +560,19 @@ describe('MedicalService', () => {
     const catalogRequest = http.expectOne('/api/v1/clinical/procedures/catalog');
     expect(catalogRequest.request.method).toBe('GET');
     catalogRequest.flush({
+      clinicalContexts: [],
       recordTypes: [{ code: 'REQUESTED', label: 'SOLICITADO / PLANEJADO' }],
       procedures: [],
       lateralities: [],
       urgencyOptions: [],
       postProcedureControls: [],
+      quickKits: [],
       templates: [],
     });
     expect((await catalogPromise).recordTypes[0].code).toBe('REQUESTED');
 
     const draft: BedsideProcedureDraft = {
+      clinicalContext: 'ADULT_ICU',
       selectedTemplate: 'CVC',
       items: [],
     };

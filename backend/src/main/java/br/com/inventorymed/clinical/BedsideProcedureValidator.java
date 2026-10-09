@@ -11,8 +11,11 @@ import org.springframework.stereotype.Component;
 public class BedsideProcedureValidator {
 
     private static final Set<String> RECORD_TYPES = Set.of("REQUESTED", "PERFORMED");
-    private static final Set<String> LATERALITIES = Set.of("RIGHT", "LEFT", "MIDLINE", "NOT_APPLICABLE");
-    private static final Set<String> URGENCIES = Set.of("NOW", "IMMEDIATE", "URGENT", "EMERGENCY");
+    private static final Set<String> CLINICAL_CONTEXTS = Set.of(
+        "ADULT_ICU", "EMERGENCY_BOX", "MEDICAL_WARD", "PEDIATRICS", "OPERATING_ROOM"
+    );
+    private static final Set<String> LATERALITIES = Set.of("RIGHT", "LEFT", "BILATERAL", "NOT_APPLICABLE");
+    private static final Set<String> URGENCIES = Set.of("IMMEDIATE_URGENT", "ELECTIVE", "PRN");
     private static final Set<String> POST_CONTROLS = Set.of(
         "CHEST_XRAY", "ULTRASOUND", "OTHER_IMAGE", "CLINICAL_JUSTIFICATION", "NOT_APPLICABLE"
     );
@@ -27,6 +30,7 @@ public class BedsideProcedureValidator {
         if (request == null || request.items() == null || request.items().isEmpty()) {
             throw invalid("Inclua ao menos um procedimento");
         }
+        requireOption(request.clinicalContext(), CLINICAL_CONTEXTS, "contexto clínico");
         if (request.items().size() > 10) throw invalid("São permitidos até 10 procedimentos por documento");
         Set<Integer> ids = new HashSet<>();
         for (BedsideProcedureRequest.Item item : request.items()) validateItem(item, ids);
@@ -50,6 +54,10 @@ public class BedsideProcedureValidator {
         requireText(item.asepsisAntisepsis(), "assepsia e antissepsia", 1000);
         requireText(item.sterileBarrier(), "barreira estéril", 1000);
         requireText(item.monitoringAssistance(), "monitorização e assistência", 1000);
+        if (item.imageGuided() == null) throw invalid("Informe se o procedimento é guiado por imagem");
+        if (Boolean.TRUE.equals(item.imageGuided())) {
+            requireText(item.imageAttachmentReference(), "referência do anexo de imagem no PEP", 300);
+        }
         requireOption(item.urgency(), URGENCIES, "prioridade do procedimento");
         requireOption(item.postProcedureControl(), POST_CONTROLS, "controle pós-procedimento");
 

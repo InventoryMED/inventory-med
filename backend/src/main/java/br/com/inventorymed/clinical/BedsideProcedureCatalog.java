@@ -3,11 +3,13 @@ package br.com.inventorymed.clinical;
 import java.util.List;
 
 public record BedsideProcedureCatalog(
+    List<Option> clinicalContexts,
     List<Option> recordTypes,
     List<ProcedureOption> procedures,
     List<Option> lateralities,
     List<Option> urgencyOptions,
     List<Option> postProcedureControls,
+    List<QuickKit> quickKits,
     List<Template> templates
 ) {
     public record Option(String code, String label) {}
@@ -19,6 +21,8 @@ public record BedsideProcedureCatalog(
         boolean pairedSite,
         boolean deviceTraceabilityRequired,
         boolean postProcedureControlRequired,
+        boolean majorInvasiveProcedure,
+        List<String> supplyKitItems,
         String defaultSite,
         String defaultAsepsis,
         String defaultSterileBarrier,
@@ -31,6 +35,8 @@ public record BedsideProcedureCatalog(
         String defaultPostProcedureControl,
         String defaultMonitoring
     ) {}
+
+    public record QuickKit(String code, String label, List<String> procedureCodes) {}
 
     public record Template(String code, String label, ProcedureItem item) {}
 

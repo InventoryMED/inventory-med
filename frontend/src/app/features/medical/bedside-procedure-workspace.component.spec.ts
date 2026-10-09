@@ -6,6 +6,7 @@ import { MedicalService } from './medical.service';
 describe('BedsideProcedureWorkspaceComponent', () => {
   const medical = {
     bedsideProcedureCatalog: vi.fn().mockResolvedValue({
+      clinicalContexts: [{ code: 'ADULT_ICU', label: 'UTI ADULTO' }],
       recordTypes: [
         { code: 'REQUESTED', label: 'SOLICITADO / PLANEJADO' },
         { code: 'PERFORMED', label: 'REALIZADO' },
@@ -18,6 +19,8 @@ describe('BedsideProcedureWorkspaceComponent', () => {
           pairedSite: true,
           deviceTraceabilityRequired: true,
           postProcedureControlRequired: true,
+          majorInvasiveProcedure: true,
+          supplyKitItems: ['KIT CVC'],
           defaultSite: 'VEIA JUGULAR INTERNA',
           defaultAsepsis: 'CLOREXIDINA',
           defaultSterileBarrier: 'BARREIRA MÁXIMA',
@@ -35,8 +38,9 @@ describe('BedsideProcedureWorkspaceComponent', () => {
         { code: 'RIGHT', label: 'DIREITA' },
         { code: 'LEFT', label: 'ESQUERDA' },
       ],
-      urgencyOptions: [{ code: 'URGENT', label: 'URGENTE' }],
+      urgencyOptions: [{ code: 'IMMEDIATE_URGENT', label: 'IMEDIATO / URGENTE' }],
       postProcedureControls: [{ code: 'CHEST_XRAY', label: 'RADIOGRAFIA DE TÓRAX' }],
+      quickKits: [],
       templates: [],
     }),
     templates: vi.fn().mockResolvedValue([]),
@@ -81,6 +85,7 @@ describe('BedsideProcedureWorkspaceComponent', () => {
     expect(medical.templates).toHaveBeenCalledWith('PROCEDURE');
     expect(medical.documents).toHaveBeenCalledWith('admission-1');
     expect(fixture.nativeElement.textContent).toContain('PROCEDIMENTO 1');
+    expect(fixture.nativeElement.textContent).toContain('CONTEXTO CLÍNICO');
     expect(fixture.nativeElement.textContent).toContain('NENHUM REGISTRO DE PROCEDIMENTO');
   });
 });

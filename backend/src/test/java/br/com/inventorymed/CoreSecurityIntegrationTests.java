@@ -768,6 +768,7 @@ class CoreSecurityIntegrationTests {
                     .content(
                         """
                         {
+                          "clinicalContext":"EMERGENCY_BOX",
                           "selectedTemplate":"THORACENTESIS",
                           "items":[{
                             "id":1,
@@ -779,9 +780,10 @@ class CoreSecurityIntegrationTests {
                             "laterality":"RIGHT",
                             "asepsisAntisepsis":"CLOREXIDINA",
                             "sterileBarrier":"BARREIRA ESTÉRIL MÁXIMA",
+                            "imageGuided":false,
                             "postProcedureControl":"NOT_APPLICABLE",
                             "monitoringAssistance":"ECG, SPO2 E PANI",
-                            "urgency":"URGENT"
+                            "urgency":"IMMEDIATE_URGENT"
                           }]
                         }
                         """
@@ -1184,6 +1186,7 @@ class CoreSecurityIntegrationTests {
                           "kind":"PROCEDURE",
                           "values":{
                             "PROCEDURE.RECORD":{
+                              "clinicalContext":"ADULT_ICU",
                               "selectedTemplate":"CVC",
                               "items":[{
                                 "id":1,
@@ -1197,6 +1200,8 @@ class CoreSecurityIntegrationTests {
                                 "asepsisAntisepsis":"CLOREXIDINA DEGERMANTE 2%% E ALCOÓLICA 0,5%%",
                                 "sterileBarrier":"BARREIRA ESTÉRIL MÁXIMA",
                                 "localAnesthesia":"LIDOCAÍNA 2%%",
+                                "imageGuided":true,
+                                "imageAttachmentReference":"ANEXO-PEP-123",
                                 "imageGuidance":"POCUS EM TEMPO REAL",
                                 "deviceName":"KIT CVC DUPLO LÚMEN",
                                 "deviceBrand":"",
@@ -1208,7 +1213,7 @@ class CoreSecurityIntegrationTests {
                                 "postProcedureControl":"CHEST_XRAY",
                                 "postProcedureDetails":"",
                                 "monitoringAssistance":"ECG, SPO2, PANI E ENFERMAGEM",
-                                "urgency":"URGENT",
+                                "urgency":"IMMEDIATE_URGENT",
                                 "techniqueOutcome":"",
                                 "complications":"",
                                 "performedAt":null

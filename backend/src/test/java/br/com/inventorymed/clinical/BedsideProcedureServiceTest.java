@@ -34,6 +34,7 @@ class BedsideProcedureServiceTest {
             .extracting(template -> template.item().postProcedureControl())
             .isEqualTo("CHEST_XRAY");
         BedsideProcedureResponse response = service.preview(new BedsideProcedureRequest(
+            "ADULT_ICU",
             "CVC",
             List.of(validRequestedItem("CVC", "RIGHT", "CHEST_XRAY"))
         ));
@@ -41,7 +42,7 @@ class BedsideProcedureServiceTest {
         assertThat(response.structuredProcedures().prescriptionDetails())
             .startsWith("11. PROCEDIMENTOS E INTERVENÇÕES BEIRA-LEITO:")
             .contains("CATETERISMO VENOSO CENTRAL")
-            .contains("VEIA JUGULAR INTERNA — DIREITA")
+            .contains("VEIA JUGULAR INTERNA — DIREITO")
             .contains("NÃO REPRESENTAM EXECUÇÃO DO PROCEDIMENTO");
         assertThat(response.billingAudit().suppliesEquipmentForReview())
             .anyMatch(value -> value.contains("VALIDAR VIGÊNCIA"));
@@ -54,7 +55,7 @@ class BedsideProcedureServiceTest {
         BedsideProcedureRequest.Item item = copy(validRequestedItem("CHEST_DRAINAGE", "RIGHT", "CHEST_XRAY"),
             "NOT_APPLICABLE", "CHEST_XRAY", "REQUESTED", null, "", "", "", "", "");
 
-        assertThatThrownBy(() -> service.preview(new BedsideProcedureRequest("", List.of(item))))
+        assertThatThrownBy(() -> service.preview(new BedsideProcedureRequest("ADULT_ICU", "", List.of(item))))
             .isInstanceOf(BusinessValidationException.class)
             .hasMessageContaining("lateralidade direita ou esquerda");
     }
@@ -65,7 +66,7 @@ class BedsideProcedureServiceTest {
             "RIGHT", "CHEST_XRAY", "PERFORMED", OffsetDateTime.now(), "TÉCNICA SEM INTERCORRÊNCIAS",
             "", "", "", "");
 
-        assertThatThrownBy(() -> service.preview(new BedsideProcedureRequest("", List.of(item))))
+        assertThatThrownBy(() -> service.preview(new BedsideProcedureRequest("ADULT_ICU", "", List.of(item))))
             .isInstanceOf(BusinessValidationException.class)
             .hasMessageContaining("marca do dispositivo");
     }
@@ -76,7 +77,7 @@ class BedsideProcedureServiceTest {
             "RIGHT", "CHEST_XRAY", "PERFORMED", OffsetDateTime.parse("2026-10-08T10:00:00Z"),
             "TÉCNICA SEM INTERCORRÊNCIAS", "MARCA TESTE", "LOTE TESTE", "ANVISA TESTE", "");
 
-        BedsideProcedureResponse response = service.preview(new BedsideProcedureRequest("CVC", List.of(item)));
+        BedsideProcedureResponse response = service.preview(new BedsideProcedureRequest("ADULT_ICU", "CVC", List.of(item)));
 
         assertThat(response.structuredProcedures().prescriptionDetails())
             .contains("DATA/HORA: 08/10/2026 07:00")
@@ -90,7 +91,7 @@ class BedsideProcedureServiceTest {
         BedsideProcedureRequest.Item item = copy(validRequestedItem("IOT", "NOT_APPLICABLE", "CHEST_XRAY"),
             "NOT_APPLICABLE", "NOT_APPLICABLE", "REQUESTED", null, "", "", "", "", "");
 
-        assertThatThrownBy(() -> service.preview(new BedsideProcedureRequest("", List.of(item))))
+        assertThatThrownBy(() -> service.preview(new BedsideProcedureRequest("ADULT_ICU", "", List.of(item))))
             .isInstanceOf(BusinessValidationException.class)
             .hasMessageContaining("exame de controle");
     }
@@ -102,16 +103,50 @@ class BedsideProcedureServiceTest {
             new TypeReference<Map<String, Object>>() {}
         );
         Map<String, Object> normalized = service.normalizeForClinicalDocument(Map.of(
+            "clinicalContext", "ADULT_ICU",
             "selectedTemplate", "LUMBAR_PUNCTURE_DIAGNOSTIC",
             "items", List.of(item)
         ));
 
         assertThat(normalized).containsKeys("request", "structuredProcedures", "billingAudit");
         assertThatThrownBy(() -> service.normalizeForClinicalDocument(Map.of(
-            "selectedTemplate", "CVC", "items", List.of(item), "automaticBilling", true
+            "clinicalContext", "ADULT_ICU", "selectedTemplate", "CVC",
+            "items", List.of(item), "automaticBilling", true
         )))
             .isInstanceOf(BusinessValidationException.class)
             .hasMessage("O registro de procedimentos contém campos não permitidos");
+    }
+
+    @Test
+    void imageGuidedProcedureRequiresAttachmentAndAddsUltrasoundReference() {
+        BedsideProcedureRequest.Item withoutAttachment = withImageGuidance(
+            validRequestedItem("CVC", "RIGHT", "CHEST_XRAY"), true, ""
+        );
+
+        assertThatThrownBy(() -> service.preview(new BedsideProcedureRequest(
+            "ADULT_ICU", "CVC", List.of(withoutAttachment)
+        )))
+            .isInstanceOf(BusinessValidationException.class)
+            .hasMessageContaining("referência do anexo");
+
+        BedsideProcedureResponse response = service.preview(new BedsideProcedureRequest(
+            "ADULT_ICU", "CVC", List.of(withImageGuidance(withoutAttachment, true, "ANEXO-PEP-123"))
+        ));
+
+        assertThat(response.billingAudit().suppliesEquipmentForReview())
+            .anyMatch(value -> value.contains("40901262"));
+        assertThat(response.billingAudit().auditAlerts())
+            .anyMatch(value -> value.contains("TP, TTPA E PLAQUETAS"));
+    }
+
+    @Test
+    void exposesClinicalContextsAndQuickKits() {
+        assertThat(service.catalog().clinicalContexts())
+            .extracting(BedsideProcedureCatalog.Option::label)
+            .contains("UTI ADULTO", "BOX DE EMERGÊNCIA", "PEDIATRIA");
+        assertThat(service.catalog().quickKits())
+            .extracting(BedsideProcedureCatalog.QuickKit::code)
+            .contains("CENTRAL_ACCESS", "ENTERAL_URINARY_CATHETERIZATION");
     }
 
     private BedsideProcedureRequest.Item validRequestedItem(
@@ -123,9 +158,9 @@ class BedsideProcedureServiceTest {
             1, "REQUESTED", procedure, "", "ACESSO VASCULAR PARA TERAPIA ENDOVENOSA",
             "Z45.2", procedure.startsWith("LUMBAR") ? "INTERESPAÇO L3-L4" : "VEIA JUGULAR INTERNA",
             laterality, BedsideProcedureCatalogService.ASEPSIS, BedsideProcedureCatalogService.BARRIER,
-            BedsideProcedureCatalogService.ANESTHESIA, "POCUS EM TEMPO REAL", "KIT / DISPOSITIVO",
+            BedsideProcedureCatalogService.ANESTHESIA, false, "", "POCUS EM TEMPO REAL", "KIT / DISPOSITIVO",
             "", "7 FR", "", "", "FIXAÇÃO E CURATIVO ESTÉRIL", "SEM AMOSTRAS",
-            postControl, "", BedsideProcedureCatalogService.MONITORING, "URGENT", "", "", null
+            postControl, "", BedsideProcedureCatalogService.MONITORING, "IMMEDIATE_URGENT", "", "", null
         );
     }
 
@@ -144,10 +179,28 @@ class BedsideProcedureServiceTest {
         return new BedsideProcedureRequest.Item(
             source.id(), recordType, source.procedureCode(), source.customProcedure(), source.clinicalIndication(),
             source.cid10Reference(), source.anatomicalSite(), laterality, source.asepsisAntisepsis(),
-            source.sterileBarrier(), source.localAnesthesia(), source.imageGuidance(), source.deviceName(),
+            source.sterileBarrier(), source.localAnesthesia(), source.imageGuided(),
+            source.imageAttachmentReference(), source.imageGuidance(), source.deviceName(),
             brand, source.deviceCaliber(), lot, anvisa, source.fixationDressingConnections(),
             source.samplesLaboratory(), postControl, source.postProcedureDetails(), source.monitoringAssistance(),
             source.urgency(), technique, complications, performedAt
+        );
+    }
+
+    private BedsideProcedureRequest.Item withImageGuidance(
+        BedsideProcedureRequest.Item source,
+        boolean imageGuided,
+        String attachmentReference
+    ) {
+        return new BedsideProcedureRequest.Item(
+            source.id(), source.recordType(), source.procedureCode(), source.customProcedure(),
+            source.clinicalIndication(), source.cid10Reference(), source.anatomicalSite(), source.laterality(),
+            source.asepsisAntisepsis(), source.sterileBarrier(), source.localAnesthesia(), imageGuided,
+            attachmentReference, source.imageGuidance(), source.deviceName(), source.deviceBrand(),
+            source.deviceCaliber(), source.deviceLot(), source.anvisaRegistration(),
+            source.fixationDressingConnections(), source.samplesLaboratory(), source.postProcedureControl(),
+            source.postProcedureDetails(), source.monitoringAssistance(), source.urgency(),
+            source.techniqueOutcome(), source.complications(), source.performedAt()
         );
     }
 }

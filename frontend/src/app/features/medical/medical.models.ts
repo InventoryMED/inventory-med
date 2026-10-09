@@ -746,6 +746,8 @@ export interface BedsideProcedureItemDraft {
   asepsisAntisepsis: string;
   sterileBarrier: string;
   localAnesthesia: string;
+  imageGuided: boolean | null;
+  imageAttachmentReference: string;
   imageGuidance: string;
   deviceName: string;
   deviceBrand: string;
@@ -764,6 +766,7 @@ export interface BedsideProcedureItemDraft {
 }
 
 export interface BedsideProcedureDraft {
+  clinicalContext: string;
   selectedTemplate: string;
   items: BedsideProcedureItemDraft[];
 }
@@ -778,6 +781,8 @@ export interface BedsideProcedureDefinition extends BedsideProcedureOption {
   pairedSite: boolean;
   deviceTraceabilityRequired: boolean;
   postProcedureControlRequired: boolean;
+  majorInvasiveProcedure: boolean;
+  supplyKitItems: string[];
   defaultSite: string;
   defaultAsepsis: string;
   defaultSterileBarrier: string;
@@ -792,11 +797,17 @@ export interface BedsideProcedureDefinition extends BedsideProcedureOption {
 }
 
 export interface BedsideProcedureCatalog {
+  clinicalContexts: BedsideProcedureOption[];
   recordTypes: BedsideProcedureOption[];
   procedures: BedsideProcedureDefinition[];
   lateralities: BedsideProcedureOption[];
   urgencyOptions: BedsideProcedureOption[];
   postProcedureControls: BedsideProcedureOption[];
+  quickKits: Array<{
+    code: string;
+    label: string;
+    procedureCodes: string[];
+  }>;
   templates: Array<{
     code: string;
     label: string;
@@ -807,6 +818,8 @@ export interface BedsideProcedureCatalog {
       | 'customProcedure'
       | 'clinicalIndication'
       | 'cid10Reference'
+      | 'imageGuided'
+      | 'imageAttachmentReference'
       | 'deviceBrand'
       | 'deviceLot'
       | 'anvisaRegistration'

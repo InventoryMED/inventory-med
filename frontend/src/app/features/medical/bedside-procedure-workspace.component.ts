@@ -17,6 +17,7 @@ import { MedicalService } from './medical.service';
 interface ProcedureControls {
   id: FormControl<number>;
   recordType: FormControl<ProcedureRecordType>;
+  procedureSearch: FormControl<string>;
   procedureCode: FormControl<string>;
   customProcedure: FormControl<string>;
   clinicalIndication: FormControl<string>;
@@ -26,6 +27,8 @@ interface ProcedureControls {
   asepsisAntisepsis: FormControl<string>;
   sterileBarrier: FormControl<string>;
   localAnesthesia: FormControl<string>;
+  imageGuided: FormControl<boolean | null>;
+  imageAttachmentReference: FormControl<string>;
   imageGuidance: FormControl<string>;
   deviceName: FormControl<string>;
   deviceBrand: FormControl<string>;
@@ -74,6 +77,7 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
   protected readonly printDocumentDate = signal(new Date());
   protected readonly printStatus = signal('PRÉVIA NÃO FINALIZADA');
   protected readonly form = new FormGroup({
+    clinicalContext: new FormControl('', { nonNullable: true }),
     selectedTemplate: new FormControl('', { nonNullable: true }),
     items: new FormArray<ProcedureForm>([]),
   });
@@ -107,6 +111,30 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
     this.preview.set(null);
   }
 
+  protected applyQuickKit(kit: BedsideProcedureCatalog['quickKits'][number]): void {
+    if (
+      this.items.length === 1 &&
+      !this.items.at(0).controls.procedureCode.value &&
+      !this.items.at(0).controls.clinicalIndication.value
+    ) {
+      this.items.clear();
+    }
+    const availableSlots = 10 - this.items.length;
+    if (availableSlots <= 0) return;
+    const templates = kit.procedureCodes
+      .map((code) => this.catalog()?.templates.find((template) => template.code === code))
+      .filter((template) => template !== undefined)
+      .slice(0, availableSlots);
+    templates.forEach((template) =>
+      this.items.push(this.procedureForm(this.fromTemplate(template.item))),
+    );
+    this.form.controls.selectedTemplate.setValue(
+      kit.procedureCodes.length === 1 ? kit.procedureCodes[0] : '',
+    );
+    this.preview.set(null);
+    this.message.set(null);
+  }
+
   protected duplicateProcedure(item: BedsideProcedureItemDraft): void {
     if (this.items.length >= 10) return;
     this.items.push(this.procedureForm({ ...item, id: this.nextId++, performedAt: null }));
@@ -123,12 +151,15 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
     const definition = this.procedureDefinition(item.procedureCode.value);
     if (!definition) return;
     group.patchValue({
+      procedureSearch: definition.label,
       customProcedure: definition.code === 'OTHER' ? item.customProcedure.value : '',
       anatomicalSite: definition.defaultSite,
       laterality: definition.pairedSite ? 'RIGHT' : 'NOT_APPLICABLE',
       asepsisAntisepsis: definition.defaultAsepsis,
       sterileBarrier: definition.defaultSterileBarrier,
       localAnesthesia: definition.defaultAnesthesia,
+      imageGuided: null,
+      imageAttachmentReference: '',
       imageGuidance: definition.defaultImageGuidance,
       deviceName: definition.defaultDevice,
       deviceCaliber: definition.defaultCaliber,
@@ -138,6 +169,23 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
       monitoringAssistance: definition.defaultMonitoring,
     });
     this.preview.set(null);
+  }
+
+  protected procedureSearchChanged(group: ProcedureForm): void {
+    const searched = group.controls.procedureSearch.value.trim().toLocaleUpperCase('pt-BR');
+    const definition = this.catalog()?.procedures.find(
+      (procedure) =>
+        procedure.label.toLocaleUpperCase('pt-BR') === searched ||
+        procedure.code.toLocaleUpperCase('pt-BR') === searched ||
+        procedure.billingReference.toLocaleUpperCase('pt-BR') === searched,
+    );
+    if (!definition) {
+      group.controls.procedureCode.setValue('');
+      this.preview.set(null);
+      return;
+    }
+    group.controls.procedureCode.setValue(definition.code);
+    this.procedureChanged(group);
   }
 
   protected recordTypeChanged(group: ProcedureForm): void {
@@ -166,6 +214,12 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
   protected requiresPostControl(group: ProcedureForm): boolean {
     const item = group.getRawValue();
     return Boolean(this.procedureDefinition(item.procedureCode)?.postProcedureControlRequired);
+  }
+
+  protected isMajorInvasive(group: ProcedureForm): boolean {
+    return Boolean(
+      this.procedureDefinition(group.controls.procedureCode.value)?.majorInvasiveProcedure,
+    );
   }
 
   protected async generatePreview(): Promise<void> {
@@ -280,11 +334,16 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
   private payload(): BedsideProcedureDraft {
     const values = this.form.getRawValue();
     return {
+      clinicalContext: values.clinicalContext,
       selectedTemplate: values.selectedTemplate,
-      items: values.items.map((item) => ({
-        ...item,
-        performedAt: item.performedAt ? new Date(item.performedAt).toISOString() : null,
-      })),
+      items: values.items.map((item) => {
+        const { procedureSearch, ...procedure } = item;
+        void procedureSearch;
+        return {
+          ...procedure,
+          performedAt: item.performedAt ? new Date(item.performedAt).toISOString() : null,
+        };
+      }),
     };
   }
 
@@ -313,6 +372,8 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
       asepsisAntisepsis: '',
       sterileBarrier: '',
       localAnesthesia: '',
+      imageGuided: null,
+      imageAttachmentReference: '',
       imageGuidance: '',
       deviceName: '',
       deviceBrand: '',
@@ -324,7 +385,7 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
       postProcedureControl: 'NOT_APPLICABLE',
       postProcedureDetails: '',
       monitoringAssistance: '',
-      urgency: 'URGENT',
+      urgency: 'IMMEDIATE_URGENT',
       techniqueOutcome: '',
       complications: '',
       performedAt: null,
@@ -335,6 +396,9 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
     return new FormGroup<ProcedureControls>({
       id: new FormControl(item.id, { nonNullable: true }),
       recordType: new FormControl(item.recordType, { nonNullable: true }),
+      procedureSearch: new FormControl(this.procedureDefinition(item.procedureCode)?.label ?? '', {
+        nonNullable: true,
+      }),
       procedureCode: new FormControl(item.procedureCode, { nonNullable: true }),
       customProcedure: new FormControl(item.customProcedure, { nonNullable: true }),
       clinicalIndication: new FormControl(item.clinicalIndication, { nonNullable: true }),
@@ -344,6 +408,10 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
       asepsisAntisepsis: new FormControl(item.asepsisAntisepsis, { nonNullable: true }),
       sterileBarrier: new FormControl(item.sterileBarrier, { nonNullable: true }),
       localAnesthesia: new FormControl(item.localAnesthesia, { nonNullable: true }),
+      imageGuided: new FormControl(item.imageGuided),
+      imageAttachmentReference: new FormControl(item.imageAttachmentReference, {
+        nonNullable: true,
+      }),
       imageGuidance: new FormControl(item.imageGuidance, { nonNullable: true }),
       deviceName: new FormControl(item.deviceName, { nonNullable: true }),
       deviceBrand: new FormControl(item.deviceBrand, { nonNullable: true }),

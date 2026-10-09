@@ -75,7 +75,16 @@
           </div>
         </header>
 
-        <div class="template-row">
+        <div class="setup-grid">
+          <label>
+            <span>CONTEXTO CLÍNICO *</span>
+            <select formControlName="clinicalContext">
+              <option value="">SELECIONE O CONTEXTO ASSISTENCIAL</option>
+              @for (context of options.clinicalContexts; track context.code) {
+                <option [value]="context.code">{{ context.label }}</option>
+              }
+            </select>
+          </label>
           <label>
             <span>MODELO PRÉ-PREENCHIDO</span>
             <select formControlName="selectedTemplate" (change)="selectTemplate()">
@@ -94,6 +103,26 @@
             + ADICIONAR PROCEDIMENTO
           </button>
         </div>
+
+        <div class="quick-kits">
+          <div>
+            <strong>KITS DE ACESSO RÁPIDO</strong>
+            <span>ADICIONE OS PROCEDIMENTOS FREQUENTES E COMPLETE OS DADOS CLÍNICOS.</span>
+          </div>
+          <div class="quick-kit-actions">
+            @for (kit of options.quickKits; track kit.code) {
+              <button type="button" (click)="applyQuickKit(kit)" [disabled]="items.length >= 10">
+                {{ kit.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <datalist id="procedure-catalog">
+          @for (procedure of options.procedures; track procedure.code) {
+            <option [value]="procedure.label" [label]="procedure.billingReference"></option>
+          }
+        </datalist>
 
         <div class="compliance-note">
           <strong>SEGURANÇA DO REGISTRO</strong>
@@ -129,17 +158,21 @@
                     }
                   </select>
                 </label>
-                <label class="span-two"
-                  ><span>PROCEDIMENTO *</span>
-                  <select formControlName="procedureCode" (change)="procedureChanged(group)">
-                    <option value="">SELECIONE</option>
-                    @for (procedure of options.procedures; track procedure.code) {
-                      <option [value]="procedure.code">{{ procedure.label }}</option>
-                    }
-                  </select>
+                <label class="span-two procedure-search"
+                  ><span>PROCEDIMENTO / CÓDIGO TUSS OU SIGTAP *</span>
+                  <input
+                    formControlName="procedureSearch"
+                    list="procedure-catalog"
+                    placeholder="DIGITE PARA BUSCAR"
+                    autocomplete="off"
+                    (change)="procedureSearchChanged(group)"
+                  />
+                  @if (procedureDefinition(group.controls.procedureCode.value); as definition) {
+                    <small>{{ definition.billingReference }}</small>
+                  }
                 </label>
                 <label
-                  ><span>PRIORIDADE *</span>
+                  ><span>MODO / APRAZAMENTO *</span>
                   <select formControlName="urgency">
                     @for (option of options.urgencyOptions; track option.code) {
                       <option [value]="option.code">{{ option.label }}</option>
@@ -169,6 +202,37 @@
                   ><input formControlName="cid10Reference" maxlength="40" placeholder="EX.: Z45.2"
                 /></label>
               </div>
+
+              <div class="form-grid form-grid--two image-choice">
+                <fieldset>
+                  <legend>GUIADO POR IMAGEM (USG / RAIO-X) *</legend>
+                  <label class="inline-option">
+                    <input type="radio" formControlName="imageGuided" [value]="true" /> SIM
+                  </label>
+                  <label class="inline-option">
+                    <input type="radio" formControlName="imageGuided" [value]="false" /> NÃO
+                  </label>
+                </fieldset>
+                @if (group.controls.imageGuided.value === true) {
+                  <label>
+                    <span>REFERÊNCIA DO ANEXO DE IMAGEM NO PEP *</span>
+                    <input
+                      formControlName="imageAttachmentReference"
+                      maxlength="300"
+                      placeholder="EX.: ID DO ANEXO, LAUDO OU DOCUMENTO NO PEP"
+                    />
+                  </label>
+                }
+              </div>
+
+              @if (isMajorInvasive(group)) {
+                <div class="major-procedure-alert">
+                  <strong>PROCEDIMENTO INVASIVO DE GRANDE PORTE</strong>
+                  <span
+                    >CHECAR TP, TTPA E PLAQUETAS E PROGRAMAR RADIOGRAFIA DE TÓRAX DE CONTROLE.</span
+                  >
+                </div>
+              }
 
               <div class="form-grid form-grid--two">
                 <label
@@ -213,7 +277,7 @@
                     ></textarea>
                   </label>
                   <label
-                    ><span>GUIAGEM POR IMAGEM / POCUS</span
+                    ><span>DETALHES TÉCNICOS DA GUIAGEM POR IMAGEM / POCUS</span
                     ><textarea formControlName="imageGuidance" maxlength="1000" rows="2"></textarea>
                   </label>
                 </div>
@@ -360,7 +424,7 @@
             type="button"
             class="secondary-button"
             (click)="generatePreview()"
-            [disabled]="busy() || !items.length"
+            [disabled]="busy() || !items.length || !form.controls.clinicalContext.value"
           >
             GERAR PRÉVIA
           </button>
@@ -368,7 +432,7 @@
             type="button"
             class="primary-button"
             (click)="finalizeDocument()"
-            [disabled]="busy() || !items.length"
+            [disabled]="busy() || !items.length || !form.controls.clinicalContext.value"
           >
             FINALIZAR REGISTRO
           </button>

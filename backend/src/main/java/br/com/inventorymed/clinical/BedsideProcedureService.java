@@ -15,11 +15,12 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class BedsideProcedureService {
 
-    private static final Set<String> ROOT_KEYS = Set.of("selectedTemplate", "items");
+    private static final Set<String> ROOT_KEYS = Set.of("clinicalContext", "selectedTemplate", "items");
     private static final Set<String> ITEM_KEYS = Set.of(
         "id", "recordType", "procedureCode", "customProcedure", "clinicalIndication",
         "cid10Reference", "anatomicalSite", "laterality", "asepsisAntisepsis",
-        "sterileBarrier", "localAnesthesia", "imageGuidance", "deviceName", "deviceBrand",
+        "sterileBarrier", "localAnesthesia", "imageGuided", "imageAttachmentReference",
+        "imageGuidance", "deviceName", "deviceBrand",
         "deviceCaliber", "deviceLot", "anvisaRegistration", "fixationDressingConnections",
         "samplesLaboratory", "postProcedureControl", "postProcedureDetails",
         "monitoringAssistance", "urgency", "techniqueOutcome", "complications", "performedAt"
@@ -51,6 +52,11 @@ public class BedsideProcedureService {
         List<String> summaries = new ArrayList<>();
         List<String> supplies = new ArrayList<>();
         List<String> alerts = new ArrayList<>();
+        String clinicalContext = catalog.optionLabel(
+            BedsideProcedureCatalogService.CLINICAL_CONTEXTS,
+            request.clinicalContext()
+        );
+        details.add("CONTEXTO CLÍNICO: " + clinicalContext + ".");
 
         for (BedsideProcedureRequest.Item item : request.items()) {
             BedsideProcedureCatalog.ProcedureOption procedure = catalog.procedure(item.procedureCode());
@@ -60,7 +66,7 @@ public class BedsideProcedureService {
             String urgency = catalog.optionLabel(BedsideProcedureCatalogService.URGENCY_OPTIONS, item.urgency());
             String site = item.anatomicalSite().trim() +
                 ("NOT_APPLICABLE".equals(item.laterality()) ? "" : " — " + laterality);
-            summaries.add(name + " — " + record);
+            summaries.add(name + " — " + site + " — " + procedure.billingReference());
 
             details.add("- " + name + " — " + record + " — " + urgency + ".");
             details.add("  * INDICAÇÃO: " + item.clinicalIndication().trim() + " — CID-10: " +
@@ -69,7 +75,14 @@ public class BedsideProcedureService {
             details.add("  * ASSEPSIA E ANTISSEPSIA: " + item.asepsisAntisepsis().trim() + ".");
             details.add("  * BARREIRA ESTÉRIL: " + item.sterileBarrier().trim() + ".");
             append(details, "ANESTESIA LOCAL", item.localAnesthesia());
-            append(details, "GUIAGEM POR IMAGEM", item.imageGuidance());
+            details.add("  * GUIADO POR IMAGEM: " + (Boolean.TRUE.equals(item.imageGuided()) ? "SIM" : "NÃO") + ".");
+            if (Boolean.TRUE.equals(item.imageGuided())) {
+                append(details, "REFERÊNCIA DO ANEXO NO PEP", item.imageAttachmentReference());
+                append(details, "TÉCNICA DE GUIAGEM", item.imageGuidance());
+                supplies.add("ULTRASSONOGRAFIA DE ACOMPANHAMENTO — TUSS 40901262 — VALIDAR EXECUÇÃO E ANEXO NO PEP.");
+                alerts.add("GUIAGEM POR IMAGEM SELECIONADA: CONFERIR O ANEXO NO PEP PELA REFERÊNCIA " +
+                    item.imageAttachmentReference().trim() + ".");
+            }
             appendDevice(details, item, procedure, supplies, name);
             append(details, "FIXAÇÃO, CURATIVO E CONEXÕES", item.fixationDressingConnections());
             append(details, "AMOSTRAS / LABORATÓRIO", item.samplesLaboratory());
@@ -89,6 +102,9 @@ public class BedsideProcedureService {
 
             supplies.add(name + " — " + procedure.billingReference() +
                 " — REFERÊNCIA INFORMADA; VALIDAR VIGÊNCIA, CONTRATO E ELEGIBILIDADE.");
+            procedure.supplyKitItems().forEach(supply -> supplies.add(
+                name + " — " + supply + " — CONFERIR DISPENSAÇÃO E USO EFETIVO."
+            ));
             if (notBlank(item.localAnesthesia())) supplies.add(item.localAnesthesia().trim() + " — CONFERIR USO EFETIVO.");
             if (notBlank(item.fixationDressingConnections())) supplies.add(
                 item.fixationDressingConnections().trim() + " — CONFERIR ITENS EFETIVAMENTE UTILIZADOS."
@@ -96,6 +112,13 @@ public class BedsideProcedureService {
             if (procedure.postProcedureControlRequired()) supplies.add(
                 "EXAME DE CONTROLE PÓS-PROCEDIMENTO — CONFERIR SOLICITAÇÃO, EXECUÇÃO E LAUDO."
             );
+            if (procedure.majorInvasiveProcedure()) {
+                alerts.add(name + ": CHECAR TP, TTPA E PLAQUETAS ANTES DO PROCEDIMENTO.");
+                alerts.add(name + ": CONFERIR RADIOGRAFIA DE TÓRAX DE CONTROLE APÓS O PROCEDIMENTO.");
+            }
+            if (BedsideProcedureCatalogService.NO_BILLING_REFERENCE.equals(procedure.billingReference())) {
+                alerts.add(name + ": REFERÊNCIA TUSS/CBHPM/SIGTAP DEVE SER CADASTRADA E VALIDADA PELA AUDITORIA.");
+            }
         }
 
         alerts.add("CÓDIGOS TUSS/SIGTAP EXIBIDOS SÃO REFERÊNCIAS INFORMADAS E DEVEM SER VALIDADOS NA TABELA VIGENTE E NO CONTRATO.");
