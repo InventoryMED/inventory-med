@@ -37,6 +37,8 @@ import {
   NursingCarePrescriptionDraft,
   NursingCarePrescriptionResponse,
   NursingCarePrescriptionSelection,
+  PrescriptionStarterCatalog,
+  PrescriptionStarterTemplate,
   RehabilitationDraft,
   RehabilitationResponse,
   RehabilitationSelection,
@@ -62,14 +64,6 @@ import {
   PrescriptionScheduling,
   Room,
 } from './models';
-
-type PrescriptionTemplateId = 'ADMISSION' | 'PAC' | 'CAD' | 'TVP' | 'TEP' | 'EMERGENCY_BOX';
-
-interface PrescriptionTemplate {
-  id: PrescriptionTemplateId;
-  name: string;
-  description: string;
-}
 
 interface PrescriptionRowPreset {
   description: string;
@@ -119,19 +113,6 @@ interface HospitalOption {
   detail: string;
 }
 
-const PRESCRIPTION_TEMPLATES: PrescriptionTemplate[] = [
-  { id: 'ADMISSION', name: 'ADMISSÃO', description: 'MODELO INICIAL PARA ADMISSÃO HOSPITALAR' },
-  { id: 'PAC', name: 'PAC', description: 'PNEUMONIA ADQUIRIDA NA COMUNIDADE' },
-  { id: 'CAD', name: 'CAD', description: 'CETOACIDOSE DIABÉTICA' },
-  { id: 'TVP', name: 'TVP', description: 'TROMBOSE VENOSA PROFUNDA' },
-  { id: 'TEP', name: 'TEP', description: 'TROMBOEMBOLISMO PULMONAR' },
-  {
-    id: 'EMERGENCY_BOX',
-    name: 'BOX DE EMERGÊNCIA',
-    description: 'ATENDIMENTO EM BOX DE EMERGÊNCIA',
-  },
-];
-
 @Component({
   imports: [
     CommonModule,
@@ -165,6 +146,9 @@ export class App implements OnInit {
   protected readonly dischargeOpen = signal(false);
   protected readonly transferOpen = signal(false);
   protected readonly prescriptionReady = signal(false);
+  protected readonly prescriptionStarterCatalog = signal<PrescriptionStarterCatalog | null>(null);
+  protected readonly prescriptionStarterLoading = signal(false);
+  protected readonly prescriptionStarterError = signal<string | null>(null);
   protected readonly searchTerm = signal('');
   protected readonly toast = signal<string | null>(null);
   protected readonly authBusy = signal(false);
@@ -269,8 +253,8 @@ export class App implements OnInit {
   protected observationRows: string[] = [];
   protected abnormalityRows: string[] = [];
   protected medicationGroups: MedicationOrderGroup[] = [];
-  protected selectedTemplateId: PrescriptionTemplateId | '' = '';
-  protected readonly prescriptionTemplates = PRESCRIPTION_TEMPLATES;
+  protected selectedPrescriptionClinicCode = '';
+  protected selectedTemplateId = '';
   protected readonly evolutionPositionOptions = [
     'ACAMADO EM DECÚBITO DORSAL',
     'SENTADO NA POLTRONA',
@@ -385,6 +369,17 @@ export class App implements OnInit {
     hour.toString().padStart(2, '0'),
   );
   protected readonly currentDate = new Date();
+
+  protected get prescriptionClinics() {
+    return this.prescriptionStarterCatalog()?.clinics ?? [];
+  }
+
+  protected get prescriptionTemplates(): PrescriptionStarterTemplate[] {
+    if (!this.selectedPrescriptionClinicCode) return [];
+    return (this.prescriptionStarterCatalog()?.templates ?? []).filter((template) =>
+      template.clinicCodes.includes(this.selectedPrescriptionClinicCode),
+    );
+  }
 
   protected readonly activeHospital = this.store.activeHospital;
   protected readonly hospitals = computed<HospitalOption[]>(() => {
@@ -1174,16 +1169,27 @@ export class App implements OnInit {
     this.prescriptionReady.set(true);
   }
 
+  protected selectPrescriptionClinic(clinicCode: string): void {
+    this.selectedPrescriptionClinicCode = clinicCode;
+    this.selectedTemplateId = '';
+  }
+
   protected applyPrescriptionTemplate(): void {
-    const template = PRESCRIPTION_TEMPLATES.find((item) => item.id === this.selectedTemplateId);
+    if (!this.selectedPrescriptionClinicCode) {
+      this.showToast('SELECIONE A CLÍNICA ANTES DO MODELO.');
+      return;
+    }
+    const template = this.prescriptionTemplates.find(
+      (item) => item.code === this.selectedTemplateId,
+    );
     if (!template) {
-      this.showToast('Selecione uma prescrição pré-pronta.');
+      this.showToast('SELECIONE UMA PRESCRIÇÃO PRÉ-PRONTA.');
       return;
     }
 
     this.resetStructuredOrders();
     this.prescriptionReady.set(true);
-    this.showToast(`MODELO ${template.name} CARREGADO.`);
+    this.showToast(`MODELO ${template.name} SELECIONADO PARA REVISÃO E COMPLEMENTAÇÃO.`);
   }
 
   protected async savePatientChanges(): Promise<void> {
@@ -1569,8 +1575,23 @@ export class App implements OnInit {
     this.observationRows = [];
     this.abnormalityRows = [];
     this.medicationGroups = [];
+    this.selectedPrescriptionClinicCode = '';
     this.selectedTemplateId = '';
     this.prescriptionReady.set(false);
+    if (this.realApiEnabled) void this.loadPrescriptionStarterCatalog();
+  }
+
+  protected async loadPrescriptionStarterCatalog(): Promise<void> {
+    if (this.prescriptionStarterCatalog() || this.prescriptionStarterLoading()) return;
+    this.prescriptionStarterLoading.set(true);
+    this.prescriptionStarterError.set(null);
+    try {
+      this.prescriptionStarterCatalog.set(await this.medical.prescriptionStartOptions());
+    } catch (error) {
+      this.prescriptionStarterError.set(this.clinicalErrorMessage(error));
+    } finally {
+      this.prescriptionStarterLoading.set(false);
+    }
   }
 
   private emptyDietDraft(): DietPrescriptionDraft {

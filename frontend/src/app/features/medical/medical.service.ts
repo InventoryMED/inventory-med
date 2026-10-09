@@ -29,6 +29,7 @@ import {
   NursingCarePrescriptionCatalog,
   NursingCarePrescriptionDraft,
   NursingCarePrescriptionResponse,
+  PrescriptionStarterCatalog,
   RehabilitationCatalog,
   RehabilitationDraft,
   RehabilitationResponse,
@@ -78,6 +79,12 @@ export class MedicalService {
       this.http.get<ClinicalFormTemplate[]>(`${this.baseUrl}/form-templates`, {
         params: { kind },
       }),
+    );
+  }
+
+  prescriptionStartOptions(): Promise<PrescriptionStarterCatalog> {
+    return firstValueFrom(
+      this.http.get<PrescriptionStarterCatalog>(`${this.baseUrl}/prescriptions/start-options`),
     );
   }
 

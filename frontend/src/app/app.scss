@@ -1180,8 +1180,7 @@ svg {
 }
 .prescription-start-card {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(220px, 0.8fr) minmax(360px, 1.4fr);
-  align-items: stretch;
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-bottom: 18px;
   padding: 22px;
@@ -1191,7 +1190,7 @@ svg {
   box-shadow: 0 5px 18px rgba(16, 24, 40, 0.05);
 }
 .prescription-start-copy {
-  align-self: center;
+  max-width: 720px;
 }
 .prescription-start-copy h2 {
   margin-bottom: 7px;
@@ -1244,6 +1243,20 @@ svg {
   justify-content: center;
   gap: 8px;
 }
+.prescription-start-actions {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.8fr) minmax(220px, 0.8fr) minmax(360px, 1.4fr);
+  align-items: stretch;
+  gap: 16px;
+}
+.prescription-start-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+.prescription-start-field label,
 .prescription-template-choice > label {
   color: #344054;
   font-size: 12px;
@@ -1253,6 +1266,7 @@ svg {
   display: flex;
   gap: 8px;
 }
+.prescription-start-field select,
 .prescription-template-choice select {
   min-width: 0;
   flex: 1;
@@ -1263,6 +1277,25 @@ svg {
   background: white;
   color: var(--ink);
   font-size: 11px;
+}
+.prescription-start-field select:disabled,
+.prescription-template-choice select:disabled {
+  cursor: not-allowed;
+  background: #f2f4f7;
+  color: #667085;
+}
+.prescription-start-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 13px;
+  border: 1px solid #f5b7b1;
+  border-radius: 8px;
+  background: #fff5f4;
+  color: #b42318;
+  font-size: 10px;
+  font-weight: 750;
 }
 .prescription-template-choice small {
   color: var(--muted);
@@ -2383,9 +2416,12 @@ svg {
     grid-template-columns: repeat(3, 1fr);
   }
   .prescription-start-card {
+    grid-template-columns: 1fr;
+  }
+  .prescription-start-actions {
     grid-template-columns: 1fr 1fr;
   }
-  .prescription-start-copy {
+  .prescription-template-choice {
     grid-column: 1 / -1;
   }
 }
@@ -2533,7 +2569,10 @@ svg {
   .prescription-start-card {
     grid-template-columns: 1fr;
   }
-  .prescription-start-copy {
+  .prescription-start-actions {
+    grid-template-columns: 1fr;
+  }
+  .prescription-template-choice {
     grid-column: auto;
   }
   .prescription-template-choice > div,

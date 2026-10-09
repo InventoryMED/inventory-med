@@ -49,6 +49,7 @@ public class MedicalWorkspaceController {
     private final CriticalCarePrescriptionService criticalCarePrescriptionService;
     private final MedicationTherapyService medicationTherapyService;
     private final BedsideProcedureService bedsideProcedureService;
+    private final PrescriptionStarterCatalogService prescriptionStarterCatalogService;
 
     public MedicalWorkspaceController(
         HospitalSessionContext sessionContext,
@@ -63,7 +64,8 @@ public class MedicalWorkspaceController {
         TherapeuticSupportService therapeuticSupportService,
         CriticalCarePrescriptionService criticalCarePrescriptionService,
         MedicationTherapyService medicationTherapyService,
-        BedsideProcedureService bedsideProcedureService
+        BedsideProcedureService bedsideProcedureService,
+        PrescriptionStarterCatalogService prescriptionStarterCatalogService
     ) {
         this.sessionContext = sessionContext;
         this.workspaceService = workspaceService;
@@ -78,6 +80,7 @@ public class MedicalWorkspaceController {
         this.criticalCarePrescriptionService = criticalCarePrescriptionService;
         this.medicationTherapyService = medicationTherapyService;
         this.bedsideProcedureService = bedsideProcedureService;
+        this.prescriptionStarterCatalogService = prescriptionStarterCatalogService;
     }
 
     @GetMapping("/workspace")
@@ -148,6 +151,12 @@ public class MedicalWorkspaceController {
     ) {
         HospitalSessionContext.Scope scope = sessionContext.require(session, MEDICAL_ROLES);
         return documentService.publishedTemplates(scope.hospitalId(), kind);
+    }
+
+    @GetMapping("/prescriptions/start-options")
+    public PrescriptionStarterCatalog prescriptionStartOptions(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return prescriptionStarterCatalogService.catalog();
     }
 
     @GetMapping("/diets/catalog")

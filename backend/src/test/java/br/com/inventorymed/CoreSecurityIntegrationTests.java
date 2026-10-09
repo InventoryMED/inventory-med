@@ -170,6 +170,41 @@ class CoreSecurityIntegrationTests {
     }
 
     @Test
+    void prescriptionStarterCatalogRequiresAnAuthorizedMedicalSession() throws Exception {
+        createMembership(
+            "starter.doctor@example.test",
+            "HOSPITAL CATÁLOGO MÉDICO",
+            "inventory_med_hospital_catalogo_medico",
+            HospitalRole.MEDICO
+        );
+        MvcResult doctorLogin = login("starter.doctor@example.test", "Secret@12345");
+
+        mockMvc
+            .perform(
+                get("/clinical/prescriptions/start-options")
+                    .cookie(latestCookie(doctorLogin, "INVENTORYMED_SESSION"))
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.clinics[0].code").value("CLINICA_MEDICA_UPA"))
+            .andExpect(jsonPath("$.templates[0].code").value("ADMISSION"));
+
+        createMembership(
+            "starter.reception@example.test",
+            "HOSPITAL CATÁLOGO RECEPÇÃO",
+            "inventory_med_hospital_catalogo_recepcao",
+            HospitalRole.RECEPCAO
+        );
+        MvcResult receptionLogin = login("starter.reception@example.test", "Secret@12345");
+
+        mockMvc
+            .perform(
+                get("/clinical/prescriptions/start-options")
+                    .cookie(latestCookie(receptionLogin, "INVENTORYMED_SESSION"))
+            )
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
     void loginStoresTheSessionOnTheServerAndAutoSelectsASingleHospital()
         throws Exception {
         HospitalMembership membership = createMembership(

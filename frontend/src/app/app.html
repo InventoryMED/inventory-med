@@ -546,33 +546,85 @@
               <h2>Como deseja começar?</h2>
               <p>Crie uma prescrição vazia ou carregue um modelo para revisar e completar.</p>
             </div>
-            <button
-              type="button"
-              class="prescription-choice prescription-choice--blank"
-              (click)="startBlankPrescription()"
-            >
-              <span class="choice-icon" aria-hidden="true">+</span>
-              <span><strong>Criar do zero</strong><small>Começar com itens em branco</small></span>
-            </button>
-            <div class="prescription-template-choice">
-              <label for="prescription-template">Prescrição pré-pronta</label>
-              <div>
-                <select id="prescription-template" [(ngModel)]="selectedTemplateId">
-                  <option value="">Selecione um modelo</option>
-                  @for (template of prescriptionTemplates; track template.id) {
-                    <option [value]="template.id">
-                      {{ template.name }} — {{ template.description }}
-                    </option>
+            <div class="prescription-start-actions">
+              <button
+                type="button"
+                class="prescription-choice prescription-choice--blank"
+                (click)="startBlankPrescription()"
+              >
+                <span class="choice-icon" aria-hidden="true">+</span>
+                <span
+                  ><strong>Criar do zero</strong><small>Começar com itens em branco</small></span
+                >
+              </button>
+              <div class="prescription-start-field">
+                <label for="prescription-clinic">Clínica</label>
+                <select
+                  id="prescription-clinic"
+                  [ngModel]="selectedPrescriptionClinicCode"
+                  (ngModelChange)="selectPrescriptionClinic($event)"
+                  [disabled]="prescriptionStarterLoading() || !!prescriptionStarterError()"
+                >
+                  <option value="">
+                    {{
+                      prescriptionStarterLoading()
+                        ? 'Carregando clínicas...'
+                        : 'Selecione a clínica'
+                    }}
+                  </option>
+                  @for (clinic of prescriptionClinics; track clinic.code) {
+                    <option [value]="clinic.code">{{ clinic.label }}</option>
                   }
                 </select>
-                <button type="button" class="primary-button" (click)="applyPrescriptionTemplate()">
-                  Usar modelo
+              </div>
+              <div class="prescription-template-choice">
+                <label for="prescription-template">Prescrição pré-pronta</label>
+                <div>
+                  <select
+                    id="prescription-template"
+                    [(ngModel)]="selectedTemplateId"
+                    [disabled]="!selectedPrescriptionClinicCode || prescriptionStarterLoading()"
+                  >
+                    <option value="">
+                      {{
+                        selectedPrescriptionClinicCode && !prescriptionTemplates.length
+                          ? 'Nenhum modelo disponível para esta clínica'
+                          : 'Selecione um modelo'
+                      }}
+                    </option>
+                    @for (template of prescriptionTemplates; track template.code) {
+                      <option [value]="template.code">
+                        {{ template.name }} — {{ template.description }}
+                      </option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    class="primary-button"
+                    (click)="applyPrescriptionTemplate()"
+                    [disabled]="!selectedTemplateId"
+                  >
+                    Usar modelo
+                  </button>
+                </div>
+                <small
+                  >Os modelos devem ser revisados pela equipe clínica responsável antes do
+                  uso.</small
+                >
+              </div>
+            </div>
+            @if (prescriptionStarterError()) {
+              <div class="prescription-start-error" role="alert">
+                <span>{{ prescriptionStarterError() }}</span>
+                <button
+                  type="button"
+                  class="ghost-button"
+                  (click)="loadPrescriptionStarterCatalog()"
+                >
+                  Tentar novamente
                 </button>
               </div>
-              <small
-                >Os modelos devem ser revisados pela equipe clínica responsável antes do uso.</small
-              >
-            </div>
+            }
           </section>
           @if (prescriptionReady()) {
             <section class="prescription-sheet">

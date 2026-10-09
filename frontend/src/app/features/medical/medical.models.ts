@@ -45,6 +45,24 @@ export interface MedicalWorkspace {
 }
 
 export type ClinicalFormKind = 'PRESCRIPTION' | 'EVOLUTION' | 'PROCEDURE';
+
+export interface PrescriptionStarterClinic {
+  code: string;
+  label: string;
+}
+
+export interface PrescriptionStarterTemplate {
+  code: string;
+  name: string;
+  description: string;
+  clinicCodes: string[];
+}
+
+export interface PrescriptionStarterCatalog {
+  clinics: PrescriptionStarterClinic[];
+  templates: PrescriptionStarterTemplate[];
+}
+
 export type ClinicalFieldType =
   | 'SHORT_TEXT'
   | 'LONG_TEXT'

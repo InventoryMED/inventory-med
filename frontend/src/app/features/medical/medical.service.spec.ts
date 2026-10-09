@@ -40,6 +40,27 @@ describe('MedicalService', () => {
 
   afterEach(() => http.verify());
 
+  it('loads prescription clinics and compatible starter models', async () => {
+    const catalogPromise = service.prescriptionStartOptions();
+    const request = http.expectOne('/api/v1/clinical/prescriptions/start-options');
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      clinics: [{ code: 'CLINICA_MEDICA_UPA', label: 'CLÍNICA MÉDICA / UPA' }],
+      templates: [
+        {
+          code: 'ADMISSION',
+          name: 'ADMISSÃO',
+          description: 'MODELO INICIAL PARA ADMISSÃO HOSPITALAR',
+          clinicCodes: ['CLINICA_MEDICA_UPA'],
+        },
+      ],
+    });
+
+    const catalog = await catalogPromise;
+    expect(catalog.clinics[0].label).toBe('CLÍNICA MÉDICA / UPA');
+    expect(catalog.templates[0].clinicCodes).toEqual(['CLINICA_MEDICA_UPA']);
+  });
+
   it('loads the diet catalog and requests a validated preview', async () => {
     const catalogPromise = service.dietCatalog();
     const catalogRequest = http.expectOne('/api/v1/clinical/diets/catalog');

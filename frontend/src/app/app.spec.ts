@@ -104,6 +104,51 @@ describe('App', () => {
     expect(app.abnormalityRows).toEqual(['']);
   });
 
+  it('should only list starter models compatible with the selected clinic', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as unknown as {
+      prescriptionStarterCatalog: {
+        set(value: {
+          clinics: Array<{ code: string; label: string }>;
+          templates: Array<{
+            code: string;
+            name: string;
+            description: string;
+            clinicCodes: string[];
+          }>;
+        }): void;
+      };
+      selectPrescriptionClinic(clinicCode: string): void;
+      prescriptionTemplates: Array<{ code: string }>;
+      selectedTemplateId: string;
+    };
+    app.prescriptionStarterCatalog.set({
+      clinics: [
+        { code: 'CLINICA_MEDICA_UPA', label: 'CLÍNICA MÉDICA / UPA' },
+        { code: 'BOX_EMERGENCIA_ADULTO', label: 'BOX DE EMERGÊNCIA ADULTO' },
+      ],
+      templates: [
+        {
+          code: 'PAC',
+          name: 'PAC',
+          description: 'PNEUMONIA ADQUIRIDA NA COMUNIDADE',
+          clinicCodes: ['CLINICA_MEDICA_UPA'],
+        },
+        {
+          code: 'EMERGENCY_BOX',
+          name: 'BOX DE EMERGÊNCIA',
+          description: 'ATENDIMENTO EM BOX DE EMERGÊNCIA ADULTO',
+          clinicCodes: ['BOX_EMERGENCIA_ADULTO'],
+        },
+      ],
+    });
+
+    app.selectPrescriptionClinic('BOX_EMERGENCIA_ADULTO');
+
+    expect(app.prescriptionTemplates.map((template) => template.code)).toEqual(['EMERGENCY_BOX']);
+    expect(app.selectedTemplateId).toBe('');
+  });
+
   it('should combine structured orders with an additional free medication row', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance as any;
