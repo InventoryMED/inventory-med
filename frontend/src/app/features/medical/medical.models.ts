@@ -44,7 +44,7 @@ export interface MedicalWorkspace {
   careUnits: MedicalCareUnit[];
 }
 
-export type ClinicalFormKind = 'PRESCRIPTION' | 'EVOLUTION' | 'PROCEDURE';
+export type ClinicalFormKind = 'PRESCRIPTION' | 'EVOLUTION' | 'PROCEDURE' | 'AIH';
 
 export interface PrescriptionStarterClinic {
   code: string;
@@ -84,7 +84,8 @@ export type ClinicalFieldType =
   | 'THERAPEUTIC_SUPPORT_PLAN'
   | 'CRITICAL_CARE_PLAN'
   | 'MEDICATION_THERAPY_PLAN'
-  | 'PROCEDURE_PLAN';
+  | 'PROCEDURE_PLAN'
+  | 'AIH_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -839,6 +840,94 @@ export interface BedsideProcedureResponse {
   billingAudit: {
     suppliesEquipmentForReview: string[];
     auditAlerts: string[];
+  };
+}
+
+export interface AihOption {
+  code: string;
+  label: string;
+}
+
+export interface AihProcedureDefinition extends AihOption {
+  tussCode: string | null;
+  cbhpmCode: string | null;
+  sigtapCode: string | null;
+  pairedSite: boolean;
+  defaultSite: string;
+}
+
+export interface AihCatalog {
+  clinicalContexts: AihOption[];
+  admissionCharacters: AihOption[];
+  lateralities: AihOption[];
+  procedures: AihProcedureDefinition[];
+  imageGuidance: {
+    tussCode: string | null;
+    cbhpmCode: string | null;
+    sigtapCode: string | null;
+  };
+}
+
+export interface AihPatientIdentification {
+  name: string;
+  cns: string;
+  motherName: string;
+  medicalRecordNumber: string;
+  address: string;
+  bed: string;
+  hospital: string;
+  cnes: string;
+}
+
+export interface AihRequestedProcedure {
+  id: number;
+  procedureCode: string;
+  anatomicalSite: string;
+  laterality: string;
+  scheduling: string;
+  imageGuided: boolean;
+  imageAttachmentReference: string;
+  clinicalJustification: string;
+}
+
+export interface AihManualData {
+  mainSignsSymptoms: string;
+  admissionConditions: string;
+  examResults: string;
+  initialDiagnosis: string;
+  primaryCid: string;
+  secondaryCids: string;
+  requestedProcedureCode: string;
+  admissionCharacter: string;
+}
+
+export interface AihDraft {
+  clinicalContext: string;
+  patientId: string;
+  patient: AihPatientIdentification;
+  requestedProcedures: AihRequestedProcedure[];
+  manualData: AihManualData;
+}
+
+export interface AihResponse {
+  structuredAih: {
+    patient: AihPatientIdentification;
+    manualData: AihManualData;
+    clinicalContext: string;
+    admissionCharacter: string;
+    requestedProcedures: Array<
+      AihRequestedProcedure & {
+        name: string;
+        tussCode: string | null;
+        cbhpmCode: string | null;
+        sigtapCode: string | null;
+        imageGuidanceTussCode: string | null;
+      }
+    >;
+    reportText: string;
+  };
+  billingAudit: {
+    alerts: string[];
   };
 }
 

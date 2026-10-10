@@ -3,6 +3,9 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  AihCatalog,
+  AihDraft,
+  AihResponse,
   BedsideProcedureCatalog,
   BedsideProcedureDraft,
   BedsideProcedureResponse,
@@ -223,6 +226,14 @@ export class MedicalService {
     return firstValueFrom(
       this.http.post<BedsideProcedureResponse>(`${this.baseUrl}/procedures/preview`, draft),
     );
+  }
+
+  aihCatalog(): Promise<AihCatalog> {
+    return firstValueFrom(this.http.get<AihCatalog>(`${this.baseUrl}/aih/catalog`));
+  }
+
+  previewAih(draft: AihDraft): Promise<AihResponse> {
+    return firstValueFrom(this.http.post<AihResponse>(`${this.baseUrl}/aih/preview`, draft));
   }
 
   documents(admissionId: string): Promise<ClinicalDocument[]> {

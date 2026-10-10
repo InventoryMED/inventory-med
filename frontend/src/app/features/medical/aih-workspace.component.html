@@ -1,0 +1,381 @@
+<div class="aih-page">
+  <header class="aih-appbar no-print">
+    <div class="aih-brand"><img src="inventory-med-logo.png" alt="INVENTORY MED" /></div>
+    <div class="aih-title">
+      <span>LAUDO PARA SOLICITAÇÃO DE INTERNAÇÃO</span>
+      <strong>AIH DIGITAL • {{ hospitalName }}</strong>
+    </div>
+    <div class="aih-professional">
+      <small>PROFISSIONAL RESPONSÁVEL</small><strong>{{ professionalName }}</strong>
+    </div>
+  </header>
+
+  <main class="aih-workspace">
+    <div class="aih-toolbar no-print">
+      <button type="button" class="back-button" (click)="back.emit()">← VOLTAR AOS QUARTOS</button>
+      <span>DOCUMENTO CLÍNICO E ADMINISTRATIVO AUDITÁVEL</span>
+    </div>
+
+    <app-clinical-documentation-tabs activeTab="AIH" (tabChange)="moduleChange.emit($event)" />
+
+    <section class="patient-summary no-print">
+      <div>
+        <span>PACIENTE</span><strong>{{ patient.name }}</strong>
+      </div>
+      <div>
+        <span>UNIDADE</span><strong>{{ unitName }}</strong>
+      </div>
+      <div>
+        <span>QUARTO / LEITO</span><strong>{{ roomName }} • {{ bedCode }}</strong>
+      </div>
+      <div>
+        <span>INTERNAÇÃO</span><strong>{{ patient.admissionAt | date: 'dd/MM/yyyy HH:mm' }}</strong>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <section class="state-card no-print">CARREGANDO CATÁLOGO E HISTÓRICO DE AIH...</section>
+    } @else if (!catalog()) {
+      <section class="state-card state-card--error no-print" role="alert">
+        <strong>{{ message() }}</strong>
+        <button type="button" class="secondary-button" (click)="retry()">TENTAR NOVAMENTE</button>
+      </section>
+    } @else if (catalog(); as options) {
+      <section class="aih-card history-card no-print">
+        <header>
+          <div>
+            <span>HISTÓRICO DA INTERNAÇÃO</span>
+            <h2>AIHS FINALIZADAS</h2>
+          </div>
+          <b>{{ documents().length }}</b>
+        </header>
+        @if (documents().length) {
+          <div class="history-list">
+            @for (document of documents(); track document.id) {
+              <button type="button" (click)="openDocument(document)">
+                <span>AIH • VERSÃO {{ document.versionNumber }}</span>
+                <strong>{{ formatDate(document.finalizedAt || document.createdAt) }}</strong>
+                <small>ABRIR PARA VISUALIZAÇÃO E IMPRESSÃO</small>
+              </button>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">NENHUMA AIH FINALIZADA NESTA INTERNAÇÃO.</p>
+        }
+      </section>
+
+      <form class="aih-form no-print" [formGroup]="form" (ngSubmit)="generatePreview()">
+        <section class="aih-card">
+          <header>
+            <div>
+              <span>AUTOMAÇÃO DE ENTRADA</span>
+              <h2>IDENTIFICAÇÃO DO PACIENTE E DA UNIDADE</h2>
+            </div>
+            <small>OS CAMPOS PODEM SER COMPLETADOS OU CORRIGIDOS NESTE LAUDO</small>
+          </header>
+          <div class="form-grid form-grid--four" formGroupName="patient">
+            <label class="span-two"
+              ><span>NOME DO PACIENTE • OPCIONAL</span
+              ><input formControlName="name" maxlength="300"
+            /></label>
+            <label><span>CNS • OPCIONAL</span><input formControlName="cns" maxlength="30" /></label>
+            <label
+              ><span>PRONTUÁRIO • OPCIONAL</span
+              ><input formControlName="medicalRecordNumber" maxlength="100"
+            /></label>
+            <label class="span-two"
+              ><span>NOME DA MÃE • OPCIONAL</span
+              ><input formControlName="motherName" maxlength="300"
+            /></label>
+            <label class="span-two"
+              ><span>ENDEREÇO • OPCIONAL</span><input formControlName="address" maxlength="500"
+            /></label>
+            <label
+              ><span>HOSPITAL • OPCIONAL</span><input formControlName="hospital" maxlength="300"
+            /></label>
+            <label
+              ><span>CNES • OPCIONAL</span><input formControlName="cnes" maxlength="30"
+            /></label>
+            <label
+              ><span>LEITO • OPCIONAL</span><input formControlName="bed" maxlength="200"
+            /></label>
+          </div>
+          <div class="form-grid context-grid">
+            <label>
+              <span>CONTEXTO CLÍNICO • OPCIONAL</span>
+              <select formControlName="clinicalContext">
+                <option value="">NÃO INFORMADO</option>
+                @for (context of options.clinicalContexts; track context.code) {
+                  <option [value]="context.code">{{ context.label }}</option>
+                }
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="aih-card" formGroupName="manualData">
+          <header>
+            <div>
+              <span>LAUDO SUS</span>
+              <h2>JUSTIFICATIVA DA INTERNAÇÃO</h2>
+            </div>
+            <small>TODOS OS CAMPOS SÃO OPCIONAIS</small>
+          </header>
+          <div class="form-grid form-grid--two">
+            <label
+              ><span>PRINCIPAIS SINAIS E SINTOMAS</span
+              ><textarea formControlName="mainSignsSymptoms" maxlength="4000" rows="4"></textarea>
+            </label>
+            <label
+              ><span>CONDIÇÕES QUE JUSTIFICAM A INTERNAÇÃO</span
+              ><textarea formControlName="admissionConditions" maxlength="4000" rows="4"></textarea>
+            </label>
+            <label
+              ><span>RESULTADOS DE EXAMES</span
+              ><textarea formControlName="examResults" maxlength="4000" rows="4"></textarea>
+            </label>
+            <label
+              ><span>DIAGNÓSTICO INICIAL</span
+              ><textarea formControlName="initialDiagnosis" maxlength="2000" rows="4"></textarea>
+            </label>
+            <label
+              ><span>CID PRINCIPAL</span
+              ><input formControlName="primaryCid" maxlength="40" placeholder="EX.: A41.9"
+            /></label>
+            <label
+              ><span>CIDS SECUNDÁRIOS</span
+              ><input
+                formControlName="secondaryCids"
+                maxlength="500"
+                placeholder="SEPARAR POR VÍRGULA"
+            /></label>
+            <label
+              ><span>CÓDIGO DO PROCEDIMENTO PRINCIPAL</span
+              ><input
+                formControlName="requestedProcedureCode"
+                maxlength="30"
+                placeholder="EX.: 0303010192"
+            /></label>
+            <label>
+              <span>CARÁTER DA INTERNAÇÃO</span>
+              <select formControlName="admissionCharacter">
+                <option value="">NÃO INFORMADO</option>
+                @for (character of options.admissionCharacters; track character.code) {
+                  <option [value]="character.code">{{ character.label }}</option>
+                }
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="aih-card">
+          <header>
+            <div>
+              <span>DICIONÁRIO MESTRE</span>
+              <h2>PROCEDIMENTOS SOLICITADOS</h2>
+            </div>
+            <button
+              type="button"
+              class="secondary-button"
+              (click)="addProcedure()"
+              [disabled]="procedures.length >= 20"
+            >
+              + ADICIONAR PROCEDIMENTO
+            </button>
+          </header>
+          <p class="section-helper">
+            A AIH PODE SER GERADA SEM PROCEDIMENTOS. AO SELECIONAR UM ITEM, OS CÓDIGOS SÃO DEFINIDOS
+            EXCLUSIVAMENTE PELA API.
+          </p>
+
+          <div formArrayName="requestedProcedures">
+            @for (group of procedures.controls; track group.controls.id.value; let index = $index) {
+              <fieldset class="procedure-item" [formGroup]="group">
+                <legend>PROCEDIMENTO {{ index + 1 }}</legend>
+                <button type="button" class="remove-button" (click)="removeProcedure(index)">
+                  REMOVER
+                </button>
+                <div class="form-grid form-grid--two">
+                  <label class="span-two">
+                    <span>PROCEDIMENTO</span>
+                    <select formControlName="procedureCode" (change)="procedureChanged(group)">
+                      <option value="">SELECIONE</option>
+                      @for (procedure of options.procedures; track procedure.code) {
+                        <option [value]="procedure.code">
+                          {{ procedure.label }} • {{ codeReferences(procedure.code) }}
+                        </option>
+                      }
+                    </select>
+                    <small class="code-reference">{{
+                      codeReferences(group.controls.procedureCode.value)
+                    }}</small>
+                  </label>
+                  <label
+                    ><span>SÍTIO ANATÔMICO</span
+                    ><input formControlName="anatomicalSite" maxlength="300"
+                  /></label>
+                  <label>
+                    <span>LATERALIDADE</span>
+                    <select formControlName="laterality">
+                      <option value="">NÃO INFORMADA</option>
+                      @for (laterality of options.lateralities; track laterality.code) {
+                        <option [value]="laterality.code">{{ laterality.label }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label
+                    ><span>MODO / APRAZAMENTO</span
+                    ><input
+                      formControlName="scheduling"
+                      maxlength="100"
+                      placeholder="EX.: IMEDIATO"
+                  /></label>
+                  <label class="check-field"
+                    ><input type="checkbox" formControlName="imageGuided" /><span
+                      >GUIADO POR IMAGEM • TUSS {{ options.imageGuidance.tussCode }}</span
+                    ></label
+                  >
+                  @if (group.controls.imageGuided.value) {
+                    <label class="span-two"
+                      ><span>REFERÊNCIA DO ANEXO DA IMAGEM NO PEP *</span
+                      ><input formControlName="imageAttachmentReference" maxlength="300"
+                    /></label>
+                  }
+                  <label class="span-two"
+                    ><span>JUSTIFICATIVA CLÍNICA</span
+                    ><textarea
+                      formControlName="clinicalJustification"
+                      maxlength="2000"
+                      rows="3"
+                    ></textarea>
+                  </label>
+                </div>
+              </fieldset>
+            }
+          </div>
+          @if (!procedures.length) {
+            <p class="empty-state">
+              NENHUM PROCEDIMENTO ADICIONADO. ISSO NÃO IMPEDE A GERAÇÃO DA AIH.
+            </p>
+          }
+        </section>
+
+        <section class="aih-card action-card">
+          <div>
+            <strong>PREENCHIMENTO FLEXÍVEL</strong>
+            <p>
+              CAMPOS CADASTRAIS, TEXTOS, CIDS E PROCEDIMENTOS PODEM FICAR EM BRANCO PARA
+              PREENCHIMENTO MANUAL POSTERIOR.
+            </p>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="secondary-button" [disabled]="busy()">GERAR PRÉVIA</button>
+            <button type="button" class="secondary-button" (click)="print()" [disabled]="busy()">
+              IMPRIMIR / SALVAR PDF
+            </button>
+            <button
+              type="button"
+              class="primary-button"
+              (click)="finalizeDocument()"
+              [disabled]="busy()"
+            >
+              FINALIZAR AIH
+            </button>
+          </div>
+          @if (message()) {
+            <p class="form-message" role="status">{{ message() }}</p>
+          }
+        </section>
+      </form>
+    }
+
+    @if (preview(); as result) {
+      <section class="aih-card aih-preview no-print">
+        <header>
+          <div>
+            <span>PRÉVIA VALIDADA PELA API</span>
+            <h2>LAUDO PARA IMPRESSÃO</h2>
+          </div>
+          <button type="button" class="primary-button" (click)="print()">
+            IMPRIMIR / SALVAR PDF
+          </button>
+        </header>
+        <pre>{{ result.structuredAih.reportText }}</pre>
+        <div class="audit-box">
+          <h3>CONFERÊNCIA DE FATURAMENTO</h3>
+          <ul>
+            @for (alert of result.billingAudit.alerts; track alert) {
+              <li>{{ alert }}</li>
+            }
+          </ul>
+        </div>
+      </section>
+
+      <article class="aih-print-sheet print-only">
+        <header class="print-header">
+          <img src="inventory-med-logo.png" alt="INVENTORY MED" />
+          <div>
+            <span>{{ hospitalName }}</span>
+            <h1>LAUDO PARA SOLICITAÇÃO DE AIH</h1>
+            <small>AUTORIZAÇÃO DE INTERNAÇÃO HOSPITALAR • SUS</small>
+          </div>
+          <div class="print-status">
+            <span>DOCUMENTO</span><strong>{{ printStatus() }}</strong>
+          </div>
+        </header>
+        <section class="print-identification">
+          <div class="wide">
+            <span>PACIENTE</span><strong>{{ result.structuredAih.patient.name }}</strong>
+          </div>
+          <div>
+            <span>CNS</span><strong>{{ result.structuredAih.patient.cns }}</strong>
+          </div>
+          <div>
+            <span>PRONTUÁRIO</span
+            ><strong>{{ result.structuredAih.patient.medicalRecordNumber }}</strong>
+          </div>
+          <div class="wide">
+            <span>NOME DA MÃE</span><strong>{{ result.structuredAih.patient.motherName }}</strong>
+          </div>
+          <div class="wide">
+            <span>ENDEREÇO</span><strong>{{ result.structuredAih.patient.address }}</strong>
+          </div>
+          <div>
+            <span>HOSPITAL</span><strong>{{ result.structuredAih.patient.hospital }}</strong>
+          </div>
+          <div>
+            <span>CNES</span><strong>{{ result.structuredAih.patient.cnes }}</strong>
+          </div>
+          <div>
+            <span>LEITO</span><strong>{{ result.structuredAih.patient.bed }}</strong>
+          </div>
+          <div>
+            <span>DATA DO LAUDO</span
+            ><strong>{{ printDocumentDate() | date: 'dd/MM/yyyy HH:mm' }}</strong>
+          </div>
+        </section>
+        <section class="print-report">
+          <pre>{{ result.structuredAih.reportText }}</pre>
+        </section>
+        <section class="print-audit">
+          <h2>CONFERÊNCIA DE CÓDIGOS E FATURAMENTO</h2>
+          <ul>
+            @for (alert of result.billingAudit.alerts; track alert) {
+              <li>{{ alert }}</li>
+            }
+          </ul>
+        </section>
+        <footer class="print-footer">
+          <span>INVENTORY MED • DOCUMENTO GERADO EM AMBIENTE AUTENTICADO</span>
+          <div class="signature">
+            <i></i><strong>{{ professionalName }}</strong
+            ><small>MÉDICO RESPONSÁVEL</small>
+          </div>
+          <div class="signature">
+            <i></i><strong>AUTORIZADOR</strong><small>ASSINATURA E IDENTIFICAÇÃO</small>
+          </div>
+        </footer>
+      </article>
+    }
+  </main>
+</div>

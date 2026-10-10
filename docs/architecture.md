@@ -1,8 +1,8 @@
 # Arquitetura oficial do Inventory MED
 
-**Versão:** 1.1
+**Versão:** 1.2
 
-**Data da decisão:** 02/10/2026 — atualização operacional em 03/10/2026
+**Data da decisão:** 02/10/2026 — atualização funcional em 09/10/2026
 
 **Status:** arquitetura oficial a ser seguida
 
@@ -22,6 +22,7 @@ por:
 - admissão, alta e transferência de pacientes;
 - prescrições médicas e impressão;
 - evoluções médicas e impressão;
+- procedimentos beira-leito e AIH digital com impressão;
 - auditoria das operações sensíveis.
 
 O sistema não será dividido em microserviços. A primeira versão será um monólito
@@ -173,6 +174,7 @@ SQL SERVER EXPRESS
     +-- transferências e altas
     +-- prescrições e itens
     +-- evoluções
+    +-- procedimentos e AIHs
     +-- auditoria clínica
 ```
 
@@ -240,6 +242,8 @@ br.com.inventorymed
 +-- formtemplates
 +-- prescriptions
 +-- evolutions
++-- procedures
++-- aih
 +-- transfers
 +-- discharges
 +-- audit
@@ -265,8 +269,9 @@ Cada módulo pode conter:
 - erros possuem um formato JSON único;
 - datas são armazenadas com tipo apropriado, nunca como texto quando forem datas reais;
 - toda operação clínica valida a unidade selecionada na sessão;
-- prescrições e evoluções criadas não são sobrescritas silenciosamente: mudanças
-  relevantes geram versão ou evento de auditoria;
+- prescrições, evoluções, procedimentos e AIHs criados não são sobrescritos
+  silenciosamente: mudanças relevantes geram novo documento, versão ou evento de
+  auditoria;
 - Flyway é o único meio normal de alterar a estrutura dos bancos;
 - a aplicação não utiliza a conta `sa`.
 
@@ -291,7 +296,8 @@ não equivale a autoria médica.
 
 ### Invariante dos documentos clínicos
 
-Prescrições e evoluções seguem um modelo de histórico somente acrescentável:
+Documentos clínicos, inclusive prescrições, evoluções, procedimentos e AIHs, seguem um
+modelo de histórico somente acrescentável:
 
 ```text
 RASCUNHO -> FINALIZADO -> RETIFICADO, SUBSTITUÍDO OU CANCELADO
@@ -423,6 +429,8 @@ src/app
     +-- admissions
     +-- prescriptions
     +-- evolutions
+    +-- procedures
+    +-- aih
 ```
 
 Regras:
@@ -447,7 +455,7 @@ tipo, rótulo, opções e restrições visuais. Ao salvar, o backend carrega a v
 modelo, valida novamente todos os campos e rejeita conteúdo incompatível.
 
 Uma versão publicada de modelo é imutável. Alterações criam nova versão e atingem
-somente documentos futuros. Cada prescrição ou evolução guarda a versão utilizada e um
+somente documentos futuros. Cada documento clínico guarda a versão utilizada e um
 retrato dos campos apresentados naquele momento.
 
 ## 11. Implantação

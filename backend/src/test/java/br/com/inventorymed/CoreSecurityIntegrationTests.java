@@ -660,6 +660,13 @@ class CoreSecurityIntegrationTests {
             .andExpect(jsonPath("$.patient.fullName").value("PACIENTE ISOLAMENTO"))
             .andReturn();
         UUID admissionId = firstUuid(admitted.getResponse().getContentAsString(), "id");
+        UUID admittedPatientId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT patient_id FROM dbo.admission WHERE id = ?",
+                UUID.class,
+                admissionId
+            )
+        );
 
         mockMvc
             .perform(
@@ -1249,6 +1256,91 @@ class CoreSecurityIntegrationTests {
         );
         assertThat(firstHospitalProcedures).isEqualTo(1);
         assertThat(secondHospitalProcedures).isZero();
+
+        UUID aihTemplateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
+                    "JOIN dbo.form_template t ON t.id = v.template_id " +
+                    "WHERE t.kind = 'AIH' AND v.status = 'PUBLISHED'",
+                UUID.class
+            )
+        );
+        String aihFieldType = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT f.field_type FROM dbo.form_field f " +
+                    "JOIN dbo.form_section s ON s.id = f.section_id " +
+                    "WHERE s.version_id = ? AND s.section_key = 'AIH' AND f.field_key = 'REPORT'",
+                String.class,
+                aihTemplateVersionId
+            )
+        );
+        assertThat(aihFieldType).isEqualTo("AIH_PLAN");
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"AIH",
+                          "values":{
+                            "AIH.REPORT":{
+                              "clinicalContext":"",
+                              "patientId":"%s",
+                              "patient":{
+                                "name":"PACIENTE TESTE",
+                                "cns":"",
+                                "motherName":"",
+                                "medicalRecordNumber":"",
+                                "address":"",
+                                "bed":"LEITO 01",
+                                "hospital":"HOSPITAL TESTE",
+                                "cnes":""
+                              },
+                              "requestedProcedures":[],
+                              "manualData":{
+                                "mainSignsSymptoms":"",
+                                "admissionConditions":"",
+                                "examResults":"",
+                                "initialDiagnosis":"",
+                                "primaryCid":"",
+                                "secondaryCids":"",
+                                "requestedProcedureCode":"",
+                                "admissionCharacter":""
+                              }
+                            }
+                          },
+                          "finalizeDocument":true
+                        }
+                        """.formatted(aihTemplateVersionId, admittedPatientId)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.kind").value("AIH"))
+            .andExpect(jsonPath("$.status").value("FINALIZED"))
+            .andExpect(
+                jsonPath("$.values['AIH.REPORT'].structuredAih.reportText")
+                    .value(org.hamcrest.Matchers.containsString("CID PRINCIPAL:"))
+            );
+
+        Integer firstHospitalAihDocuments = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'AIH'",
+                Integer.class
+            )
+        );
+        Integer secondHospitalAihDocuments = tenantJdbc.read(secondHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'AIH'",
+                Integer.class
+            )
+        );
+        assertThat(firstHospitalAihDocuments).isEqualTo(1);
+        assertThat(secondHospitalAihDocuments).isZero();
 
         Integer firstHospitalPatients = tenantJdbc.read(firstHospital.getId(), jdbc ->
             jdbc.queryForObject("SELECT COUNT(*) FROM dbo.patient", Integer.class)

@@ -1,0 +1,31 @@
+<nav class="module-tabs no-print" aria-label="MÓDULO DE PROCEDIMENTOS E AIH">
+  <button
+    type="button"
+    [class.active]="activeTab === 'PROCEDURE'"
+    [attr.aria-current]="activeTab === 'PROCEDURE' ? 'page' : null"
+    (click)="tabChange.emit('PROCEDURE')"
+  >
+    <span>01</span>
+    <strong>PROCEDIMENTOS E INTERVENÇÕES</strong>
+    <small>BEIRA-LEITO</small>
+  </button>
+  <button
+    type="button"
+    disabled
+    title="O CATÁLOGO CLÍNICO E DE FATURAMENTO DO POCUS AINDA NÃO FOI FORNECIDO"
+  >
+    <span>02</span>
+    <strong>EXAMES POINT-OF-CARE</strong>
+    <small>POCUS / LABORATÓRIO BEIRA-LEITO</small>
+  </button>
+  <button
+    type="button"
+    [class.active]="activeTab === 'AIH'"
+    [attr.aria-current]="activeTab === 'AIH' ? 'page' : null"
+    (click)="tabChange.emit('AIH')"
+  >
+    <span>03</span>
+    <strong>AIH DIGITAL</strong>
+    <small>LAUDO SUS</small>
+  </button>
+</nav>

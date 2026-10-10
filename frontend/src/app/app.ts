@@ -6,7 +6,9 @@ import { environment } from '../environments/environment';
 import { AuthService } from './auth/auth.service';
 import { DemoStore } from './demo-store';
 import { AdministrationComponent } from './features/administration/administration.component';
+import { AihWorkspaceComponent } from './features/medical/aih-workspace.component';
 import { BedsideProcedureWorkspaceComponent } from './features/medical/bedside-procedure-workspace.component';
+import { ClinicalDocumentationTab } from './features/medical/clinical-documentation-tabs.component';
 import { CriticalCarePrescriptionComponent } from './features/medical/critical-care-prescription.component';
 import { DietPrescriptionComponent } from './features/medical/diet-prescription.component';
 import { IsolationPrecautionsComponent } from './features/medical/isolation-precautions.component';
@@ -118,6 +120,7 @@ interface HospitalOption {
     CommonModule,
     FormsModule,
     AdministrationComponent,
+    AihWorkspaceComponent,
     BedsideProcedureWorkspaceComponent,
     DietPrescriptionComponent,
     NursingCarePrescriptionComponent,
@@ -649,6 +652,19 @@ export class App implements OnInit {
   protected openProcedures(bed: Bed): void {
     if (!bed.patient) return;
     this.openProcedureTab(bed.id);
+  }
+
+  protected openAih(bed: Bed): void {
+    if (!bed.patient) return;
+    this.openAihTab(bed.id);
+  }
+
+  protected switchClinicalModule(tab: ClinicalDocumentationTab): void {
+    const flow = tab === 'AIH' ? 'aih' : 'procedure';
+    this.screen.set(flow);
+    const url = new URL(window.location.href);
+    url.searchParams.set('flow', flow);
+    window.history.replaceState({}, '', url);
   }
 
   protected openDischarge(bed: Bed): void {
@@ -2098,6 +2114,20 @@ export class App implements OnInit {
     window.open(url.toString(), '_blank', 'noopener');
   }
 
+  private openAihTab(bedId: string): void {
+    const hospitalId = this.store.activeHospitalId();
+    if (!hospitalId) return;
+
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('hospital', hospitalId);
+    url.searchParams.set('bed', bedId);
+    url.searchParams.set('flow', 'aih');
+
+    window.open(url.toString(), '_blank', 'noopener');
+  }
+
   private openRequestedView(): boolean {
     const params = new URLSearchParams(window.location.search);
     const hospitalId = params.get('hospital');
@@ -2127,6 +2157,10 @@ export class App implements OnInit {
     }
     if (flow === 'procedure' && bed.status === 'OCCUPIED' && bed.patient) {
       this.screen.set('procedure');
+      return true;
+    }
+    if (flow === 'aih' && bed.status === 'OCCUPIED' && bed.patient) {
+      this.screen.set('aih');
       return true;
     }
     return false;

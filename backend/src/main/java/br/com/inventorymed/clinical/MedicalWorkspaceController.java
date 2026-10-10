@@ -49,6 +49,7 @@ public class MedicalWorkspaceController {
     private final CriticalCarePrescriptionService criticalCarePrescriptionService;
     private final MedicationTherapyService medicationTherapyService;
     private final BedsideProcedureService bedsideProcedureService;
+    private final AihService aihService;
     private final PrescriptionStarterCatalogService prescriptionStarterCatalogService;
 
     public MedicalWorkspaceController(
@@ -65,6 +66,7 @@ public class MedicalWorkspaceController {
         CriticalCarePrescriptionService criticalCarePrescriptionService,
         MedicationTherapyService medicationTherapyService,
         BedsideProcedureService bedsideProcedureService,
+        AihService aihService,
         PrescriptionStarterCatalogService prescriptionStarterCatalogService
     ) {
         this.sessionContext = sessionContext;
@@ -80,6 +82,7 @@ public class MedicalWorkspaceController {
         this.criticalCarePrescriptionService = criticalCarePrescriptionService;
         this.medicationTherapyService = medicationTherapyService;
         this.bedsideProcedureService = bedsideProcedureService;
+        this.aihService = aihService;
         this.prescriptionStarterCatalogService = prescriptionStarterCatalogService;
     }
 
@@ -307,6 +310,21 @@ public class MedicalWorkspaceController {
     ) {
         sessionContext.require(session, MEDICAL_ROLES);
         return bedsideProcedureService.preview(body);
+    }
+
+    @GetMapping("/aih/catalog")
+    public AihCatalog aihCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return aihService.catalog();
+    }
+
+    @PostMapping("/aih/preview")
+    public AihResponse previewAih(
+        HttpSession session,
+        @Valid @RequestBody AihRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return aihService.preview(body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")

@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { authInterceptor } from '../../auth/auth.interceptor';
 import {
+  AihDraft,
   BedsideProcedureDraft,
   CriticalCareDraft,
   MedicationTherapyDraft,
@@ -595,5 +596,62 @@ describe('MedicalService', () => {
     expect(documentsRequest.request.method).toBe('GET');
     documentsRequest.flush([]);
     expect(await documentsPromise).toEqual([]);
+  });
+
+  it('loads the AIH dictionary and requests a null-safe preview', async () => {
+    const catalogPromise = service.aihCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/aih/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      clinicalContexts: [],
+      admissionCharacters: [],
+      lateralities: [],
+      procedures: [],
+      imageGuidance: { tussCode: '40901262', cbhpmCode: null, sigtapCode: null },
+    });
+    expect((await catalogPromise).imageGuidance.tussCode).toBe('40901262');
+
+    const draft: AihDraft = {
+      clinicalContext: '',
+      patientId: 'patient-1',
+      patient: {
+        name: 'PACIENTE TESTE',
+        cns: '',
+        motherName: '',
+        medicalRecordNumber: '',
+        address: '',
+        bed: 'LEITO 01',
+        hospital: 'HOSPITAL TESTE',
+        cnes: '',
+      },
+      requestedProcedures: [],
+      manualData: {
+        mainSignsSymptoms: '',
+        admissionConditions: '',
+        examResults: '',
+        initialDiagnosis: '',
+        primaryCid: '',
+        secondaryCids: '',
+        requestedProcedureCode: '',
+        admissionCharacter: '',
+      },
+    };
+    const previewPromise = service.previewAih(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/aih/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredAih: {
+        patient: draft.patient,
+        manualData: draft.manualData,
+        clinicalContext: '',
+        admissionCharacter: '',
+        requestedProcedures: [],
+        reportText: 'LAUDO PARA SOLICITAÇÃO DE AIH',
+      },
+      billingAudit: { alerts: [] },
+    });
+    expect((await previewPromise).structuredAih.reportText).toContain('AIH');
   });
 });

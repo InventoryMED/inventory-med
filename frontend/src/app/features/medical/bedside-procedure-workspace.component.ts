@@ -13,6 +13,10 @@ import {
   ProcedureRecordType,
 } from './medical.models';
 import { MedicalService } from './medical.service';
+import {
+  ClinicalDocumentationTab,
+  ClinicalDocumentationTabsComponent,
+} from './clinical-documentation-tabs.component';
 
 interface ProcedureControls {
   id: FormControl<number>;
@@ -50,7 +54,7 @@ type ProcedureForm = FormGroup<ProcedureControls>;
 
 @Component({
   selector: 'app-bedside-procedure-workspace',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ClinicalDocumentationTabsComponent],
   templateUrl: './bedside-procedure-workspace.component.html',
   styleUrl: './bedside-procedure-workspace.component.scss',
 })
@@ -63,6 +67,7 @@ export class BedsideProcedureWorkspaceComponent implements OnInit {
   @Input({ required: true }) patient!: Patient;
   @Input({ required: true }) professionalName = '';
   @Output() readonly back = new EventEmitter<void>();
+  @Output() readonly moduleChange = new EventEmitter<ClinicalDocumentationTab>();
 
   private readonly medical = inject(MedicalService);
   private nextId = 1;

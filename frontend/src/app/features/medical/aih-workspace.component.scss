@@ -1,0 +1,606 @@
+:host {
+  --navy: #08233f;
+  --blue: #0f5f9b;
+  --line: #ced8e4;
+  --soft: #f3f6fa;
+  display: block;
+  min-height: 100vh;
+  color: #0d2035;
+  background: #eef2f6;
+  text-transform: uppercase;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.aih-appbar {
+  display: grid;
+  min-height: 72px;
+  grid-template-columns: 220px 1fr 260px;
+  align-items: center;
+  gap: 24px;
+  padding: 0 4vw;
+  color: #fff;
+  background: var(--navy);
+}
+
+.aih-brand {
+  display: flex;
+  width: 190px;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.aih-brand img {
+  width: 170px;
+  max-height: 44px;
+  object-fit: contain;
+}
+
+.aih-title,
+.aih-professional {
+  display: flex;
+  flex-direction: column;
+}
+
+.aih-title span,
+.aih-professional small {
+  margin-bottom: 3px;
+  color: #9ec8e9;
+  font-size: 0.67rem;
+  letter-spacing: 0.11em;
+}
+
+.aih-title strong {
+  font-size: 1rem;
+}
+
+.aih-professional {
+  text-align: right;
+}
+
+.aih-workspace {
+  width: min(1240px, 92vw);
+  margin: 0 auto;
+  padding-bottom: 44px;
+}
+
+.aih-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 18px;
+  color: #526981;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+.back-button,
+.secondary-button,
+.primary-button {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 7px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.back-button,
+.secondary-button {
+  border: 1px solid #aebdcc;
+  color: var(--navy);
+  background: #fff;
+}
+
+.primary-button {
+  border: 1px solid var(--navy);
+  color: #fff;
+  background: var(--navy);
+}
+
+.patient-summary {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.patient-summary > div {
+  display: flex;
+  min-height: 62px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px 14px;
+  border-right: 1px solid var(--line);
+}
+
+.patient-summary > div:last-child {
+  border-right: 0;
+}
+
+.patient-summary span,
+.aih-card header span,
+.aih-card header small {
+  color: #5c7188;
+  font-size: 0.59rem;
+  letter-spacing: 0.08em;
+}
+
+.patient-summary strong {
+  margin-top: 5px;
+  font-size: 0.76rem;
+}
+
+.state-card,
+.aih-card {
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.state-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.state-card--error,
+.form-message {
+  color: #b42318;
+  background: #fff3f2;
+}
+
+.aih-card {
+  padding: 20px;
+}
+
+.aih-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -20px -20px 18px;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.aih-card h2 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.history-card header b {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--navy);
+  font-size: 0.72rem;
+}
+
+.history-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.history-list button {
+  display: flex;
+  min-height: 82px;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--navy);
+  background: var(--soft);
+  text-align: left;
+}
+
+.history-list span,
+.history-list small {
+  color: #5c7188;
+  font-size: 0.57rem;
+}
+
+.history-list strong {
+  font-size: 0.72rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 13px;
+}
+
+.form-grid--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.form-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.context-grid {
+  width: min(300px, 100%);
+  margin-top: 13px;
+}
+
+.span-two {
+  grid-column: span 2;
+}
+
+label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  color: #334a62;
+  font-size: 0.63rem;
+  font-weight: 800;
+}
+
+input,
+select,
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #bbc8d5;
+  border-radius: 6px;
+  color: #0d2035;
+  background: #fff;
+  font-size: 0.73rem;
+  text-transform: uppercase;
+}
+
+input,
+select {
+  min-height: 42px;
+  padding: 0 11px;
+}
+
+textarea {
+  min-height: 88px;
+  padding: 10px 11px;
+  resize: vertical;
+}
+
+.procedure-item {
+  position: relative;
+  margin: 0 0 14px;
+  padding: 20px 16px 16px;
+  border: 1px solid #aebdcc;
+  border-radius: 8px;
+  background: #f9fbfd;
+}
+
+.procedure-item legend {
+  padding: 0 8px;
+  color: var(--navy);
+  font-size: 0.69rem;
+  font-weight: 800;
+}
+
+.remove-button {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  border: 0;
+  color: #b42318;
+  background: transparent;
+  font-size: 0.61rem;
+  font-weight: 800;
+}
+
+.check-field {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: center;
+  align-self: end;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #bbc8d5;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.check-field input {
+  width: 16px;
+  min-height: 16px;
+  margin: 0;
+}
+
+.code-reference {
+  color: var(--blue);
+  font-size: 0.58rem;
+}
+
+.section-helper,
+.empty-state,
+.action-card p {
+  margin: 0 0 16px;
+  color: #5c7188;
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed #bbc8d5;
+  text-align: center;
+}
+
+.action-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 20px;
+}
+
+.action-card strong {
+  font-size: 0.75rem;
+}
+
+.action-card p {
+  max-width: 660px;
+  margin: 5px 0 0;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.form-message {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #f2a7a0;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.aih-preview pre {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.71rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.audit-box {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+}
+
+.audit-box h3 {
+  margin: 0 0 8px;
+  font-size: 0.7rem;
+}
+
+.audit-box ul,
+.print-audit ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+.print-only {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .aih-appbar,
+  .patient-summary,
+  .form-grid--four,
+  .form-grid--two,
+  .history-list,
+  .action-card {
+    grid-template-columns: 1fr;
+  }
+
+  .aih-appbar {
+    gap: 8px;
+    padding: 14px 4vw;
+  }
+
+  .aih-professional {
+    text-align: left;
+  }
+
+  .span-two {
+    grid-column: auto;
+  }
+}
+
+@media print {
+  @page aih {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  :host {
+    background: #fff;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .aih-workspace {
+    width: 100%;
+    padding: 0;
+  }
+
+  .print-only {
+    display: flex;
+  }
+
+  .aih-print-sheet {
+    box-sizing: border-box;
+    min-height: 277mm;
+    flex-direction: column;
+    color: #111827;
+    page: aih;
+    font-family: Arial, Helvetica, sans-serif;
+    text-transform: uppercase;
+  }
+
+  .print-header {
+    display: grid;
+    grid-template-columns: 38mm 1fr 37mm;
+    align-items: center;
+    gap: 3mm;
+    padding-bottom: 2mm;
+    border-bottom: 0.8pt solid #193b5c;
+    text-align: center;
+  }
+
+  .print-header img {
+    width: 36mm;
+  }
+
+  .print-header span,
+  .print-status span {
+    font-size: 6pt;
+  }
+
+  .print-header h1 {
+    margin: 1mm 0;
+    font-size: 12pt;
+  }
+
+  .print-header small,
+  .print-status strong {
+    font-size: 5.5pt;
+  }
+
+  .print-status {
+    display: flex;
+    min-height: 14mm;
+    flex-direction: column;
+    justify-content: center;
+    border: 0.6pt solid #667085;
+  }
+
+  .print-identification {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-left: 0.6pt solid #667085;
+  }
+
+  .print-identification > div {
+    display: flex;
+    min-height: 7mm;
+    flex-direction: column;
+    padding: 0.7mm 1mm;
+    border-right: 0.6pt solid #667085;
+    border-bottom: 0.6pt solid #667085;
+  }
+
+  .print-identification .wide {
+    grid-column: span 2;
+  }
+
+  .print-identification span {
+    font-size: 4.5pt;
+  }
+
+  .print-identification strong {
+    margin-top: 0.5mm;
+    font-size: 6pt;
+  }
+
+  .print-report {
+    margin-top: 2mm;
+    border: 0.6pt solid #667085;
+  }
+
+  .print-report pre {
+    margin: 0;
+    padding: 2mm;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 6.5pt;
+    line-height: 1.45;
+    white-space: pre-wrap;
+  }
+
+  .print-audit {
+    margin-top: 2mm;
+    border: 0.6pt solid #667085;
+    break-inside: avoid;
+  }
+
+  .print-audit h2 {
+    margin: 0;
+    padding: 0.8mm 1mm;
+    border-bottom: 0.6pt solid #667085;
+    background: #e8eef5;
+    font-size: 6pt;
+  }
+
+  .print-audit ul {
+    padding: 1mm 2mm 1mm 5mm;
+    font-size: 5.3pt;
+  }
+
+  .print-footer {
+    display: grid;
+    grid-template-columns: 1fr 55mm 55mm;
+    align-items: end;
+    gap: 8mm;
+    margin-top: auto;
+    padding-top: 7mm;
+    font-size: 5pt;
+  }
+
+  .signature {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .signature i {
+    margin-bottom: 1mm;
+    border-top: 0.6pt solid #111827;
+  }
+
+  .signature strong {
+    font-size: 6pt;
+  }
+
+  .signature small {
+    font-size: 5pt;
+  }
+}

@@ -391,12 +391,7 @@
                           >
                             Transferir paciente
                           </button>
-                          <button
-                            type="button"
-                            class="bed-action-button bed-action-button--placeholder"
-                            disabled
-                            title="Funcionalidade em definição"
-                          >
+                          <button type="button" class="bed-action-button" (click)="openAih(bed)">
                             AIH
                           </button>
                         </div>
@@ -2260,6 +2255,25 @@
         [patient]="patient"
         [professionalName]="professionalName()"
         (back)="backToRooms()"
+        (moduleChange)="switchClinicalModule($event)"
+      />
+    }
+  }
+}
+
+@if (screen() === 'aih' && activeHospital(); as hospital) {
+  @if (selectedBed(); as bed) {
+    @if (bed.patient; as patient) {
+      <app-aih-workspace
+        [hospitalName]="hospital.name"
+        [unitName]="selectedRoom()?.unit || 'UNIDADE DE INTERNAÇÃO'"
+        [roomName]="selectedRoom()?.name || 'QUARTO'"
+        [bedCode]="bed.code"
+        [admissionId]="patient.admissionId || ''"
+        [patient]="patient"
+        [professionalName]="professionalName()"
+        (back)="backToRooms()"
+        (moduleChange)="switchClinicalModule($event)"
       />
     }
   }

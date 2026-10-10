@@ -19,6 +19,11 @@
       <span>DOCUMENTO CLÍNICO AUDITÁVEL</span>
     </div>
 
+    <app-clinical-documentation-tabs
+      activeTab="PROCEDURE"
+      (tabChange)="moduleChange.emit($event)"
+    />
+
     <section class="patient-summary no-print">
       <div>
         <span>PACIENTE</span><strong>{{ patient.name }}</strong>
