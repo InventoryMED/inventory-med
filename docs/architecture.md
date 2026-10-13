@@ -1,8 +1,8 @@
 # Arquitetura oficial do Inventory MED
 
-**Versão:** 1.2
+**Versão:** 1.4
 
-**Data da decisão:** 02/10/2026 — atualização funcional em 09/10/2026
+**Data da decisão:** 02/10/2026 — atualização funcional em 13/10/2026
 
 **Status:** arquitetura oficial a ser seguida
 
@@ -19,10 +19,12 @@ por:
 - autenticação de profissionais;
 - seleção da unidade hospitalar autorizada;
 - gerenciamento de quartos e leitos;
+- admissão provisória e fila de pacientes que ainda aguardam leito físico;
 - admissão, alta e transferência de pacientes;
 - prescrições médicas e impressão;
 - evoluções médicas e impressão;
 - procedimentos beira-leito e AIH digital com impressão;
+- solicitações estruturadas de exames laboratoriais, de imagem e ECG com impressão;
 - auditoria das operações sensíveis.
 
 O sistema não será dividido em microserviços. A primeira versão será um monólito
@@ -171,10 +173,11 @@ SQL SERVER EXPRESS
     +-- leitos
     +-- pacientes
     +-- admissões
+    +-- admissões provisórias sem leito físico
     +-- transferências e altas
     +-- prescrições e itens
     +-- evoluções
-    +-- procedimentos e AIHs
+    +-- procedimentos, AIHs e solicitações de exames
     +-- auditoria clínica
 ```
 
@@ -193,6 +196,44 @@ global de pacientes e não haverá chave estrangeira entre bancos hospitalares.
 8. Cada banco hospitalar terá um usuário SQL próprio, com permissão apenas naquele
    banco.
 9. Nenhuma consulta clínica poderá juntar bancos de hospitais diferentes.
+
+### Admissão provisória e alocação posterior
+
+Uma admissão ativa pode começar sem leito físico, mas deve estar vinculada a uma
+unidade assistencial ativa do mesmo banco hospitalar. Nesse estado,
+`admission.current_bed_id` permanece nulo e `admission.provisional_care_unit_id`
+identifica a unidade responsável.
+
+- o hospital é sempre obtido da sessão autenticada;
+- a API registra data e hora da admissão provisória no servidor;
+- documentos clínicos referenciam a admissão, não o leito;
+- alocar um leito altera somente a localização da mesma admissão e não copia nem move
+  prescrições, evoluções, procedimentos ou AIHs;
+- a reserva do leito e a atualização da admissão ocorrem na mesma transação;
+- uma admissão ativa deve possuir um leito físico ou uma unidade provisória;
+- admissão provisória, alocação e encerramento são eventos auditáveis;
+- o encerramento antes da alocação usa o motivo `CANCELAMENTO` e mantém o histórico.
+
+### Solicitações de exames diagnósticos
+
+Solicitações de exames são documentos clínicos vinculados à internação e armazenados
+somente no banco do hospital selecionado. O navegador não escolhe hospital, paciente ou
+banco livremente; a API deriva o hospital da sessão e valida a internação no respectivo
+banco hospitalar.
+
+- laboratório, urina, tomografia, raio-X, ultrassonografia e ECG usam um catálogo
+  controlado pelo backend;
+- exames de maior custo e exames de imagem exigem justificativa clínica explícita;
+- tomografia com contraste exige o registro do valor de creatinina prévia;
+- perfis de raio-X definem incidências permitidas e incidências inicialmente sugeridas;
+- solicitação repetida para o mesmo paciente em menos de 12 horas é sinalizada como
+  reavaliação e permanece visível na auditoria;
+- EAS é associado à urocultura no documento normalizado pelo backend;
+- códigos TUSS/SIGTAP e insumos são referências para conferência na competência e no
+  contrato vigentes; o módulo não realiza cobrança automática;
+- justificativa clínica nunca é inventada ou completada silenciosamente pelo sistema;
+- o documento finalizado é imutável e segue a política de retificação dos demais
+  documentos clínicos.
 
 O SQL Server Express limita cada banco a 10 GB. O uso será monitorado; uma mudança de
 edição ou banco será avaliada antes que qualquer unidade se aproxime desse limite.
@@ -269,7 +310,9 @@ Cada módulo pode conter:
 - erros possuem um formato JSON único;
 - datas são armazenadas com tipo apropriado, nunca como texto quando forem datas reais;
 - toda operação clínica valida a unidade selecionada na sessão;
-- prescrições, evoluções, procedimentos e AIHs criados não são sobrescritos
+- admissões sem leito só aceitam uma unidade assistencial ativa do banco hospitalar
+  selecionado na sessão;
+- prescrições, evoluções, procedimentos, AIHs e solicitações de exames não são sobrescritos
   silenciosamente: mudanças relevantes geram novo documento, versão ou evento de
   auditoria;
 - Flyway é o único meio normal de alterar a estrutura dos bancos;
@@ -296,7 +339,8 @@ não equivale a autoria médica.
 
 ### Invariante dos documentos clínicos
 
-Documentos clínicos, inclusive prescrições, evoluções, procedimentos e AIHs, seguem um
+Documentos clínicos, inclusive prescrições, evoluções, procedimentos, AIHs e solicitações
+de exames, seguem um
 modelo de histórico somente acrescentável:
 
 ```text
@@ -427,10 +471,12 @@ src/app
     +-- administration
     +-- beds
     +-- admissions
+    +-- provisional-admissions
     +-- prescriptions
     +-- evolutions
     +-- procedures
     +-- aih
+    +-- diagnostic-exams
 ```
 
 Regras:

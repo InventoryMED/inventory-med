@@ -7,10 +7,11 @@ export type AppScreen =
   | 'prescription'
   | 'evolution'
   | 'procedure'
-  | 'aih';
+  | 'aih'
+  | 'exams';
 
 export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE';
-export type DischargeReason = 'ÓBITO' | 'TRANSFERÊNCIA' | 'ALTA MELHORA';
+export type DischargeReason = 'ÓBITO' | 'TRANSFERÊNCIA' | 'ALTA MELHORA' | 'CANCELAMENTO';
 export type PrescriptionScheduling = 'ACM' | 'SN' | 'FIXO';
 export type MedicationSectionId =
   | 'ANALGESIA'
@@ -60,6 +61,8 @@ export interface Patient {
   admissionId?: string;
   name: string;
   birthDate?: string;
+  cns?: string;
+  motherName?: string;
   sex?: string;
   weightKg?: number;
   diagnosis?: string;
@@ -67,6 +70,15 @@ export interface Patient {
   allergies?: string;
   admissionAt: string;
   prescriptions: Prescription[];
+}
+
+export interface ProvisionalAdmission {
+  id: string;
+  admittedAt: string;
+  careUnitId: string;
+  careUnitName: string;
+  origin?: string;
+  patient: Patient;
 }
 
 export interface PrescriptionDraftRow {
@@ -104,6 +116,7 @@ export interface Room {
   name: string;
   floor: string;
   unit: string;
+  careUnitId?: string;
   beds: Bed[];
 }
 
@@ -113,4 +126,6 @@ export interface Hospital {
   shortName: string;
   city: string;
   rooms: Room[];
+  careUnits?: Array<{ id: string; name: string }>;
+  provisionalAdmissions?: ProvisionalAdmission[];
 }

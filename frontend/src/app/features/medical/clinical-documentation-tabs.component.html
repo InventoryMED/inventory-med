@@ -11,12 +11,13 @@
   </button>
   <button
     type="button"
-    disabled
-    title="O CATÁLOGO CLÍNICO E DE FATURAMENTO DO POCUS AINDA NÃO FOI FORNECIDO"
+    [class.active]="activeTab === 'EXAM'"
+    [attr.aria-current]="activeTab === 'EXAM' ? 'page' : null"
+    (click)="tabChange.emit('EXAM')"
   >
     <span>02</span>
-    <strong>EXAMES POINT-OF-CARE</strong>
-    <small>POCUS / LABORATÓRIO BEIRA-LEITO</small>
+    <strong>EXAMES DIAGNÓSTICOS</strong>
+    <small>LABORATÓRIO / IMAGEM / ECG</small>
   </button>
   <button
     type="button"

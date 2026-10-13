@@ -1,0 +1,146 @@
+<aside class="waiting-panel" aria-labelledby="waiting-title">
+  <header class="waiting-header">
+    <div>
+      <p>ADMISSÕES PROVISÓRIAS</p>
+      <div class="waiting-title-row">
+        <h2 id="waiting-title">AGUARDANDO LEITO</h2>
+        <span class="waiting-count" aria-label="Quantidade de pacientes aguardando leito">
+          {{ admissions().length }}
+        </span>
+      </div>
+    </div>
+    <button
+      type="button"
+      class="quick-admit-button"
+      (click)="admit.emit()"
+      aria-label="Admitir paciente sem leito"
+      title="Admitir paciente sem leito"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+    </button>
+  </header>
+
+  @if (admissions().length) {
+    <label class="waiting-search">
+      <span class="sr-only">BUSCAR PACIENTE AGUARDANDO LEITO</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m16 16 4 4" />
+      </svg>
+      <input
+        #waitingSearch
+        type="search"
+        placeholder="BUSCAR PACIENTE"
+        [value]="searchTerm()"
+        (input)="searchTerm.set(waitingSearch.value)"
+      />
+    </label>
+
+    <div class="waiting-list" role="list">
+      @for (admission of visibleAdmissions(); track admission.id) {
+        <article
+          class="waiting-entry"
+          [class.waiting-entry--selected]="selectedAdmissionId() === admission.id"
+          role="listitem"
+        >
+          <button
+            type="button"
+            class="patient-summary"
+            (click)="toggleAdmission(admission.id)"
+            [attr.aria-expanded]="selectedAdmissionId() === admission.id"
+          >
+            <span class="patient-monogram" aria-hidden="true">
+              {{ patientInitials(admission.patient.name) }}
+            </span>
+            <span class="patient-summary-copy">
+              <strong>{{ admission.patient.name }}</strong>
+              <small>{{ admission.careUnitName }}</small>
+              <small>{{ admission.admittedAt | date: 'dd/MM • HH:mm' }}</small>
+            </span>
+            <svg
+              class="summary-chevron"
+              [class.summary-chevron--open]="selectedAdmissionId() === admission.id"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="m9 6 6 6-6 6" />
+            </svg>
+          </button>
+
+          @if (selectedAdmissionId() === admission.id) {
+            <section class="patient-detail" aria-label="Ações do paciente aguardando leito">
+              <div class="patient-detail-status">
+                <span></span>
+                SEM LEITO ALOCADO
+              </div>
+              @if (admission.origin) {
+                <p><strong>ORIGEM</strong>{{ admission.origin }}</p>
+              }
+
+              <div class="patient-quick-actions">
+                <button type="button" (click)="edit.emit(admission)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" />
+                  </svg>
+                  EDITAR
+                </button>
+                <button type="button" class="allocate-action" (click)="allocate.emit(admission)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M3 18v-7M21 18v-5a2 2 0 0 0-2-2H9v7M3 15h18M6 11V8h4a2 2 0 0 1 2 2v1"
+                    />
+                  </svg>
+                  ALOCAR
+                </button>
+              </div>
+
+              @if (medicalActionsEnabled()) {
+                <div class="clinical-actions" aria-label="Documentos clínicos">
+                  <button
+                    type="button"
+                    class="clinical-action--primary"
+                    (click)="prescription.emit(admission)"
+                  >
+                    PRESCRIÇÃO
+                  </button>
+                  <button type="button" (click)="evolution.emit(admission)">EVOLUÇÃO</button>
+                  <button type="button" (click)="procedures.emit(admission)">PROCEDIMENTOS</button>
+                  <button type="button" (click)="exams.emit(admission)">EXAMES</button>
+                  <button type="button" (click)="aih.emit(admission)">AIH</button>
+                </div>
+              }
+
+              <button type="button" class="cancel-action" (click)="discharge.emit(admission)">
+                DAR ALTA / CANCELAR
+              </button>
+            </section>
+          }
+        </article>
+      } @empty {
+        <div class="filtered-empty-state">
+          <strong>NENHUM RESULTADO</strong>
+          <span>ALTERE O TERMO DA BUSCA.</span>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="waiting-empty-state">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 18v-7M21 18v-5a2 2 0 0 0-2-2H9v7M3 15h18M6 11V8h4a2 2 0 0 1 2 2v1" />
+      </svg>
+      <strong>NENHUM PACIENTE NA FILA</strong>
+      <span>AS ADMISSÕES SEM LEITO APARECERÃO AQUI.</span>
+    </div>
+  }
+
+  <footer class="waiting-footer">
+    <button type="button" (click)="admit.emit()">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      ADMITIR SEM LEITO
+    </button>
+  </footer>
+</aside>

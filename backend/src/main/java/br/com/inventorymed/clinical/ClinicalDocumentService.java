@@ -38,6 +38,7 @@ public class ClinicalDocumentService {
     private final MedicationTherapyService medicationTherapyService;
     private final BedsideProcedureService bedsideProcedureService;
     private final AihService aihService;
+    private final DiagnosticExamService diagnosticExamService;
     private final ObjectMapper objectMapper;
 
     public ClinicalDocumentService(
@@ -55,6 +56,7 @@ public class ClinicalDocumentService {
         MedicationTherapyService medicationTherapyService,
         BedsideProcedureService bedsideProcedureService,
         AihService aihService,
+        DiagnosticExamService diagnosticExamService,
         ObjectMapper objectMapper
     ) {
         this.tenantJdbc = tenantJdbc;
@@ -71,6 +73,7 @@ public class ClinicalDocumentService {
         this.medicationTherapyService = medicationTherapyService;
         this.bedsideProcedureService = bedsideProcedureService;
         this.aihService = aihService;
+        this.diagnosticExamService = diagnosticExamService;
         this.objectMapper = objectMapper;
     }
 
@@ -113,7 +116,12 @@ public class ClinicalDocumentService {
             request.templateVersionId(),
             request.kind()
         );
-        Map<String, Object> normalizedValues = validateValues(template, request.values());
+        Map<String, Object> normalizedValues = validateValues(
+            hospitalId,
+            admissionId,
+            template,
+            request.values()
+        );
         UUID documentId = UUID.randomUUID();
         tenantJdbc.write(hospitalId, jdbc -> {
             Integer activeAdmission = jdbc.queryForObject(
@@ -165,7 +173,13 @@ public class ClinicalDocumentService {
             request.templateVersionId(),
             request.kind()
         );
-        Map<String, Object> normalizedValues = validateValues(template, request.values());
+        UUID admissionId = requiredDocument(hospitalId, documentId).admissionId();
+        Map<String, Object> normalizedValues = validateValues(
+            hospitalId,
+            admissionId,
+            template,
+            request.values()
+        );
         tenantJdbc.write(hospitalId, jdbc -> {
             int updated = jdbc.update(
                 "UPDATE dbo.clinical_document SET content_json = ?, template_snapshot_json = ?, " +
@@ -216,6 +230,8 @@ public class ClinicalDocumentService {
     }
 
     private Map<String, Object> validateValues(
+        UUID hospitalId,
+        UUID admissionId,
         FormTemplateDefinition template,
         Map<String, Object> values
     ) {
@@ -239,7 +255,7 @@ public class ClinicalDocumentService {
                 throw new BusinessValidationException("Preencha o campo obrigatório: " + field.label());
             }
             if (!empty(value)) {
-                normalized.put(key, normalizedValue(field, value));
+                normalized.put(key, normalizedValue(hospitalId, admissionId, field, value));
             }
         });
         requireContinuousInfusionRates(normalized, "SEDACAO.MEDICAMENTOS", false);
@@ -247,7 +263,12 @@ public class ClinicalDocumentService {
         return normalized;
     }
 
-    private Object normalizedValue(FormTemplateDefinition.Field field, Object value) {
+    private Object normalizedValue(
+        UUID hospitalId,
+        UUID admissionId,
+        FormTemplateDefinition.Field field,
+        Object value
+    ) {
         if (field.type() == FormFieldType.DIET_PLAN) {
             return dietPrescriptionService.normalizeForClinicalDocument(value);
         }
@@ -280,6 +301,13 @@ public class ClinicalDocumentService {
         }
         if (field.type() == FormFieldType.AIH_PLAN) {
             return aihService.normalizeForClinicalDocument(value);
+        }
+        if (field.type() == FormFieldType.DIAGNOSTIC_EXAM_PLAN) {
+            return diagnosticExamService.normalizeForClinicalDocument(
+                hospitalId,
+                admissionId,
+                value
+            );
         }
         validateType(field, value);
         return value;

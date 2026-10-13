@@ -258,165 +258,199 @@
         </article>
       </section>
 
-      <section class="rooms-section">
-        <div class="section-toolbar">
-          <div>
-            <h2>Quartos</h2>
-            <p>Clique em um quarto para visualizar seus leitos.</p>
+      <div class="census-layout">
+        <app-provisional-admissions
+          [admissions]="visibleProvisionalAdmissions()"
+          [medicalActionsEnabled]="medicalActionsEnabled()"
+          (admit)="openProvisionalAdmission()"
+          (edit)="openProvisionalPatientEditor($event)"
+          (prescription)="openProvisionalPrescription($event)"
+          (evolution)="openProvisionalEvolution($event)"
+          (procedures)="openProvisionalProcedures($event)"
+          (exams)="openProvisionalExams($event)"
+          (aih)="openProvisionalAih($event)"
+          (allocate)="openProvisionalAllocation($event)"
+          (discharge)="openProvisionalDischarge($event)"
+        />
+
+        <section class="rooms-section">
+          <div class="section-toolbar">
+            <div>
+              <h2>Quartos</h2>
+              <p>Clique em um quarto para visualizar seus leitos.</p>
+            </div>
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m16 16 4 4" />
+              </svg>
+              <input
+                type="search"
+                placeholder="Buscar quarto ou paciente"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="searchTerm.set($event)"
+              />
+            </div>
           </div>
-          <div class="search-box">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m16 16 4 4" />
-            </svg>
-            <input
-              type="search"
-              placeholder="Buscar quarto ou paciente"
-              [ngModel]="searchTerm()"
-              (ngModelChange)="searchTerm.set($event)"
-            />
+          <div class="legend" aria-label="Legenda dos leitos">
+            <span><i class="status-dot status-dot--available"></i> Vazio</span
+            ><span><i class="status-dot status-dot--occupied"></i> Ocupado</span
+            ><span><i class="status-dot status-dot--cleaning"></i> Higienização</span
+            ><span><i class="status-dot status-dot--maintenance"></i> Manutenção</span>
           </div>
-        </div>
-        <div class="legend" aria-label="Legenda dos leitos">
-          <span><i class="status-dot status-dot--available"></i> Vazio</span
-          ><span><i class="status-dot status-dot--occupied"></i> Ocupado</span
-          ><span><i class="status-dot status-dot--cleaning"></i> Higienização</span
-          ><span><i class="status-dot status-dot--maintenance"></i> Manutenção</span>
-        </div>
-        <div class="rooms-list">
-          @for (room of visibleRooms(); track room.id) {
-            <article class="room-card" [class.room-card--open]="isRoomExpanded(room.id)">
-              <button
-                type="button"
-                class="room-summary"
-                (click)="toggleRoom(room)"
-                [attr.aria-expanded]="isRoomExpanded(room.id)"
-              >
-                <span class="room-icon" aria-hidden="true"
-                  ><svg viewBox="0 0 24 24">
-                    <path
-                      d="M3 20h18M5 20V4h14v16M9 8h2M9 12h2M9 16h2M14 8h2M14 12h2M14 16h2"
-                    /></svg
-                ></span>
-                <span class="room-title"
-                  ><strong>{{ room.name }}</strong
-                  ><small>{{ room.unit }} • {{ room.floor }}</small></span
+          <div class="rooms-list">
+            @for (room of visibleRooms(); track room.id) {
+              <article class="room-card" [class.room-card--open]="isRoomExpanded(room.id)">
+                <button
+                  type="button"
+                  class="room-summary"
+                  (click)="toggleRoom(room)"
+                  [attr.aria-expanded]="isRoomExpanded(room.id)"
                 >
-                <span class="room-counts"
-                  ><span>{{ room.beds.length }} leitos</span
-                  ><span class="available-count">{{ availableBedsCount(room) }} vazios</span></span
-                >
-                <span
-                  class="chevron"
-                  [class.chevron--open]="isRoomExpanded(room.id)"
-                  aria-hidden="true"
-                  >⌄</span
-                >
-              </button>
-              @if (isRoomExpanded(room.id)) {
-                <div class="bed-grid">
-                  @for (bed of room.beds; track bed.id) {
-                    <article
-                      class="bed-card"
-                      [class.bed-card--available]="bed.status === 'AVAILABLE'"
-                      [class.bed-card--occupied]="bed.status === 'OCCUPIED'"
-                      [class.bed-card--maintenance]="bed.status === 'MAINTENANCE'"
-                      [class.bed-card--disabled]="
-                        bed.status === 'CLEANING' || bed.status === 'MAINTENANCE'
-                      "
-                    >
-                      <span class="bed-card-top"
-                        ><span class="bed-symbol" aria-hidden="true"
-                          ><svg viewBox="0 0 24 24">
-                            <path
-                              d="M3 18v-7M21 18v-5a2 2 0 00-2-2H9v7M3 15h18M6 11V8h4a2 2 0 012 2v1"
-                            /></svg></span
-                        ><span class="status-pill status-pill--{{ bed.status.toLowerCase() }}">{{
-                          statusLabel(bed.status)
-                        }}</span></span
+                  <span class="room-icon" aria-hidden="true"
+                    ><svg viewBox="0 0 24 24">
+                      <path
+                        d="M3 20h18M5 20V4h14v16M9 8h2M9 12h2M9 16h2M14 8h2M14 12h2M14 16h2"
+                      /></svg
+                  ></span>
+                  <span class="room-title"
+                    ><strong>{{ room.name }}</strong
+                    ><small>{{ room.unit }} • {{ room.floor }}</small></span
+                  >
+                  <span class="room-counts"
+                    ><span>{{ room.beds.length }} leitos</span
+                    ><span class="available-count"
+                      >{{ availableBedsCount(room) }} vazios</span
+                    ></span
+                  >
+                  <span
+                    class="chevron"
+                    [class.chevron--open]="isRoomExpanded(room.id)"
+                    aria-hidden="true"
+                    >⌄</span
+                  >
+                </button>
+                @if (isRoomExpanded(room.id)) {
+                  <div class="bed-grid">
+                    @for (bed of room.beds; track bed.id) {
+                      <article
+                        class="bed-card"
+                        [class.bed-card--available]="bed.status === 'AVAILABLE'"
+                        [class.bed-card--occupied]="bed.status === 'OCCUPIED'"
+                        [class.bed-card--maintenance]="bed.status === 'MAINTENANCE'"
+                        [class.bed-card--disabled]="
+                          bed.status === 'CLEANING' || bed.status === 'MAINTENANCE'
+                        "
                       >
-                      <strong>{{ bed.code }}</strong>
-                      @if (bed.patient) {
-                        <div class="patient-name-row">
-                          <span class="patient-name">{{ bed.patient.name }}</span>
-                          <button
-                            type="button"
-                            class="patient-edit-button"
-                            (click)="openPatientEditor(bed)"
-                            aria-label="Editar cadastro do paciente"
-                            title="Editar cadastro do paciente"
-                          >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" />
-                            </svg>
-                          </button>
-                        </div>
-                        <small
-                          >Internado em
-                          {{ bed.patient.admissionAt | date: 'dd/MM às HH:mm' }}</small
+                        <span class="bed-card-top"
+                          ><span class="bed-symbol" aria-hidden="true"
+                            ><svg viewBox="0 0 24 24">
+                              <path
+                                d="M3 18v-7M21 18v-5a2 2 0 00-2-2H9v7M3 15h18M6 11V8h4a2 2 0 012 2v1"
+                              /></svg></span
+                          ><span class="status-pill status-pill--{{ bed.status.toLowerCase() }}">{{
+                            statusLabel(bed.status)
+                          }}</span></span
                         >
-                        <div class="bed-card-actions">
+                        <strong>{{ bed.code }}</strong>
+                        @if (bed.patient) {
+                          <div class="patient-name-row">
+                            <span class="patient-name">{{ bed.patient.name }}</span>
+                            <button
+                              type="button"
+                              class="patient-edit-button"
+                              (click)="openPatientEditor(bed)"
+                              aria-label="Editar cadastro do paciente"
+                              title="Editar cadastro do paciente"
+                            >
+                              <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" />
+                              </svg>
+                            </button>
+                          </div>
+                          <small
+                            >Internado em
+                            {{ bed.patient.admissionAt | date: 'dd/MM às HH:mm' }}</small
+                          >
+                          <div class="bed-card-actions">
+                            <button
+                              type="button"
+                              class="bed-action-button bed-action-button--primary"
+                              (click)="openPrescription(bed)"
+                            >
+                              Abrir prescrição
+                            </button>
+                            <details class="bed-more-actions">
+                              <summary>MAIS AÇÕES</summary>
+                              <div class="bed-more-actions-menu">
+                                <button
+                                  type="button"
+                                  class="bed-action-button"
+                                  (click)="startEvolution(bed)"
+                                >
+                                  Iniciar evolução
+                                </button>
+                                <button
+                                  type="button"
+                                  class="bed-action-button"
+                                  (click)="openProcedures(bed)"
+                                >
+                                  Procedimentos
+                                </button>
+                                <button
+                                  type="button"
+                                  class="bed-action-button"
+                                  (click)="openExams(bed)"
+                                >
+                                  Exames
+                                </button>
+                                <button
+                                  type="button"
+                                  class="bed-action-button"
+                                  (click)="openTransfer(bed)"
+                                >
+                                  Transferir paciente
+                                </button>
+                                <button
+                                  type="button"
+                                  class="bed-action-button"
+                                  (click)="openAih(bed)"
+                                >
+                                  AIH
+                                </button>
+                                <button
+                                  type="button"
+                                  class="bed-action-button bed-action-button--danger"
+                                  (click)="openDischarge(bed)"
+                                >
+                                  Dar alta
+                                </button>
+                              </div>
+                            </details>
+                          </div>
+                        } @else if (bed.status === 'AVAILABLE') {
+                          <span class="empty-label">Leito pronto para receber paciente</span>
                           <button
                             type="button"
-                            class="bed-action-button bed-action-button--primary"
-                            (click)="openPrescription(bed)"
+                            class="bed-action bed-action--register"
+                            (click)="openAdmission(bed)"
                           >
-                            Abrir prescrição
+                            Admitir paciente <b aria-hidden="true">+</b>
                           </button>
-                          <button
-                            type="button"
-                            class="bed-action-button bed-action-button--danger"
-                            (click)="openDischarge(bed)"
-                          >
-                            Dar alta
-                          </button>
-                          <button
-                            type="button"
-                            class="bed-action-button"
-                            (click)="startEvolution(bed)"
-                          >
-                            Iniciar evolução
-                          </button>
-                          <button
-                            type="button"
-                            class="bed-action-button"
-                            (click)="openProcedures(bed)"
-                          >
-                            Procedimentos
-                          </button>
-                          <button
-                            type="button"
-                            class="bed-action-button"
-                            (click)="openTransfer(bed)"
-                          >
-                            Transferir paciente
-                          </button>
-                          <button type="button" class="bed-action-button" (click)="openAih(bed)">
-                            AIH
-                          </button>
-                        </div>
-                      } @else if (bed.status === 'AVAILABLE') {
-                        <span class="empty-label">Leito pronto para receber paciente</span>
-                        <button
-                          type="button"
-                          class="bed-action bed-action--register"
-                          (click)="openAdmission(bed)"
-                        >
-                          Admitir paciente <b aria-hidden="true">+</b>
-                        </button>
-                      } @else {
-                        <span class="empty-label">Temporariamente indisponível</span>
-                      }
-                    </article>
-                  }
-                </div>
-              }
-            </article>
-          } @empty {
-            <div class="empty-state">Nenhum quarto ou paciente encontrado.</div>
-          }
-        </div>
-      </section>
+                        } @else {
+                          <span class="empty-label">Temporariamente indisponível</span>
+                        }
+                      </article>
+                    }
+                  </div>
+                }
+              </article>
+            } @empty {
+              <div class="empty-state">Nenhum quarto ou paciente encontrado.</div>
+            }
+          </div>
+        </section>
+      </div>
     </main>
   </div>
 }
@@ -463,7 +497,7 @@
                 <p class="eyebrow">Dados do paciente</p>
                 <h2>Revise ou altere as informações</h2>
               </div>
-              <span>{{ selectedRoom()?.name }} • {{ bed.code }}</span>
+              <span>{{ selectedRoomName() }} • {{ bed.code }}</span>
             </header>
             <div class="patient-header-grid patient-editor-grid">
               <label class="patient-edit-field patient-edit-field--name">
@@ -503,11 +537,11 @@
                 </div>
               </label>
               <div class="patient-meta">
-                <span class="meta-label">Unidade</span><strong>{{ selectedRoom()?.unit }}</strong>
+                <span class="meta-label">Unidade</span><strong>{{ selectedUnitName() }}</strong>
               </div>
               <div class="patient-meta">
                 <span class="meta-label">Quarto / leito</span
-                ><strong>{{ selectedRoom()?.name }} • {{ bed.code }}</strong>
+                ><strong>{{ selectedRoomName() }} • {{ bed.code }}</strong>
               </div>
               <div class="patient-meta">
                 <span class="meta-label">Internação</span
@@ -625,7 +659,7 @@
             <section class="prescription-sheet">
               <header class="sheet-title">
                 <div>
-                  <p class="eyebrow">{{ selectedRoom()?.unit }}</p>
+                  <p class="eyebrow">{{ selectedUnitName() }}</p>
                   <h1>Prescrição médica</h1>
                 </div>
                 <div class="sheet-date">
@@ -851,7 +885,7 @@
                   <span>{{ hospital.name }}</span>
                   <h1>Prescrição médica</h1>
                   <small
-                    >{{ selectedRoom()?.unit }} • {{ selectedRoom()?.name }} • {{ bed.code }}</small
+                    >{{ selectedUnitName() }} • {{ selectedRoomName() }} • {{ bed.code }}</small
                   >
                 </div>
                 <img
@@ -903,7 +937,7 @@
                 </div>
                 <div class="print-unit">
                   <span>Unidade de internação</span
-                  ><strong>{{ selectedRoom()?.unit || hospital.name }}</strong>
+                  ><strong>{{ selectedUnitName() || hospital.name }}</strong>
                 </div>
                 <div class="print-diet">
                   <span>Dieta</span><strong>{{ prescriptionDiet || 'NÃO INFORMADO' }}</strong>
@@ -1126,7 +1160,7 @@
                   <p class="eyebrow">Cabeçalho da evolução</p>
                   <h2>Identificação do paciente</h2>
                 </div>
-                <span>{{ selectedRoom()?.name }} • {{ bed.code }}</span>
+                <span>{{ selectedRoomName() }} • {{ bed.code }}</span>
               </header>
               <div class="evolution-summary-grid">
                 <div class="evolution-summary-wide">
@@ -1168,7 +1202,7 @@
                   ><strong>{{ currentDate | date: 'dd/MM/yyyy' }}</strong>
                 </div>
                 <div>
-                  <span>Unidade</span><strong>{{ selectedRoom()?.unit }}</strong>
+                  <span>Unidade</span><strong>{{ selectedUnitName() }}</strong>
                 </div>
                 <div>
                   <span>Dieta</span><strong>{{ evolutionDiet || 'NÃO INFORMADO' }}</strong>
@@ -1865,9 +1899,7 @@
               <div class="print-sheet-heading">
                 <span>{{ hospital.name }}</span>
                 <h1>Evolução médica</h1>
-                <small
-                  >{{ selectedRoom()?.unit }} • {{ selectedRoom()?.name }} • {{ bed.code }}</small
-                >
+                <small>{{ selectedUnitName() }} • {{ selectedRoomName() }} • {{ bed.code }}</small>
               </div>
               <img
                 class="print-upa-logo"
@@ -1915,7 +1947,7 @@
               </div>
               <div class="print-unit">
                 <span>Unidade de internação</span
-                ><strong>{{ selectedRoom()?.unit || hospital.name }}</strong>
+                ><strong>{{ selectedUnitName() || hospital.name }}</strong>
               </div>
               <div class="print-diet">
                 <span>Dieta</span><strong>{{ evolutionDiet || 'NÃO INFORMADO' }}</strong>
@@ -2149,7 +2181,13 @@
         <div>
           <p class="eyebrow">{{ patientEditOpen() ? 'Cadastro do paciente' : 'Admissão' }}</p>
           <h2 id="admission-title">
-            {{ patientEditOpen() ? 'Editar paciente' : 'Admitir paciente no ' + bed.code }}
+            {{
+              patientEditOpen()
+                ? 'Editar paciente'
+                : isProvisionalSelection()
+                  ? 'Admitir paciente sem leito'
+                  : 'Admitir paciente no ' + bed.code
+            }}
           </h2>
         </div>
         <button
@@ -2197,6 +2235,40 @@
             <option>NÃO INFORMADO</option>
           </select></label
         >
+        <label class="form-field"
+          ><span>CNS • opcional</span
+          ><input
+            name="patientCns"
+            type="text"
+            inputmode="numeric"
+            maxlength="20"
+            [(ngModel)]="patientCns"
+            placeholder="Somente números"
+        /></label>
+        <label class="form-field form-field--full"
+          ><span>Nome da mãe • opcional</span
+          ><input
+            name="patientMotherName"
+            [(ngModel)]="patientMotherName"
+            placeholder="Nome completo da mãe"
+        /></label>
+        @if (isProvisionalSelection() && !patientEditOpen()) {
+          <label class="form-field"
+            ><span>Unidade assistencial *</span
+            ><select name="provisionalCareUnit" [(ngModel)]="provisionalCareUnitId">
+              @for (unit of careUnitOptions(); track unit.id) {
+                <option [value]="unit.id">{{ unit.name }}</option>
+              }
+            </select></label
+          >
+          <label class="form-field"
+            ><span>Origem • opcional</span
+            ><input
+              name="provisionalOrigin"
+              [(ngModel)]="provisionalOrigin"
+              placeholder="Ex.: pronto socorro / triagem"
+          /></label>
+        }
         <label class="form-field"
           ><span>Peso • opcional</span>
           <div class="input-with-suffix">
@@ -2248,8 +2320,8 @@
     @if (bed.patient; as patient) {
       <app-bedside-procedure-workspace
         [hospitalName]="hospital.name"
-        [unitName]="selectedRoom()?.unit || 'UNIDADE DE INTERNAÇÃO'"
-        [roomName]="selectedRoom()?.name || 'QUARTO'"
+        [unitName]="selectedUnitName() || 'UNIDADE DE INTERNAÇÃO'"
+        [roomName]="selectedRoomName()"
         [bedCode]="bed.code"
         [admissionId]="patient.admissionId || ''"
         [patient]="patient"
@@ -2266,8 +2338,26 @@
     @if (bed.patient; as patient) {
       <app-aih-workspace
         [hospitalName]="hospital.name"
-        [unitName]="selectedRoom()?.unit || 'UNIDADE DE INTERNAÇÃO'"
-        [roomName]="selectedRoom()?.name || 'QUARTO'"
+        [unitName]="selectedUnitName() || 'UNIDADE DE INTERNAÇÃO'"
+        [roomName]="selectedRoomName()"
+        [bedCode]="bed.code"
+        [admissionId]="patient.admissionId || ''"
+        [patient]="patient"
+        [professionalName]="professionalName()"
+        (back)="backToRooms()"
+        (moduleChange)="switchClinicalModule($event)"
+      />
+    }
+  }
+}
+
+@if (screen() === 'exams' && activeHospital(); as hospital) {
+  @if (selectedBed(); as bed) {
+    @if (bed.patient; as patient) {
+      <app-diagnostic-exam-workspace
+        [hospitalName]="hospital.name"
+        [unitName]="selectedUnitName() || 'UNIDADE DE INTERNAÇÃO'"
+        [roomName]="selectedRoomName()"
         [bedCode]="bed.code"
         [admissionId]="patient.admissionId || ''"
         [patient]="patient"
@@ -2299,10 +2389,11 @@
           </button>
         </header>
         <p class="modal-description">
-          Selecione o motivo da alta de <strong>{{ patient.name }}</strong> no {{ bed.code }}.
+          Selecione o motivo do encerramento de <strong>{{ patient.name }}</strong> no
+          {{ bed.code }}.
         </p>
         <div class="discharge-reasons" role="radiogroup" aria-label="Motivo da alta">
-          @for (reason of dischargeReasons; track reason.value) {
+          @for (reason of availableDischargeReasons(); track reason.value) {
             <label
               class="discharge-reason"
               [class.discharge-reason--selected]="dischargeReason === reason.value"
@@ -2343,16 +2434,20 @@
       >
         <header class="modal-header">
           <div>
-            <p class="eyebrow">Movimentação interna</p>
-            <h2 id="transfer-title">Transferir paciente</h2>
+            <p class="eyebrow">
+              {{ isProvisionalSelection() ? 'Admissão provisória' : 'Movimentação interna' }}
+            </p>
+            <h2 id="transfer-title">
+              {{ isProvisionalSelection() ? 'Alocar paciente em leito' : 'Transferir paciente' }}
+            </h2>
           </div>
           <button type="button" class="close-button" (click)="closeTransfer()" aria-label="Fechar">
             ×
           </button>
         </header>
         <p class="modal-description">
-          Selecione o novo leito de <strong>{{ patient.name }}</strong
-          >. As prescrições acompanharão o paciente.
+          Selecione o leito de destino de <strong>{{ patient.name }}</strong
+          >. Todo o histórico clínico permanecerá na mesma internação.
         </p>
         <label class="form-field transfer-destination">
           <span>Leito de destino</span>
@@ -2374,7 +2469,7 @@
             [disabled]="!availableTransferBeds().length"
             (click)="confirmTransfer()"
           >
-            Confirmar transferência
+            {{ isProvisionalSelection() ? 'Confirmar alocação' : 'Confirmar transferência' }}
           </button>
         </div>
       </section>

@@ -5,6 +5,8 @@ import {
   DischargeReason,
   Hospital,
   MedicationSectionDraft,
+  Prescription,
+  ProvisionalAdmission,
   PrescriptionDraftRow,
   Room,
   VitalSignDraftRow,
@@ -13,6 +15,8 @@ import {
 interface PatientFormData {
   name: string;
   birthDate?: string;
+  cns?: string;
+  motherName?: string;
   sex?: string;
   weightKg?: number;
   diagnosis?: string;
@@ -72,6 +76,128 @@ export class DemoStore {
         },
       };
     });
+  }
+
+  admitProvisionalPatient(
+    careUnitId: string,
+    careUnitName: string,
+    origin: string | undefined,
+    patient: PatientFormData,
+  ): ProvisionalAdmission | null {
+    const hospitalId = this.activeHospitalId();
+    if (!hospitalId) return null;
+
+    const admissionId = crypto.randomUUID();
+    const admission: ProvisionalAdmission = {
+      id: admissionId,
+      admittedAt: new Date().toISOString(),
+      careUnitId,
+      careUnitName,
+      origin,
+      patient: {
+        ...patient,
+        id: crypto.randomUUID(),
+        admissionId,
+        name: patient.name.toLocaleUpperCase('pt-BR'),
+        motherName: patient.motherName?.toLocaleUpperCase('pt-BR'),
+        diagnosis: patient.diagnosis?.toLocaleUpperCase('pt-BR'),
+        comorbidities: patient.comorbidities?.toLocaleUpperCase('pt-BR'),
+        allergies: patient.allergies?.toLocaleUpperCase('pt-BR'),
+        admissionAt: new Date().toISOString(),
+        prescriptions: [],
+      },
+    };
+    admission.patient.admissionAt = admission.admittedAt;
+    this.hospitalsState.update((hospitals) =>
+      hospitals.map((hospital) =>
+        hospital.id === hospitalId
+          ? {
+              ...hospital,
+              provisionalAdmissions: [...(hospital.provisionalAdmissions ?? []), admission],
+            }
+          : hospital,
+      ),
+    );
+    return admission;
+  }
+
+  findProvisionalAdmission(admissionId: string): ProvisionalAdmission | undefined {
+    return this.activeHospital()?.provisionalAdmissions?.find(
+      (admission) => admission.id === admissionId,
+    );
+  }
+
+  updateProvisionalPatient(admissionId: string, patient: PatientFormData): void {
+    this.updateProvisionalAdmission(admissionId, (admission) => ({
+      ...admission,
+      patient: {
+        ...admission.patient,
+        ...patient,
+        name: patient.name.toLocaleUpperCase('pt-BR'),
+        motherName: patient.motherName?.toLocaleUpperCase('pt-BR'),
+        diagnosis: patient.diagnosis?.toLocaleUpperCase('pt-BR'),
+        comorbidities: patient.comorbidities?.toLocaleUpperCase('pt-BR'),
+        allergies: patient.allergies?.toLocaleUpperCase('pt-BR'),
+      },
+    }));
+  }
+
+  allocateProvisionalPatient(admissionId: string, targetBedId: string): boolean {
+    const hospitalId = this.activeHospitalId();
+    if (!hospitalId) return false;
+    let allocated = false;
+    this.hospitalsState.update((hospitals) =>
+      hospitals.map((hospital) => {
+        if (hospital.id !== hospitalId) return hospital;
+        const admission = hospital.provisionalAdmissions?.find((item) => item.id === admissionId);
+        const targetBed = hospital.rooms
+          .flatMap((room) => room.beds)
+          .find((bed) => bed.id === targetBedId);
+        if (!admission || targetBed?.status !== 'AVAILABLE') return hospital;
+        allocated = true;
+        return {
+          ...hospital,
+          provisionalAdmissions: (hospital.provisionalAdmissions ?? []).filter(
+            (item) => item.id !== admissionId,
+          ),
+          rooms: hospital.rooms.map((room) => ({
+            ...room,
+            beds: room.beds.map((bed) =>
+              bed.id === targetBedId
+                ? {
+                    ...bed,
+                    status: 'OCCUPIED' as const,
+                    patient: admission.patient,
+                    lastDischarge: undefined,
+                  }
+                : bed,
+            ),
+          })),
+        };
+      }),
+    );
+    return allocated;
+  }
+
+  dischargeProvisionalPatient(admissionId: string): string | null {
+    const hospitalId = this.activeHospitalId();
+    if (!hospitalId) return null;
+    let patientName: string | null = null;
+    this.hospitalsState.update((hospitals) =>
+      hospitals.map((hospital) => {
+        if (hospital.id !== hospitalId) return hospital;
+        const admission = hospital.provisionalAdmissions?.find((item) => item.id === admissionId);
+        if (!admission) return hospital;
+        patientName = admission.patient.name;
+        return {
+          ...hospital,
+          provisionalAdmissions: (hospital.provisionalAdmissions ?? []).filter(
+            (item) => item.id !== admissionId,
+          ),
+        };
+      }),
+    );
+    return patientName;
   }
 
   dischargePatient(bedId: string, reason: DischargeReason): string | null {
@@ -168,52 +294,50 @@ export class DemoStore {
     hydrationRows: PrescriptionDraftRow[],
     medicationSections: MedicationSectionDraft[],
   ): void {
+    const prescription = this.createPrescription(
+      diet,
+      observations,
+      abnormalities,
+      vitalSigns,
+      hydrationRows,
+      medicationSections,
+    );
     this.updateBed(bedId, (bed) => {
       if (!bed.patient) return bed;
       return {
         ...bed,
         patient: {
           ...bed.patient,
-          prescriptions: [
-            {
-              id: crypto.randomUUID(),
-              createdAt: new Date().toISOString(),
-              diet,
-              notes: observations.join('\n'),
-              observations,
-              abnormalities,
-              vitalSigns: vitalSigns.map((row) => ({
-                id: crypto.randomUUID(),
-                description: row.description,
-                frequency: row.frequency,
-                guidance: row.guidance,
-              })),
-              hydrationItems: hydrationRows.map((row) => ({
-                id: crypto.randomUUID(),
-                medication: row.description,
-                dose: '',
-                route: row.route,
-                frequency: row.frequency,
-                scheduling: row.scheduling,
-              })),
-              medicationSections: medicationSections.map((section) => ({
-                id: section.id,
-                items: section.items.map((row) => ({
-                  id: crypto.randomUUID(),
-                  medication: row.description,
-                  dose: '',
-                  route: row.route,
-                  frequency: row.frequency,
-                  scheduling: row.scheduling,
-                })),
-              })),
-              items: [],
-            },
-            ...bed.patient.prescriptions,
-          ],
+          prescriptions: [prescription, ...bed.patient.prescriptions],
         },
       };
     });
+  }
+
+  addProvisionalPrescription(
+    admissionId: string,
+    diet: string,
+    observations: string[],
+    abnormalities: string[],
+    vitalSigns: VitalSignDraftRow[],
+    hydrationRows: PrescriptionDraftRow[],
+    medicationSections: MedicationSectionDraft[],
+  ): void {
+    const prescription = this.createPrescription(
+      diet,
+      observations,
+      abnormalities,
+      vitalSigns,
+      hydrationRows,
+      medicationSections,
+    );
+    this.updateProvisionalAdmission(admissionId, (admission) => ({
+      ...admission,
+      patient: {
+        ...admission.patient,
+        prescriptions: [prescription, ...admission.patient.prescriptions],
+      },
+    }));
   }
 
   resetDemo(): void {
@@ -239,6 +363,70 @@ export class DemoStore {
       );
       return next;
     });
+  }
+
+  private updateProvisionalAdmission(
+    admissionId: string,
+    updater: (admission: ProvisionalAdmission) => ProvisionalAdmission,
+  ): void {
+    const hospitalId = this.activeHospitalId();
+    if (!hospitalId) return;
+    this.hospitalsState.update((hospitals) =>
+      hospitals.map((hospital) =>
+        hospital.id !== hospitalId
+          ? hospital
+          : {
+              ...hospital,
+              provisionalAdmissions: (hospital.provisionalAdmissions ?? []).map((admission) =>
+                admission.id === admissionId ? updater(admission) : admission,
+              ),
+            },
+      ),
+    );
+  }
+
+  private createPrescription(
+    diet: string,
+    observations: string[],
+    abnormalities: string[],
+    vitalSigns: VitalSignDraftRow[],
+    hydrationRows: PrescriptionDraftRow[],
+    medicationSections: MedicationSectionDraft[],
+  ): Prescription {
+    return {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      diet,
+      notes: observations.join('\n'),
+      observations,
+      abnormalities,
+      vitalSigns: vitalSigns.map((row) => ({
+        id: crypto.randomUUID(),
+        description: row.description,
+        frequency: row.frequency,
+        guidance: row.guidance,
+      })),
+      hydrationItems: hydrationRows.map((row) => ({
+        id: crypto.randomUUID(),
+        medication: row.description,
+        dose: '',
+        route: row.route,
+        frequency: row.frequency,
+        scheduling: row.scheduling,
+      })),
+      medicationSections: medicationSections.map((section) => ({
+        id: section.id,
+        items: section.items.map((row) => ({
+          id: crypto.randomUUID(),
+          medication: row.description,
+          dose: '',
+          route: row.route,
+          frequency: row.frequency,
+          scheduling: row.scheduling,
+        })),
+      })),
+      items: [],
+    };
   }
 
   private loadHospitals(): Hospital[] {

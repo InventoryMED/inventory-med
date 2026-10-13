@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-export type ClinicalDocumentationTab = 'PROCEDURE' | 'AIH';
+export type ClinicalDocumentationTab = 'PROCEDURE' | 'EXAM' | 'AIH';
 
 @Component({
   selector: 'app-clinical-documentation-tabs',

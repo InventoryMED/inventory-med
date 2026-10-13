@@ -343,6 +343,45 @@ describe('App', () => {
     openSpy.mockRestore();
   });
 
+  it('should admit without a bed and preserve the admission when allocating a physical bed', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    app.realApiEnabled = false;
+    const store = app.store;
+    store.resetDemo();
+    store.selectHospital(INITIAL_HOSPITALS[0].id);
+    const targetBed = store.activeHospital().rooms[0].beds[0];
+
+    app.openProvisionalAdmission();
+    app.patientName = 'Maria das Dores';
+    app.patientBirthDate = '12/08/1975';
+    app.patientCns = '700000000000001';
+    app.patientMotherName = 'Joana das Dores';
+    app.provisionalOrigin = 'Pronto Socorro / Triagem';
+    await app.admitPatient();
+
+    const provisional = store.activeHospital().provisionalAdmissions[0];
+    expect(provisional).toMatchObject({
+      patient: {
+        name: 'MARIA DAS DORES',
+        cns: '700000000000001',
+        motherName: 'JOANA DAS DORES',
+      },
+      origin: 'Pronto Socorro / Triagem',
+    });
+    const admissionId = provisional.id;
+
+    app.openProvisionalAllocation(provisional);
+    app.transferTargetBedId = targetBed.id;
+    await app.confirmTransfer();
+
+    expect(store.activeHospital().provisionalAdmissions).toEqual([]);
+    expect(store.findBed(targetBed.id)).toMatchObject({
+      status: 'OCCUPIED',
+      patient: { admissionId, name: 'MARIA DAS DORES' },
+    });
+  });
+
   it('should edit the patient registration from an occupied bed', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance as any;
@@ -484,6 +523,25 @@ describe('App', () => {
     app.openAih(store.findBed(bed.id));
 
     expect(openSpy).toHaveBeenCalledWith(expect.stringContaining('flow=aih'), '_blank', 'noopener');
+  });
+
+  it('should open the diagnostic exams page from an occupied bed', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    const store = app.store;
+    store.resetDemo();
+    store.selectHospital(INITIAL_HOSPITALS[0].id);
+    const bed = store.activeHospital().rooms[0].beds[0];
+    store.admitPatient(bed.id, { name: 'Paciente exames' });
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    app.openExams(store.findBed(bed.id));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining('flow=exams'),
+      '_blank',
+      'noopener',
+    );
   });
 
   it('should convert evolution choices into the published template contract', () => {

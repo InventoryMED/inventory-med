@@ -35,6 +35,11 @@ public class MedicalWorkspaceController {
         HospitalRole.MEDICO,
         HospitalRole.RESPONSAVEL_CLINICO
     };
+    private static final HospitalRole[] PATIENT_MANAGEMENT_ROLES = {
+        HospitalRole.MEDICO,
+        HospitalRole.RESPONSAVEL_CLINICO,
+        HospitalRole.ENFERMAGEM
+    };
 
     private final HospitalSessionContext sessionContext;
     private final MedicalWorkspaceService workspaceService;
@@ -50,6 +55,7 @@ public class MedicalWorkspaceController {
     private final MedicationTherapyService medicationTherapyService;
     private final BedsideProcedureService bedsideProcedureService;
     private final AihService aihService;
+    private final DiagnosticExamService diagnosticExamService;
     private final PrescriptionStarterCatalogService prescriptionStarterCatalogService;
 
     public MedicalWorkspaceController(
@@ -67,6 +73,7 @@ public class MedicalWorkspaceController {
         MedicationTherapyService medicationTherapyService,
         BedsideProcedureService bedsideProcedureService,
         AihService aihService,
+        DiagnosticExamService diagnosticExamService,
         PrescriptionStarterCatalogService prescriptionStarterCatalogService
     ) {
         this.sessionContext = sessionContext;
@@ -83,6 +90,7 @@ public class MedicalWorkspaceController {
         this.medicationTherapyService = medicationTherapyService;
         this.bedsideProcedureService = bedsideProcedureService;
         this.aihService = aihService;
+        this.diagnosticExamService = diagnosticExamService;
         this.prescriptionStarterCatalogService = prescriptionStarterCatalogService;
     }
 
@@ -102,6 +110,34 @@ public class MedicalWorkspaceController {
     ) {
         HospitalSessionContext.Actor actor = sessionContext.requireActor(principal, session, CARE_ROLES);
         return workspaceService.admit(actor.hospitalId(), actor.userId(), body, request.getRemoteAddr());
+    }
+
+    @PostMapping("/provisional-admissions")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MedicalWorkspaceResponse.Admission admitWithoutBed(
+        @AuthenticationPrincipal InventoryUserPrincipal principal,
+        HttpSession session,
+        @Valid @RequestBody ClinicalRequests.AdmitPatientWithoutBed body,
+        HttpServletRequest request
+    ) {
+        HospitalSessionContext.Actor actor = sessionContext.requireActor(principal, session, CARE_ROLES);
+        return workspaceService.admitWithoutBed(
+            actor.hospitalId(), actor.userId(), body, request.getRemoteAddr()
+        );
+    }
+
+    @PostMapping("/admissions/{admissionId}/allocate")
+    public MedicalWorkspaceResponse.Admission allocateBed(
+        @AuthenticationPrincipal InventoryUserPrincipal principal,
+        HttpSession session,
+        @PathVariable UUID admissionId,
+        @Valid @RequestBody ClinicalRequests.AllocateBed body,
+        HttpServletRequest request
+    ) {
+        HospitalSessionContext.Actor actor = sessionContext.requireActor(principal, session, CARE_ROLES);
+        return workspaceService.allocateBed(
+            actor.hospitalId(), actor.userId(), admissionId, body.targetBedId(), request.getRemoteAddr()
+        );
     }
 
     @PostMapping("/admissions/{admissionId}/transfer")
@@ -126,7 +162,11 @@ public class MedicalWorkspaceController {
         @Valid @RequestBody ClinicalRequests.UpdatePatient body,
         HttpServletRequest request
     ) {
-        HospitalSessionContext.Actor actor = sessionContext.requireActor(principal, session, MEDICAL_ROLES);
+        HospitalSessionContext.Actor actor = sessionContext.requireActor(
+            principal,
+            session,
+            PATIENT_MANAGEMENT_ROLES
+        );
         return workspaceService.updatePatient(
             actor.hospitalId(), actor.userId(), admissionId, body, request.getRemoteAddr()
         );
@@ -325,6 +365,22 @@ public class MedicalWorkspaceController {
     ) {
         sessionContext.require(session, MEDICAL_ROLES);
         return aihService.preview(body);
+    }
+
+    @GetMapping("/exams/catalog")
+    public DiagnosticExamCatalog diagnosticExamCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return diagnosticExamService.catalog();
+    }
+
+    @PostMapping("/admissions/{admissionId}/exams/preview")
+    public DiagnosticExamResponse previewDiagnosticExams(
+        HttpSession session,
+        @PathVariable UUID admissionId,
+        @Valid @RequestBody DiagnosticExamRequest body
+    ) {
+        HospitalSessionContext.Scope scope = sessionContext.require(session, MEDICAL_ROLES);
+        return diagnosticExamService.preview(scope.hospitalId(), admissionId, body);
     }
 
     @GetMapping("/admissions/{admissionId}/documents")

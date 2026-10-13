@@ -6,6 +6,7 @@ import {
   AihDraft,
   BedsideProcedureDraft,
   CriticalCareDraft,
+  DiagnosticExamDraft,
   MedicationTherapyDraft,
   DietPrescriptionDraft,
   IsolationPrecautionDraft,
@@ -40,6 +41,59 @@ describe('MedicalService', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('creates an unassigned admission and later allocates the same admission to a bed', async () => {
+    const payload = {
+      careUnitId: 'unit-1',
+      fullName: 'MARIA DAS DORES',
+      birthDate: '1975-08-12',
+      cns: '700000000000001',
+      motherName: 'JOANA DAS DORES',
+      sex: 'FEMININO',
+      weightKg: null,
+      diagnosis: null,
+      comorbidities: null,
+      allergies: null,
+      origin: 'PRONTO SOCORRO / TRIAGEM',
+    };
+    const admission = {
+      id: 'admission-1',
+      admittedAt: '2026-10-13T12:00:00Z',
+      provisionalCareUnitId: 'unit-1',
+      provisionalCareUnitName: 'CLÍNICA MÉDICA',
+      origin: payload.origin,
+      patient: {
+        id: 'patient-1',
+        fullName: payload.fullName,
+        birthDate: payload.birthDate,
+        cns: payload.cns,
+        motherName: payload.motherName,
+        sex: payload.sex,
+        weightKg: null,
+        diagnosis: null,
+        comorbidities: null,
+        allergies: null,
+      },
+    };
+
+    const admissionPromise = service.admitProvisional(payload);
+    const admissionRequest = http.expectOne('/api/v1/clinical/provisional-admissions');
+    expect(admissionRequest.request.method).toBe('POST');
+    expect(admissionRequest.request.body).toEqual(payload);
+    admissionRequest.flush(admission);
+    expect((await admissionPromise).id).toBe('admission-1');
+
+    const allocationPromise = service.allocate('admission-1', 'bed-1');
+    const allocationRequest = http.expectOne('/api/v1/clinical/admissions/admission-1/allocate');
+    expect(allocationRequest.request.method).toBe('POST');
+    expect(allocationRequest.request.body).toEqual({ targetBedId: 'bed-1' });
+    allocationRequest.flush({
+      ...admission,
+      provisionalCareUnitId: null,
+      provisionalCareUnitName: null,
+    });
+    expect((await allocationPromise).id).toBe('admission-1');
+  });
 
   it('loads prescription clinics and compatible starter models', async () => {
     const catalogPromise = service.prescriptionStartOptions();
@@ -653,5 +707,51 @@ describe('MedicalService', () => {
       billingAudit: { alerts: [] },
     });
     expect((await previewPromise).structuredAih.reportText).toContain('AIH');
+  });
+
+  it('loads the exam catalog and validates the preview in the admission context', async () => {
+    const catalogPromise = service.diagnosticExamCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/exams/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      clinicalContexts: [{ code: 'ADULT_ICU', label: 'UTI ADULTO' }],
+      quickPacks: [],
+      bloodExams: [],
+      urineExams: [],
+      tomographyRegions: [],
+      contrastOptions: [],
+      tomographyJustifications: [],
+      xrayProfiles: [],
+      lateralities: [],
+      ultrasoundExams: [],
+      ecgPriorities: [],
+      ecgJustifications: [],
+    });
+    expect((await catalogPromise).clinicalContexts[0].code).toBe('ADULT_ICU');
+
+    const draft: DiagnosticExamDraft = {
+      clinicalContext: 'ADULT_ICU',
+      bloodExams: ['HEMOGRAM'],
+      urineExams: [],
+      laboratoryClinicalJustification: '',
+      tomography: null,
+      xray: null,
+      ultrasound: null,
+      electrocardiogram: null,
+    };
+    const previewPromise = service.previewDiagnosticExams('admission-1', draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/admissions/admission-1/exams/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('medical-token');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      structuredExams: {
+        summaryLine: 'EXAMES SOLICITADOS: PAINEL DE SANGUE.',
+        requestDetails: 'SOLICITAÇÃO DE EXAMES DIAGNÓSTICOS:',
+        duplicateReviewItems: [],
+      },
+      billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
+    });
+    expect((await previewPromise).structuredExams.summaryLine).toContain('PAINEL DE SANGUE');
   });
 });

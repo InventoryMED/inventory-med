@@ -588,7 +588,14 @@ svg {
 .stat-card small {
   color: #8a94a3;
 }
+.census-layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 286px) minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
 .rooms-section {
+  min-width: 0;
   padding: 28px;
   border: 1px solid var(--line);
   border-radius: 15px;
@@ -776,7 +783,7 @@ svg {
   border-color: var(--navy-700);
 }
 .bed-card--occupied {
-  min-height: 230px;
+  min-height: 188px;
   border-left: 4px solid var(--occupied-yellow);
 }
 .bed-card--available {
@@ -916,7 +923,7 @@ svg {
 .bed-card-actions {
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 7px;
   margin-top: auto;
   padding-top: 16px;
@@ -953,6 +960,52 @@ svg {
 .bed-action-button--danger:hover {
   border-color: var(--maintenance-red);
   background: var(--maintenance-red-soft);
+}
+.bed-more-actions {
+  min-width: 104px;
+}
+.bed-more-actions summary {
+  display: grid;
+  min-height: 36px;
+  place-items: center;
+  padding: 7px 10px;
+  border: 1px solid #cfd6df;
+  border-radius: 7px;
+  background: white;
+  color: var(--navy-800);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+  list-style: none;
+  cursor: pointer;
+}
+.bed-more-actions summary::-webkit-details-marker {
+  display: none;
+}
+.bed-more-actions summary::after {
+  content: '⌄';
+  margin-left: 6px;
+  font-size: 11px;
+}
+.bed-more-actions[open] {
+  grid-column: 1 / -1;
+}
+.bed-more-actions[open] summary {
+  border-color: var(--navy-700);
+  background: var(--navy-100);
+}
+.bed-more-actions[open] summary::after {
+  transform: rotate(180deg);
+}
+.bed-more-actions-menu {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 7px;
+  padding: 9px;
+  border: 1px solid #d7dee7;
+  border-radius: 8px;
+  background: #f8fafc;
 }
 .bed-action-button--placeholder:disabled {
   border-style: dashed;
@@ -2426,6 +2479,12 @@ svg {
   }
 }
 
+@media (max-width: 980px) {
+  .census-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 760px) {
   .login-page {
     display: block;
@@ -2509,6 +2568,9 @@ svg {
   .bed-grid {
     grid-template-columns: 1fr;
     padding-left: 16px;
+  }
+  .bed-more-actions-menu {
+    grid-template-columns: 1fr;
   }
   .admission-form {
     grid-template-columns: 1fr;

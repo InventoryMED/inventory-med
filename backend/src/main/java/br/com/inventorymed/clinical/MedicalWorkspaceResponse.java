@@ -9,7 +9,8 @@ import java.util.UUID;
 
 public record MedicalWorkspaceResponse(
     UUID hospitalId,
-    List<CareUnit> careUnits
+    List<CareUnit> careUnits,
+    List<Admission> unassignedAdmissions
 ) {
     public record CareUnit(UUID id, String name, String code, List<Room> rooms) {}
 
@@ -31,6 +32,9 @@ public record MedicalWorkspaceResponse(
     public record Admission(
         UUID id,
         Instant admittedAt,
+        UUID provisionalCareUnitId,
+        String provisionalCareUnitName,
+        String origin,
         Patient patient
     ) {}
 
@@ -38,6 +42,8 @@ public record MedicalWorkspaceResponse(
         UUID id,
         String fullName,
         LocalDate birthDate,
+        String cns,
+        String motherName,
         String sex,
         BigDecimal weightKg,
         String diagnosis,

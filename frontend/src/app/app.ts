@@ -11,10 +11,12 @@ import { BedsideProcedureWorkspaceComponent } from './features/medical/bedside-p
 import { ClinicalDocumentationTab } from './features/medical/clinical-documentation-tabs.component';
 import { CriticalCarePrescriptionComponent } from './features/medical/critical-care-prescription.component';
 import { DietPrescriptionComponent } from './features/medical/diet-prescription.component';
+import { DiagnosticExamWorkspaceComponent } from './features/medical/diagnostic-exam-workspace.component';
 import { IsolationPrecautionsComponent } from './features/medical/isolation-precautions.component';
 import { MedicationTherapyComponent } from './features/medical/medication-therapy.component';
 import { MonitoringPrescriptionComponent } from './features/medical/monitoring-prescription.component';
 import { NursingCarePrescriptionComponent } from './features/medical/nursing-care-prescription.component';
+import { ProvisionalAdmissionsComponent } from './features/medical/provisional-admissions.component';
 import { RehabilitationPrescriptionComponent } from './features/medical/rehabilitation-prescription.component';
 import { TherapeuticSupportComponent } from './features/medical/therapeutic-support.component';
 import { VentilatorySupportComponent } from './features/medical/ventilatory-support.component';
@@ -61,6 +63,7 @@ import {
   MedicationSectionDraft,
   MedicationSectionId,
   Patient,
+  ProvisionalAdmission,
   Prescription,
   PrescriptionDraftRow,
   PrescriptionScheduling,
@@ -123,7 +126,9 @@ interface HospitalOption {
     AihWorkspaceComponent,
     BedsideProcedureWorkspaceComponent,
     DietPrescriptionComponent,
+    DiagnosticExamWorkspaceComponent,
     NursingCarePrescriptionComponent,
+    ProvisionalAdmissionsComponent,
     MonitoringPrescriptionComponent,
     VentilatorySupportComponent,
     RehabilitationPrescriptionComponent,
@@ -137,6 +142,8 @@ interface HospitalOption {
   templateUrl: './app.html',
 })
 export class App implements OnInit {
+  private readonly provisionalReferencePrefix = 'provisional:';
+  private readonly newProvisionalReference = `${this.provisionalReferencePrefix}new`;
   protected readonly store = inject(DemoStore);
   protected readonly auth = inject(AuthService);
   private readonly medical = inject(MedicalService);
@@ -182,10 +189,14 @@ export class App implements OnInit {
   protected confirmNewPassword = '';
   protected patientName = '';
   protected patientBirthDate = '';
+  protected patientCns = '';
+  protected patientMotherName = '';
   protected patientSex = 'FEMININO';
   protected patientWeight: number | null = null;
   protected dischargeReason: DischargeReason | '' = '';
   protected transferTargetBedId = '';
+  protected provisionalCareUnitId = '';
+  protected provisionalOrigin = '';
   protected prescriptionDiagnosis = '';
   protected prescriptionComorbidities = '';
   protected prescriptionAllergies = '';
@@ -367,6 +378,11 @@ export class App implements OnInit {
       label: 'Alta melhora',
       description: 'Paciente liberado após melhora clínica.',
     },
+    {
+      value: 'CANCELAMENTO',
+      label: 'Cancelar admissão',
+      description: 'Encerramento da admissão provisória antes da alocação em leito.',
+    },
   ];
   protected readonly printHours = Array.from({ length: 24 }, (_, hour) =>
     hour.toString().padStart(2, '0'),
@@ -420,6 +436,11 @@ export class App implements OnInit {
       this.auth.selectedHospital()?.role ?? this.auth.hospitals()[0]?.role ?? 'MEDICO',
     ),
   );
+  protected readonly medicalActionsEnabled = computed(() => {
+    if (!this.realApiEnabled) return true;
+    const role = this.auth.selectedHospital()?.role;
+    return role === 'MEDICO' || role === 'RESPONSAVEL_CLINICO';
+  });
   protected readonly professionalInitials = computed(() =>
     this.professionalName()
       .replace(/^DR\.\s*/i, '')
@@ -432,11 +453,47 @@ export class App implements OnInit {
   );
   protected readonly selectedBed = computed(() => {
     const bedId = this.selectedBedId();
-    return bedId ? this.store.findBed(bedId) : undefined;
+    if (!bedId) return undefined;
+    if (bedId === this.newProvisionalReference) {
+      return { id: bedId, code: 'SEM LEITO ALOCADO', status: 'AVAILABLE' as const };
+    }
+    const provisionalAdmission = this.provisionalAdmissionFromReference(bedId);
+    return provisionalAdmission
+      ? this.provisionalAdmissionAsBed(provisionalAdmission)
+      : this.store.findBed(bedId);
+  });
+  protected readonly selectedProvisionalAdmission = computed(() => {
+    const reference = this.selectedBedId();
+    return reference ? this.provisionalAdmissionFromReference(reference) : undefined;
   });
   protected readonly selectedRoom = computed(() => {
     const bedId = this.selectedBedId();
     return this.activeHospital()?.rooms.find((room) => room.beds.some((bed) => bed.id === bedId));
+  });
+  protected readonly selectedUnitName = computed(
+    () => this.selectedRoom()?.unit ?? this.selectedProvisionalAdmission()?.careUnitName ?? '',
+  );
+  protected readonly selectedRoomName = computed(
+    () => this.selectedRoom()?.name ?? 'ADMISSÃO PROVISÓRIA',
+  );
+  protected readonly isProvisionalSelection = computed(() =>
+    this.selectedBedId()?.startsWith(this.provisionalReferencePrefix),
+  );
+  protected readonly availableDischargeReasons = computed(() =>
+    this.dischargeReasons.filter(
+      (reason) => this.isProvisionalSelection() || reason.value !== 'CANCELAMENTO',
+    ),
+  );
+  protected readonly careUnitOptions = computed(() => {
+    const configuredUnits = this.activeHospital()?.careUnits;
+    if (configuredUnits?.length) return configuredUnits;
+    const seen = new Set<string>();
+    return (this.activeHospital()?.rooms ?? []).flatMap((room) => {
+      const id = room.careUnitId ?? room.unit;
+      if (seen.has(id)) return [];
+      seen.add(id);
+      return [{ id, name: room.unit }];
+    });
   });
   protected readonly availableTransferBeds = computed(() =>
     (this.activeHospital()?.rooms ?? []).flatMap((room) =>
@@ -456,6 +513,17 @@ export class App implements OnInit {
 
     return hospital.rooms.filter((room) =>
       [room.name, room.floor, room.unit, ...room.beds.map((bed) => bed.patient?.name ?? '')]
+        .join(' ')
+        .toLocaleLowerCase('pt-BR')
+        .includes(term),
+    );
+  });
+  protected readonly visibleProvisionalAdmissions = computed(() => {
+    const admissions = this.activeHospital()?.provisionalAdmissions ?? [];
+    const term = this.searchTerm().trim().toLocaleLowerCase('pt-BR');
+    if (!term) return admissions;
+    return admissions.filter((admission) =>
+      [admission.patient.name, admission.careUnitName, admission.origin ?? '']
         .join(' ')
         .toLocaleLowerCase('pt-BR')
         .includes(term),
@@ -612,10 +680,30 @@ export class App implements OnInit {
     this.admissionOpen.set(true);
   }
 
+  protected openProvisionalAdmission(): void {
+    const firstCareUnit = this.careUnitOptions()[0];
+    if (!firstCareUnit) {
+      this.showToast('CADASTRE UMA UNIDADE ASSISTENCIAL ANTES DA ADMISSÃO PROVISÓRIA.');
+      return;
+    }
+    this.selectedBedId.set(this.newProvisionalReference);
+    this.resetPatientForm();
+    this.provisionalCareUnitId = firstCareUnit.id;
+    this.admissionOpen.set(true);
+  }
+
   protected openPatientEditor(bed: Bed): void {
     if (bed.status !== 'OCCUPIED' || !bed.patient) return;
     this.selectedBedId.set(bed.id);
     this.preparePatientForm(bed.patient);
+    this.patientEditOpen.set(true);
+  }
+
+  protected openProvisionalPatientEditor(admission: ProvisionalAdmission): void {
+    this.selectedBedId.set(this.provisionalReference(admission.id));
+    this.preparePatientForm(admission.patient);
+    this.provisionalCareUnitId = admission.careUnitId;
+    this.provisionalOrigin = admission.origin ?? '';
     this.patientEditOpen.set(true);
   }
 
@@ -659,8 +747,33 @@ export class App implements OnInit {
     this.openAihTab(bed.id);
   }
 
+  protected openExams(bed: Bed): void {
+    if (!bed.patient) return;
+    this.openExamsTab(bed.id);
+  }
+
+  protected openProvisionalPrescription(admission: ProvisionalAdmission): void {
+    this.openPrescription(this.provisionalAdmissionAsBed(admission));
+  }
+
+  protected openProvisionalEvolution(admission: ProvisionalAdmission): void {
+    this.startEvolution(this.provisionalAdmissionAsBed(admission));
+  }
+
+  protected openProvisionalProcedures(admission: ProvisionalAdmission): void {
+    this.openProcedures(this.provisionalAdmissionAsBed(admission));
+  }
+
+  protected openProvisionalAih(admission: ProvisionalAdmission): void {
+    this.openAih(this.provisionalAdmissionAsBed(admission));
+  }
+
+  protected openProvisionalExams(admission: ProvisionalAdmission): void {
+    this.openExams(this.provisionalAdmissionAsBed(admission));
+  }
+
   protected switchClinicalModule(tab: ClinicalDocumentationTab): void {
-    const flow = tab === 'AIH' ? 'aih' : 'procedure';
+    const flow = tab === 'AIH' ? 'aih' : tab === 'EXAM' ? 'exams' : 'procedure';
     this.screen.set(flow);
     const url = new URL(window.location.href);
     url.searchParams.set('flow', flow);
@@ -672,6 +785,10 @@ export class App implements OnInit {
     this.selectedBedId.set(bed.id);
     this.dischargeReason = '';
     this.dischargeOpen.set(true);
+  }
+
+  protected openProvisionalDischarge(admission: ProvisionalAdmission): void {
+    this.openDischarge(this.provisionalAdmissionAsBed(admission));
   }
 
   protected closeDischarge(): void {
@@ -686,7 +803,7 @@ export class App implements OnInit {
       this.showToast('SELECIONE O MOTIVO DA ALTA.');
       return;
     }
-    const bed = this.store.findBed(bedId);
+    const bed = this.selectedBed();
     if (this.realApiEnabled) {
       if (!bed?.patient?.admissionId) {
         this.showToast('NÃO FOI POSSÍVEL IDENTIFICAR A INTERNAÇÃO.');
@@ -707,7 +824,10 @@ export class App implements OnInit {
       return;
     }
 
-    const patientName = this.store.dischargePatient(bedId, this.dischargeReason);
+    const provisionalAdmission = this.selectedProvisionalAdmission();
+    const patientName = provisionalAdmission
+      ? this.store.dischargeProvisionalPatient(provisionalAdmission.id)
+      : this.store.dischargePatient(bedId, this.dischargeReason);
     if (!patientName) {
       this.showToast('NÃO FOI POSSÍVEL CONCLUIR A ALTA.');
       return;
@@ -726,6 +846,10 @@ export class App implements OnInit {
     this.transferOpen.set(true);
   }
 
+  protected openProvisionalAllocation(admission: ProvisionalAdmission): void {
+    this.openTransfer(this.provisionalAdmissionAsBed(admission));
+  }
+
   protected closeTransfer(): void {
     this.transferOpen.set(false);
     this.transferTargetBedId = '';
@@ -739,32 +863,49 @@ export class App implements OnInit {
       return;
     }
     if (this.realApiEnabled) {
-      const admissionId = this.store.findBed(sourceBedId)?.patient?.admissionId;
+      const provisional = this.selectedProvisionalAdmission();
+      const admissionId = this.selectedBed()?.patient?.admissionId;
       if (!admissionId) {
         this.showToast('NÃO FOI POSSÍVEL IDENTIFICAR A INTERNAÇÃO.');
         return;
       }
       try {
-        await this.medical.transfer(admissionId, this.transferTargetBedId);
+        if (provisional) {
+          await this.medical.allocate(admissionId, this.transferTargetBedId);
+        } else {
+          await this.medical.transfer(admissionId, this.transferTargetBedId);
+        }
         await this.refreshRealWorkspace();
         this.transferOpen.set(false);
         this.transferTargetBedId = '';
         this.selectedBedId.set(null);
-        this.showToast('PACIENTE TRANSFERIDO PARA O NOVO LEITO.');
+        this.showToast(
+          provisional
+            ? 'PACIENTE ALOCADO NO LEITO SELECIONADO.'
+            : 'PACIENTE TRANSFERIDO PARA O NOVO LEITO.',
+        );
       } catch (error) {
         this.showToast(this.clinicalErrorMessage(error));
       }
       return;
     }
 
-    if (!this.store.transferPatient(sourceBedId, this.transferTargetBedId)) {
+    const provisional = this.selectedProvisionalAdmission();
+    const moved = provisional
+      ? this.store.allocateProvisionalPatient(provisional.id, this.transferTargetBedId)
+      : this.store.transferPatient(sourceBedId, this.transferTargetBedId);
+    if (!moved) {
       this.showToast('NÃO FOI POSSÍVEL TRANSFERIR O PACIENTE.');
       return;
     }
     this.transferOpen.set(false);
     this.transferTargetBedId = '';
     this.selectedBedId.set(null);
-    this.showToast('PACIENTE TRANSFERIDO PARA O NOVO LEITO.');
+    this.showToast(
+      provisional
+        ? 'PACIENTE ALOCADO NO LEITO SELECIONADO.'
+        : 'PACIENTE TRANSFERIDO PARA O NOVO LEITO.',
+    );
   }
 
   protected async admitPatient(): Promise<void> {
@@ -778,6 +919,12 @@ export class App implements OnInit {
       return;
     }
 
+    const provisionalAdmission = bedId === this.newProvisionalReference;
+    if (provisionalAdmission && !this.provisionalCareUnitId) {
+      this.showToast('SELECIONE A UNIDADE ASSISTENCIAL.');
+      return;
+    }
+
     if (this.realApiEnabled) {
       const birthDate = this.parseBirthDate(this.patientBirthDate);
       if (this.patientBirthDate.trim() && !birthDate) {
@@ -785,38 +932,71 @@ export class App implements OnInit {
         return;
       }
       try {
-        await this.medical.admit({
-          bedId,
+        const patientPayload = {
           fullName: this.patientName.trim(),
           birthDate,
+          cns: this.onlyDigits(this.patientCns) || null,
+          motherName: this.patientMotherName.trim() || null,
           sex: this.patientSex === 'NÃO INFORMADO' ? 'NAO_INFORMADO' : this.patientSex,
           weightKg: this.patientWeight,
           diagnosis: this.prescriptionDiagnosis.trim() || null,
           comorbidities: this.prescriptionComorbidities.trim() || null,
           allergies: this.prescriptionAllergies.trim() || null,
-        });
+        };
+        if (provisionalAdmission) {
+          await this.medical.admitProvisional({
+            ...patientPayload,
+            careUnitId: this.provisionalCareUnitId,
+            origin: this.provisionalOrigin.trim() || null,
+          });
+        } else {
+          await this.medical.admit({ ...patientPayload, bedId });
+        }
         await this.refreshRealWorkspace();
         this.admissionOpen.set(false);
         this.selectedBedId.set(null);
-        this.showToast('PACIENTE ADMITIDO. USE ABRIR PRESCRIÇÃO NO LEITO PARA CONTINUAR.');
+        this.showToast(
+          provisionalAdmission
+            ? 'PACIENTE ADMITIDO PROVISORIAMENTE E DISPONÍVEL PARA ATENDIMENTO.'
+            : 'PACIENTE ADMITIDO. USE ABRIR PRESCRIÇÃO NO LEITO PARA CONTINUAR.',
+        );
       } catch (error) {
         this.showToast(this.clinicalErrorMessage(error));
       }
       return;
     }
 
-    this.store.admitPatient(bedId, {
+    const patientData = {
       name: this.patientName.trim(),
       birthDate: this.patientBirthDate.trim() || undefined,
+      cns: this.onlyDigits(this.patientCns) || undefined,
+      motherName: this.patientMotherName.trim() || undefined,
       sex: this.patientSex,
       weightKg: this.patientWeight ?? undefined,
       diagnosis: this.prescriptionDiagnosis.trim() || undefined,
       comorbidities: this.prescriptionComorbidities.trim() || undefined,
       allergies: this.prescriptionAllergies.trim() || undefined,
-    });
+    };
+    if (provisionalAdmission) {
+      const careUnit = this.careUnitOptions().find(
+        (item) => item.id === this.provisionalCareUnitId,
+      );
+      this.store.admitProvisionalPatient(
+        this.provisionalCareUnitId,
+        careUnit?.name ?? 'UNIDADE ASSISTENCIAL',
+        this.provisionalOrigin.trim() || undefined,
+        patientData,
+      );
+    } else {
+      this.store.admitPatient(bedId, patientData);
+    }
     this.admissionOpen.set(false);
     this.selectedBedId.set(null);
-    this.showToast('PACIENTE ADMITIDO. USE ABRIR PRESCRIÇÃO NO LEITO PARA CONTINUAR.');
+    this.showToast(
+      provisionalAdmission
+        ? 'PACIENTE ADMITIDO PROVISORIAMENTE E DISPONÍVEL PARA ATENDIMENTO.'
+        : 'PACIENTE ADMITIDO. USE ABRIR PRESCRIÇÃO NO LEITO PARA CONTINUAR.',
+    );
   }
 
   protected async updatePatient(): Promise<void> {
@@ -1165,15 +1345,28 @@ export class App implements OnInit {
       }
     }
 
-    this.store.addPrescription(
-      bedId,
-      this.prescriptionDiet.trim(),
-      observations,
-      abnormalities,
-      [],
-      [],
-      validMedicationSections,
-    );
+    const provisionalAdmission = this.selectedProvisionalAdmission();
+    if (provisionalAdmission) {
+      this.store.addProvisionalPrescription(
+        provisionalAdmission.id,
+        this.prescriptionDiet.trim(),
+        observations,
+        abnormalities,
+        [],
+        [],
+        validMedicationSections,
+      );
+    } else {
+      this.store.addPrescription(
+        bedId,
+        this.prescriptionDiet.trim(),
+        observations,
+        abnormalities,
+        [],
+        [],
+        validMedicationSections,
+      );
+    }
     this.showToast('PRESCRIÇÃO CRIADA.');
     const patient = this.selectedBed()?.patient;
     if (patient) this.preparePrescription(patient);
@@ -1362,12 +1555,17 @@ export class App implements OnInit {
       name: hospitalName,
       shortName: selectedHospital?.shortName ?? hospitalName.slice(0, 3),
       city: selectedHospital?.city ?? '',
+      careUnits: workspace.careUnits.map((careUnit) => ({
+        id: careUnit.id,
+        name: careUnit.name,
+      })),
       rooms: workspace.careUnits.flatMap((careUnit) =>
         careUnit.rooms.map((room) => ({
           id: room.id,
           name: room.name,
           floor: room.floorName ?? 'SEM ANDAR INFORMADO',
           unit: careUnit.name,
+          careUnitId: careUnit.id,
           beds: room.beds.map((bed) => ({
             id: bed.id,
             code: /^LEITO\b/i.test(bed.code) ? bed.code : `LEITO ${bed.code}`,
@@ -1378,6 +1576,8 @@ export class App implements OnInit {
                   admissionId: bed.admission.id,
                   name: bed.admission.patient.fullName,
                   birthDate: this.displayBirthDate(bed.admission.patient.birthDate),
+                  cns: bed.admission.patient.cns ?? undefined,
+                  motherName: bed.admission.patient.motherName ?? undefined,
                   sex: this.displaySex(bed.admission.patient.sex),
                   weightKg: bed.admission.patient.weightKg ?? undefined,
                   diagnosis: bed.admission.patient.diagnosis ?? undefined,
@@ -1390,6 +1590,28 @@ export class App implements OnInit {
           })),
         })),
       ),
+      provisionalAdmissions: (workspace.unassignedAdmissions ?? []).map((admission) => ({
+        id: admission.id,
+        admittedAt: admission.admittedAt,
+        careUnitId: admission.provisionalCareUnitId ?? '',
+        careUnitName: admission.provisionalCareUnitName ?? 'UNIDADE ASSISTENCIAL',
+        origin: admission.origin ?? undefined,
+        patient: {
+          id: admission.patient.id,
+          admissionId: admission.id,
+          name: admission.patient.fullName,
+          birthDate: this.displayBirthDate(admission.patient.birthDate),
+          cns: admission.patient.cns ?? undefined,
+          motherName: admission.patient.motherName ?? undefined,
+          sex: this.displaySex(admission.patient.sex),
+          weightKg: admission.patient.weightKg ?? undefined,
+          diagnosis: admission.patient.diagnosis ?? undefined,
+          comorbidities: admission.patient.comorbidities ?? undefined,
+          allergies: admission.patient.allergies ?? undefined,
+          admissionAt: admission.admittedAt,
+          prescriptions: [],
+        },
+      })),
     };
     this.store.replaceHospital(hospital);
   }
@@ -1455,6 +1677,7 @@ export class App implements OnInit {
       ÓBITO: 'OBITO',
       TRANSFERÊNCIA: 'TRANSFERENCIA',
       'ALTA MELHORA': 'ALTA_MELHORA',
+      CANCELAMENTO: 'CANCELAMENTO',
     }[reason];
   }
 
@@ -2072,6 +2295,30 @@ export class App implements OnInit {
     ];
   }
 
+  private provisionalReference(admissionId: string): string {
+    return `${this.provisionalReferencePrefix}${admissionId}`;
+  }
+
+  private provisionalAdmissionFromReference(reference: string): ProvisionalAdmission | undefined {
+    if (!reference.startsWith(this.provisionalReferencePrefix)) return undefined;
+    const admissionId = reference.slice(this.provisionalReferencePrefix.length);
+    if (!admissionId || admissionId === 'new') return undefined;
+    return this.store.findProvisionalAdmission(admissionId);
+  }
+
+  private provisionalAdmissionAsBed(admission: ProvisionalAdmission): Bed {
+    return {
+      id: this.provisionalReference(admission.id),
+      code: 'SEM LEITO ALOCADO',
+      status: 'OCCUPIED',
+      patient: admission.patient,
+    };
+  }
+
+  private onlyDigits(value: string): string {
+    return value.replace(/\D/g, '');
+  }
+
   private openPrescriptionTab(bedId: string): void {
     const hospitalId = this.store.activeHospitalId();
     if (!hospitalId) return;
@@ -2128,6 +2375,20 @@ export class App implements OnInit {
     window.open(url.toString(), '_blank', 'noopener');
   }
 
+  private openExamsTab(bedId: string): void {
+    const hospitalId = this.store.activeHospitalId();
+    if (!hospitalId) return;
+
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('hospital', hospitalId);
+    url.searchParams.set('bed', bedId);
+    url.searchParams.set('flow', 'exams');
+
+    window.open(url.toString(), '_blank', 'noopener');
+  }
+
   private openRequestedView(): boolean {
     const params = new URLSearchParams(window.location.search);
     const hospitalId = params.get('hospital');
@@ -2136,14 +2397,29 @@ export class App implements OnInit {
     if (!hospitalId || !bedId || !flow) return false;
 
     this.store.selectHospital(hospitalId);
-    const bed = this.store.findBed(bedId);
-    const room = this.activeHospital()?.rooms.find((item) =>
-      item.beds.some((roomBed) => roomBed.id === bedId),
-    );
-    if (!bed || !room) return false;
-
     this.selectedBedId.set(bedId);
-    this.expandedRooms.set(new Set([room.id]));
+    let bed = this.selectedBed();
+    let effectiveBedId = bedId;
+    if (!bed && bedId.startsWith(this.provisionalReferencePrefix)) {
+      const admissionId = bedId.slice(this.provisionalReferencePrefix.length);
+      const allocatedBed = this.activeHospital()
+        ?.rooms.flatMap((item) => item.beds)
+        .find((item) => item.patient?.admissionId === admissionId);
+      if (allocatedBed) {
+        effectiveBedId = allocatedBed.id;
+        this.selectedBedId.set(effectiveBedId);
+        bed = allocatedBed;
+      }
+    }
+    const room = this.activeHospital()?.rooms.find((item) =>
+      item.beds.some((roomBed) => roomBed.id === effectiveBedId),
+    );
+    if (!bed) {
+      this.selectedBedId.set(null);
+      return false;
+    }
+
+    this.expandedRooms.set(room ? new Set([room.id]) : new Set());
 
     if (flow === 'prescription' && bed.status === 'OCCUPIED' && bed.patient) {
       this.preparePrescription(bed.patient);
@@ -2163,22 +2439,32 @@ export class App implements OnInit {
       this.screen.set('aih');
       return true;
     }
+    if (flow === 'exams' && bed.status === 'OCCUPIED' && bed.patient) {
+      this.screen.set('exams');
+      return true;
+    }
     return false;
   }
 
   private resetPatientForm(): void {
     this.patientName = '';
     this.patientBirthDate = '';
+    this.patientCns = '';
+    this.patientMotherName = '';
     this.patientSex = 'FEMININO';
     this.patientWeight = null;
     this.prescriptionDiagnosis = '';
     this.prescriptionComorbidities = '';
     this.prescriptionAllergies = '';
+    this.provisionalCareUnitId = '';
+    this.provisionalOrigin = '';
   }
 
   private preparePatientForm(patient: Patient): void {
     this.patientName = patient.name;
     this.patientBirthDate = patient.birthDate || '';
+    this.patientCns = patient.cns || '';
+    this.patientMotherName = patient.motherName || '';
     this.patientSex = patient.sex || 'NÃO INFORMADO';
     this.patientWeight = patient.weightKg ?? null;
     this.prescriptionDiagnosis = patient.diagnosis || '';
@@ -2199,6 +2485,8 @@ export class App implements OnInit {
     const patientData = {
       name: this.patientName.trim(),
       birthDate: this.patientBirthDate.trim() || undefined,
+      cns: this.onlyDigits(this.patientCns) || undefined,
+      motherName: this.patientMotherName.trim() || undefined,
       sex: this.patientSex,
       weightKg: this.patientWeight ?? undefined,
       diagnosis: this.prescriptionDiagnosis.trim() || undefined,
@@ -2215,6 +2503,8 @@ export class App implements OnInit {
         await this.medical.updatePatient(bed.patient.admissionId, {
           fullName: patientData.name,
           birthDate,
+          cns: patientData.cns ?? null,
+          motherName: patientData.motherName ?? null,
           sex: patientData.sex === 'NÃO INFORMADO' ? 'NAO_INFORMADO' : patientData.sex,
           weightKg: this.patientWeight,
           diagnosis: patientData.diagnosis ?? null,
@@ -2223,7 +2513,12 @@ export class App implements OnInit {
         });
         await this.refreshRealWorkspace();
       } else {
-        this.store.updatePatient(bed.id, patientData);
+        const provisional = this.selectedProvisionalAdmission();
+        if (provisional) {
+          this.store.updateProvisionalPatient(provisional.id, patientData);
+        } else {
+          this.store.updatePatient(bed.id, patientData);
+        }
       }
       if (showFeedback) this.showToast('DADOS DO PACIENTE ATUALIZADOS E REGISTRADOS NA AUDITORIA.');
       return true;

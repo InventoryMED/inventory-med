@@ -798,6 +798,13 @@ class CoreSecurityIntegrationTests {
             )
             .andExpect(status().isForbidden());
 
+        mockMvc
+            .perform(
+                get("/clinical/exams/catalog")
+                    .cookie(receptionSession)
+            )
+            .andExpect(status().isForbidden());
+
         UUID templateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
             jdbc.queryForObject(
                 "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
@@ -1342,6 +1349,113 @@ class CoreSecurityIntegrationTests {
         assertThat(firstHospitalAihDocuments).isEqualTo(1);
         assertThat(secondHospitalAihDocuments).isZero();
 
+        UUID examTemplateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
+                    "JOIN dbo.form_template t ON t.id = v.template_id " +
+                    "WHERE t.kind = 'EXAM' AND v.status = 'PUBLISHED'",
+                UUID.class
+            )
+        );
+        String examFieldType = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT f.field_type FROM dbo.form_field f " +
+                    "JOIN dbo.form_section s ON s.id = f.section_id " +
+                    "WHERE s.version_id = ? AND s.section_key = 'EXAMS' AND f.field_key = 'REQUEST'",
+                String.class,
+                examTemplateVersionId
+            )
+        );
+        assertThat(examFieldType).isEqualTo("DIAGNOSTIC_EXAM_PLAN");
+
+        String examRequest = """
+            {
+              "clinicalContext":"ADULT_ICU",
+              "bloodExams":["HEMOGRAM","TROPONIN"],
+              "urineExams":["URINE_CULTURE"],
+              "laboratoryClinicalJustification":"DOR TORÁCICA EM INVESTIGAÇÃO",
+              "tomography":{
+                "region":"CHEST",
+                "contrast":"WITH_CONTRAST",
+                "clinicalJustification":"SUSPEITA DE TEP",
+                "previousCreatinineMgDl":"1,1"
+              },
+              "xray":{
+                "region":"ELBOW",
+                "laterality":"RIGHT",
+                "incidences":["AP","PROFILE"],
+                "clinicalJustification":"TRAUMA LOCAL"
+              },
+              "ultrasound":{
+                "type":"VENOUS_DOPPLER_LOWER_LIMB",
+                "laterality":"LEFT",
+                "clinicalJustification":"SUSPEITA DE TVP"
+              },
+              "electrocardiogram":{
+                "type":"ECG_12_LEADS",
+                "priority":"IMMEDIATE",
+                "clinicalJustification":"DOR TORÁCICA"
+              }
+            }
+            """;
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"EXAM",
+                          "values":{"EXAMS.REQUEST":%s},
+                          "finalizeDocument":true
+                        }
+                        """.formatted(examTemplateVersionId, examRequest)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.kind").value("EXAM"))
+            .andExpect(jsonPath("$.status").value("FINALIZED"))
+            .andExpect(jsonPath("$.values['EXAMS.REQUEST'].request.urineExams[0]").value("URINE_CULTURE"))
+            .andExpect(jsonPath("$.values['EXAMS.REQUEST'].request.urineExams[1]").value("EAS"))
+            .andExpect(
+                jsonPath("$.values['EXAMS.REQUEST'].structuredExams.requestDetails")
+                    .value(org.hamcrest.Matchers.containsString("COM CONTRASTE"))
+            );
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/exams/preview")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(examRequest)
+            )
+            .andExpect(status().isOk())
+            .andExpect(
+                jsonPath("$.structuredExams.requestDetails")
+                    .value(org.hamcrest.Matchers.containsString("REAVALIAÇÃO CLÍNICA AGUDA PÓS-CONDUTA"))
+            )
+            .andExpect(jsonPath("$.structuredExams.duplicateReviewItems").isNotEmpty());
+
+        Integer firstHospitalExamDocuments = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'EXAM'",
+                Integer.class
+            )
+        );
+        Integer secondHospitalExamDocuments = tenantJdbc.read(secondHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'EXAM'",
+                Integer.class
+            )
+        );
+        assertThat(firstHospitalExamDocuments).isEqualTo(1);
+        assertThat(secondHospitalExamDocuments).isZero();
+
         Integer firstHospitalPatients = tenantJdbc.read(firstHospital.getId(), jdbc ->
             jdbc.queryForObject("SELECT COUNT(*) FROM dbo.patient", Integer.class)
         );
@@ -1350,6 +1464,185 @@ class CoreSecurityIntegrationTests {
         );
         assertThat(firstHospitalPatients).isEqualTo(1);
         assertThat(secondHospitalPatients).isZero();
+    }
+
+    @Test
+    void provisionalAdmissionIsTenantScopedAndKeepsItsIdentityWhenAllocated() throws Exception {
+        AppUser administrator = createSystemAdministrator("provisional.admin@example.test");
+        InventoryUserPrincipal administratorPrincipal = new InventoryUserPrincipal(
+            administrator.getId(),
+            administrator.getFullName(),
+            administrator.getEmail(),
+            null,
+            true,
+            false,
+            List.of(SystemRole.ADMIN_SISTEMA.name())
+        );
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        hospitalAdministrationService.create(
+            new HospitalCreateRequest("PROVISÓRIO A " + suffix, "PA", "JOÃO PINHEIRO, MG"),
+            administratorPrincipal,
+            "127.0.0.1",
+            "integration-test"
+        );
+        hospitalAdministrationService.create(
+            new HospitalCreateRequest("PROVISÓRIO B " + suffix, "PB", "JOÃO PINHEIRO, MG"),
+            administratorPrincipal,
+            "127.0.0.1",
+            "integration-test"
+        );
+        Hospital firstHospital = hospitalRepository
+            .findByNameIgnoreCase("PROVISÓRIO A " + suffix)
+            .orElseThrow();
+        Hospital secondHospital = hospitalRepository
+            .findByNameIgnoreCase("PROVISÓRIO B " + suffix)
+            .orElseThrow();
+        UUID firstBedId = insertStructure(firstHospital.getId(), "PROVISIONAL_A");
+        insertStructure(secondHospital.getId(), "PROVISIONAL_B");
+        UUID careUnitId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT r.care_unit_id FROM dbo.bed b JOIN dbo.room r ON r.id = b.room_id " +
+                "WHERE b.id = ?",
+                UUID.class,
+                firstBedId
+            )
+        );
+
+        AppUser doctor = userRepository.save(
+            new AppUser(
+                "MÉDICO PROVISÓRIO",
+                "provisional.doctor@example.test",
+                passwordEncoder.encode("Secret@12345")
+            )
+        );
+        membershipRepository.save(
+            new HospitalMembership(firstHospital, doctor, HospitalRole.MEDICO)
+        );
+        MvcResult login = login("provisional.doctor@example.test", "Secret@12345");
+        Cookie sessionCookie = latestCookie(login, "INVENTORYMED_SESSION");
+        Cookie csrfCookie = latestCookie(login, "XSRF-TOKEN");
+
+        MvcResult admitted = mockMvc
+            .perform(
+                post("/clinical/provisional-admissions")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "careUnitId":"%s",
+                          "fullName":"Maria das Dores",
+                          "birthDate":"1975-08-12",
+                          "cns":"700000000000001",
+                          "motherName":"Joana das Dores",
+                          "sex":"FEMININO",
+                          "weightKg":null,
+                          "diagnosis":null,
+                          "comorbidities":null,
+                          "allergies":null,
+                          "origin":"PRONTO SOCORRO / TRIAGEM"
+                        }
+                        """.formatted(careUnitId)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.patient.fullName").value("MARIA DAS DORES"))
+            .andExpect(jsonPath("$.patient.cns").value("700000000000001"))
+            .andExpect(jsonPath("$.patient.motherName").value("JOANA DAS DORES"))
+            .andExpect(jsonPath("$.provisionalCareUnitId").value(careUnitId.toString()))
+            .andExpect(jsonPath("$.origin").value("PRONTO SOCORRO / TRIAGEM"))
+            .andReturn();
+        UUID admissionId = firstUuid(admitted.getResponse().getContentAsString(), "id");
+
+        mockMvc
+            .perform(get("/clinical/workspace").cookie(sessionCookie))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.unassignedAdmissions.length()").value(1))
+            .andExpect(jsonPath("$.unassignedAdmissions[0].id").value(admissionId.toString()));
+        Integer secondHospitalAdmissions = tenantJdbc.read(secondHospital.getId(), jdbc ->
+            jdbc.queryForObject("SELECT COUNT(*) FROM dbo.admission", Integer.class)
+        );
+        assertThat(secondHospitalAdmissions).isZero();
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/allocate")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"targetBedId\":\"" + firstBedId + "\"}")
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(admissionId.toString()));
+
+        mockMvc
+            .perform(get("/clinical/workspace").cookie(sessionCookie))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.unassignedAdmissions.length()").value(0))
+            .andExpect(jsonPath("$.careUnits[0].rooms[0].beds[0].status").value("OCCUPIED"))
+            .andExpect(
+                jsonPath("$.careUnits[0].rooms[0].beds[0].admission.id")
+                    .value(admissionId.toString())
+            );
+
+        Integer allocationAudit = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_audit_event " +
+                "WHERE event_type = 'PROVISIONAL_PATIENT_ALLOCATED' AND entity_id = ?",
+                Integer.class,
+                admissionId.toString()
+            )
+        );
+        assertThat(allocationAudit).isEqualTo(1);
+
+        MvcResult cancellationCandidate = mockMvc
+            .perform(
+                post("/clinical/provisional-admissions")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "careUnitId":"%s",
+                          "fullName":"Paciente a Cancelar",
+                          "birthDate":null,
+                          "cns":null,
+                          "motherName":null,
+                          "sex":"NAO_INFORMADO",
+                          "weightKg":null,
+                          "diagnosis":null,
+                          "comorbidities":null,
+                          "allergies":null,
+                          "origin":null
+                        }
+                        """.formatted(careUnitId)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andReturn();
+        UUID cancellationAdmissionId = firstUuid(
+            cancellationCandidate.getResponse().getContentAsString(),
+            "id"
+        );
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + cancellationAdmissionId + "/discharge")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"reason\":\"CANCELAMENTO\"}")
+            )
+            .andExpect(status().isNoContent());
+        String cancellationReason = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT discharge_reason FROM dbo.admission WHERE id = ? AND status = 'DISCHARGED'",
+                String.class,
+                cancellationAdmissionId
+            )
+        );
+        assertThat(cancellationReason).isEqualTo("CANCELAMENTO");
     }
 
     private HospitalMembership createMembership(

@@ -4,5 +4,6 @@ public enum FormKind {
     PRESCRIPTION,
     EVOLUTION,
     PROCEDURE,
-    AIH
+    AIH,
+    EXAM
 }

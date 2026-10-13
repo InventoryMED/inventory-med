@@ -57,11 +57,13 @@ public class MedicalWorkspaceService {
                 }
                 jdbc.update(
                     "INSERT INTO dbo.patient " +
-                    "(id, full_name, birth_date, sex, weight_kg, diagnosis, comorbidities, allergies, created_by) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "(id, full_name, birth_date, cns, mother_name, sex, weight_kg, diagnosis, " +
+                    "comorbidities, allergies, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     patientId,
                     normalizeName(request.fullName()),
                     request.birthDate() == null ? null : Date.valueOf(request.birthDate()),
+                    normalizeDigits(request.cns()),
+                    normalizePersonName(request.motherName()),
                     request.sex(),
                     request.weightKg(),
                     normalizeNullable(request.diagnosis()),
@@ -96,6 +98,116 @@ public class MedicalWorkspaceService {
         }
     }
 
+    public MedicalWorkspaceResponse.Admission admitWithoutBed(
+        UUID hospitalId,
+        UUID actorId,
+        ClinicalRequests.AdmitPatientWithoutBed request,
+        String sourceIp
+    ) {
+        try {
+            UUID admissionId = tenantJdbc.write(hospitalId, jdbc -> {
+                Integer activeCareUnit = jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM dbo.care_unit WHERE id = ? AND active = 1",
+                    Integer.class,
+                    request.careUnitId()
+                );
+                if (activeCareUnit == null || activeCareUnit == 0) {
+                    throw new BusinessValidationException("Unidade de internação ativa não encontrada");
+                }
+
+                UUID patientId = UUID.randomUUID();
+                UUID createdAdmissionId = UUID.randomUUID();
+                jdbc.update(
+                    "INSERT INTO dbo.patient " +
+                    "(id, full_name, birth_date, cns, mother_name, sex, weight_kg, diagnosis, " +
+                    "comorbidities, allergies, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    patientId,
+                    normalizeName(request.fullName()),
+                    request.birthDate() == null ? null : Date.valueOf(request.birthDate()),
+                    normalizeDigits(request.cns()),
+                    normalizePersonName(request.motherName()),
+                    request.sex(),
+                    request.weightKg(),
+                    normalizeNullable(request.diagnosis()),
+                    normalizeNullable(request.comorbidities()),
+                    normalizeNullable(request.allergies()),
+                    actorId
+                );
+                jdbc.update(
+                    "INSERT INTO dbo.admission " +
+                    "(id, patient_id, current_bed_id, provisional_care_unit_id, admission_origin, " +
+                    "status, created_by, updated_by) VALUES (?, ?, NULL, ?, ?, 'ACTIVE', ?, ?)",
+                    createdAdmissionId,
+                    patientId,
+                    request.careUnitId(),
+                    normalizeNullable(request.origin()),
+                    actorId,
+                    actorId
+                );
+                auditWriter.success(
+                    jdbc,
+                    actorId,
+                    "PROVISIONAL_PATIENT_ADMITTED",
+                    "ADMISSION",
+                    createdAdmissionId,
+                    sourceIp,
+                    Map.of(
+                        "careUnitId", request.careUnitId(),
+                        "patientId", patientId,
+                        "location", "UNASSIGNED"
+                    )
+                );
+                return createdAdmissionId;
+            });
+            return requiredAdmission(hospitalId, admissionId);
+        } catch (DataIntegrityViolationException exception) {
+            throw new BusinessValidationException("Não foi possível registrar a admissão provisória");
+        }
+    }
+
+    public MedicalWorkspaceResponse.Admission allocateBed(
+        UUID hospitalId,
+        UUID actorId,
+        UUID admissionId,
+        UUID targetBedId,
+        String sourceIp
+    ) {
+        tenantJdbc.write(hospitalId, jdbc -> {
+            Integer activeUnassignedAdmission = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.admission WHERE id = ? AND status = 'ACTIVE' " +
+                "AND current_bed_id IS NULL",
+                Integer.class,
+                admissionId
+            );
+            if (activeUnassignedAdmission == null || activeUnassignedAdmission == 0) {
+                throw new BusinessValidationException("Admissão provisória ativa não encontrada");
+            }
+            reserveAvailableBed(jdbc, targetBedId);
+            int allocated = jdbc.update(
+                "UPDATE dbo.admission SET current_bed_id = ?, allocated_at = SYSUTCDATETIME(), " +
+                "updated_by = ?, updated_at = SYSUTCDATETIME(), row_version = row_version + 1 " +
+                "WHERE id = ? AND status = 'ACTIVE' AND current_bed_id IS NULL",
+                targetBedId,
+                actorId,
+                admissionId
+            );
+            if (allocated == 0) {
+                throw new BusinessValidationException("O paciente já foi alocado por outro usuário");
+            }
+            auditWriter.success(
+                jdbc,
+                actorId,
+                "PROVISIONAL_PATIENT_ALLOCATED",
+                "ADMISSION",
+                admissionId,
+                sourceIp,
+                Map.of("targetBedId", targetBedId)
+            );
+            return null;
+        });
+        return requiredAdmission(hospitalId, admissionId);
+    }
+
     public MedicalWorkspaceResponse.Admission transfer(
         UUID hospitalId,
         UUID actorId,
@@ -105,19 +217,15 @@ public class MedicalWorkspaceService {
     ) {
         tenantJdbc.write(hospitalId, jdbc -> {
             UUID sourceBedId = requiredActiveBed(jdbc, admissionId);
+            if (sourceBedId == null) {
+                throw new BusinessValidationException(
+                    "Use a alocação de leito para uma admissão provisória"
+                );
+            }
             if (sourceBedId.equals(targetBedId)) {
                 throw new BusinessValidationException("Selecione outro leito para a transferência");
             }
-            int reserved = jdbc.update(
-                "UPDATE dbo.bed SET status = 'OCCUPIED', updated_at = SYSUTCDATETIME(), " +
-                "row_version = row_version + 1 WHERE id = ? AND active = 1 AND status = 'AVAILABLE' " +
-                "AND EXISTS (SELECT 1 FROM dbo.room r JOIN dbo.care_unit u ON u.id = r.care_unit_id " +
-                "WHERE r.id = dbo.bed.room_id AND r.active = 1 AND u.active = 1)",
-                targetBedId
-            );
-            if (reserved == 0) {
-                throw new BusinessValidationException("O leito de destino não está disponível");
-            }
+            reserveAvailableBed(jdbc, targetBedId);
             jdbc.update(
                 "UPDATE dbo.admission SET current_bed_id = ?, updated_by = ?, " +
                 "updated_at = SYSUTCDATETIME(), row_version = row_version + 1 " +
@@ -156,12 +264,14 @@ public class MedicalWorkspaceService {
             UUID patientId = requiredActivePatient(jdbc, admissionId);
             int updated = jdbc.update(
                 "UPDATE dbo.patient SET full_name = ?, birth_date = ?, sex = ?, weight_kg = ?, " +
-                "diagnosis = ?, comorbidities = ?, allergies = ?, updated_at = SYSUTCDATETIME(), " +
-                "row_version = row_version + 1 WHERE id = ?",
+                "cns = ?, mother_name = ?, diagnosis = ?, comorbidities = ?, allergies = ?, " +
+                "updated_at = SYSUTCDATETIME(), row_version = row_version + 1 WHERE id = ?",
                 normalizeName(request.fullName()),
                 request.birthDate() == null ? null : Date.valueOf(request.birthDate()),
                 request.sex(),
                 request.weightKg(),
+                normalizeDigits(request.cns()),
+                normalizePersonName(request.motherName()),
                 normalizeNullable(request.diagnosis()),
                 normalizeNullable(request.comorbidities()),
                 normalizeNullable(request.allergies()),
@@ -210,11 +320,16 @@ public class MedicalWorkspaceService {
             if (updated == 0) {
                 throw new BusinessValidationException("Internação ativa não encontrada");
             }
-            jdbc.update(
-                "UPDATE dbo.bed SET status = 'AVAILABLE', updated_at = SYSUTCDATETIME(), " +
-                "row_version = row_version + 1 WHERE id = ?",
-                bedId
-            );
+            if (bedId != null) {
+                jdbc.update(
+                    "UPDATE dbo.bed SET status = 'AVAILABLE', updated_at = SYSUTCDATETIME(), " +
+                    "row_version = row_version + 1 WHERE id = ?",
+                    bedId
+                );
+            }
+            Map<String, Object> auditDetails = new LinkedHashMap<>();
+            auditDetails.put("bedId", bedId);
+            auditDetails.put("reason", reason);
             auditWriter.success(
                 jdbc,
                 actorId,
@@ -222,7 +337,7 @@ public class MedicalWorkspaceService {
                 "ADMISSION",
                 admissionId,
                 sourceIp,
-                Map.of("bedId", bedId, "reason", reason)
+                auditDetails
             );
             return null;
         });
@@ -260,9 +375,12 @@ public class MedicalWorkspaceService {
         jdbc.query(
             "SELECT b.id AS bed_id, b.room_id, b.code AS bed_code, b.status, " +
             "a.id AS admission_id, a.admitted_at, p.id AS patient_id, p.full_name, " +
-            "p.birth_date, p.sex, p.weight_kg, p.diagnosis, p.comorbidities, p.allergies " +
+            "p.birth_date, p.cns, p.mother_name, p.sex, p.weight_kg, p.diagnosis, " +
+            "p.comorbidities, p.allergies, a.provisional_care_unit_id, " +
+            "pu.name AS provisional_care_unit_name, a.admission_origin " +
             "FROM dbo.bed b LEFT JOIN dbo.admission a ON a.current_bed_id = b.id AND a.status = 'ACTIVE' " +
-            "LEFT JOIN dbo.patient p ON p.id = a.patient_id WHERE b.active = 1 " +
+            "LEFT JOIN dbo.patient p ON p.id = a.patient_id " +
+            "LEFT JOIN dbo.care_unit pu ON pu.id = a.provisional_care_unit_id WHERE b.active = 1 " +
             "ORDER BY b.display_order, b.code",
             (RowCallbackHandler) row -> {
                 MutableRoom room = rooms.get(row.getObject("room_id", UUID.class));
@@ -281,17 +399,32 @@ public class MedicalWorkspaceService {
                 );
             }
         );
+        List<MedicalWorkspaceResponse.Admission> unassignedAdmissions = jdbc.query(
+            "SELECT a.id AS admission_id, a.admitted_at, a.provisional_care_unit_id, " +
+            "u.name AS provisional_care_unit_name, a.admission_origin, p.id AS patient_id, " +
+            "p.full_name, p.birth_date, p.cns, p.mother_name, p.sex, p.weight_kg, " +
+            "p.diagnosis, p.comorbidities, p.allergies FROM dbo.admission a " +
+            "JOIN dbo.patient p ON p.id = a.patient_id " +
+            "JOIN dbo.care_unit u ON u.id = a.provisional_care_unit_id " +
+            "WHERE a.status = 'ACTIVE' AND a.current_bed_id IS NULL " +
+            "ORDER BY a.admitted_at, p.full_name",
+            (row, number) -> mapAdmission(row, row.getObject("admission_id", UUID.class))
+        );
         return new MedicalWorkspaceResponse(
             hospitalId,
-            units.values().stream().map(MutableUnit::response).toList()
+            units.values().stream().map(MutableUnit::response).toList(),
+            unassignedAdmissions
         );
     }
 
     private MedicalWorkspaceResponse.Admission requiredAdmission(UUID hospitalId, UUID admissionId) {
         return tenantJdbc.read(hospitalId, jdbc -> jdbc.query(
             "SELECT a.id AS admission_id, a.admitted_at, p.id AS patient_id, p.full_name, " +
-            "p.birth_date, p.sex, p.weight_kg, p.diagnosis, p.comorbidities, p.allergies " +
+            "p.birth_date, p.cns, p.mother_name, p.sex, p.weight_kg, p.diagnosis, " +
+            "p.comorbidities, p.allergies, a.provisional_care_unit_id, " +
+            "u.name AS provisional_care_unit_name, a.admission_origin " +
             "FROM dbo.admission a JOIN dbo.patient p ON p.id = a.patient_id " +
+            "LEFT JOIN dbo.care_unit u ON u.id = a.provisional_care_unit_id " +
             "WHERE a.id = ? AND a.status = 'ACTIVE'",
             (row, number) -> mapAdmission(row, row.getObject("admission_id", UUID.class)),
             admissionId
@@ -308,10 +441,15 @@ public class MedicalWorkspaceService {
         return new MedicalWorkspaceResponse.Admission(
             admissionId,
             row.getObject("admitted_at", java.time.OffsetDateTime.class).toInstant(),
+            row.getObject("provisional_care_unit_id", UUID.class),
+            row.getString("provisional_care_unit_name"),
+            row.getString("admission_origin"),
             new MedicalWorkspaceResponse.Patient(
                 row.getObject("patient_id", UUID.class),
                 row.getString("full_name"),
                 birthDate == null ? null : birthDate.toLocalDate(),
+                row.getString("cns"),
+                row.getString("mother_name"),
                 row.getString("sex"),
                 row.getBigDecimal("weight_kg"),
                 row.getString("diagnosis"),
@@ -333,6 +471,19 @@ public class MedicalWorkspaceService {
         return beds.getFirst();
     }
 
+    private void reserveAvailableBed(JdbcTemplate jdbc, UUID targetBedId) {
+        int reserved = jdbc.update(
+            "UPDATE dbo.bed SET status = 'OCCUPIED', updated_at = SYSUTCDATETIME(), " +
+            "row_version = row_version + 1 WHERE id = ? AND active = 1 AND status = 'AVAILABLE' " +
+            "AND EXISTS (SELECT 1 FROM dbo.room r JOIN dbo.care_unit u ON u.id = r.care_unit_id " +
+            "WHERE r.id = dbo.bed.room_id AND r.active = 1 AND u.active = 1)",
+            targetBedId
+        );
+        if (reserved == 0) {
+            throw new BusinessValidationException("O leito de destino não está disponível");
+        }
+    }
+
     private UUID requiredActivePatient(JdbcTemplate jdbc, UUID admissionId) {
         List<UUID> patients = jdbc.query(
             "SELECT patient_id FROM dbo.admission WHERE id = ? AND status = 'ACTIVE'",
@@ -351,6 +502,16 @@ public class MedicalWorkspaceService {
 
     private String normalizeNullable(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String normalizePersonName(String value) {
+        String normalized = normalizeNullable(value);
+        return normalized == null ? null : normalizeName(normalized);
+    }
+
+    private String normalizeDigits(String value) {
+        String normalized = normalizeNullable(value);
+        return normalized == null ? null : normalized.replaceAll("\\s+", "");
     }
 
     private static final class MutableUnit {

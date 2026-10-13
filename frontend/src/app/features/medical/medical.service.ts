@@ -6,6 +6,8 @@ import {
   AihCatalog,
   AihDraft,
   AihResponse,
+  AdmitPatientPayload,
+  AdmitProvisionalPatientPayload,
   BedsideProcedureCatalog,
   BedsideProcedureDraft,
   BedsideProcedureResponse,
@@ -18,6 +20,9 @@ import {
   DietPrescriptionCatalog,
   DietPrescriptionDraft,
   DietPrescriptionResponse,
+  DiagnosticExamCatalog,
+  DiagnosticExamDraft,
+  DiagnosticExamResponse,
   IsolationPrecautionCatalog,
   IsolationPrecautionDraft,
   IsolationPrecautionResponse,
@@ -39,6 +44,7 @@ import {
   TherapeuticSupportCatalog,
   TherapeuticSupportDraft,
   TherapeuticSupportResponse,
+  UpdatePatientPayload,
   VentilatorySupportCatalog,
   VentilatorySupportDraft,
   VentilatorySupportResponse,
@@ -53,8 +59,14 @@ export class MedicalService {
     return firstValueFrom(this.http.get<MedicalWorkspace>(`${this.baseUrl}/workspace`));
   }
 
-  admit(payload: Record<string, unknown>): Promise<MedicalAdmission> {
+  admit(payload: AdmitPatientPayload): Promise<MedicalAdmission> {
     return firstValueFrom(this.http.post<MedicalAdmission>(`${this.baseUrl}/admissions`, payload));
+  }
+
+  admitProvisional(payload: AdmitProvisionalPatientPayload): Promise<MedicalAdmission> {
+    return firstValueFrom(
+      this.http.post<MedicalAdmission>(`${this.baseUrl}/provisional-admissions`, payload),
+    );
   }
 
   transfer(admissionId: string, targetBedId: string): Promise<MedicalAdmission> {
@@ -65,7 +77,15 @@ export class MedicalService {
     );
   }
 
-  updatePatient(admissionId: string, payload: Record<string, unknown>): Promise<MedicalAdmission> {
+  allocate(admissionId: string, targetBedId: string): Promise<MedicalAdmission> {
+    return firstValueFrom(
+      this.http.post<MedicalAdmission>(`${this.baseUrl}/admissions/${admissionId}/allocate`, {
+        targetBedId,
+      }),
+    );
+  }
+
+  updatePatient(admissionId: string, payload: UpdatePatientPayload): Promise<MedicalAdmission> {
     return firstValueFrom(
       this.http.put<MedicalAdmission>(`${this.baseUrl}/admissions/${admissionId}/patient`, payload),
     );
@@ -234,6 +254,22 @@ export class MedicalService {
 
   previewAih(draft: AihDraft): Promise<AihResponse> {
     return firstValueFrom(this.http.post<AihResponse>(`${this.baseUrl}/aih/preview`, draft));
+  }
+
+  diagnosticExamCatalog(): Promise<DiagnosticExamCatalog> {
+    return firstValueFrom(this.http.get<DiagnosticExamCatalog>(`${this.baseUrl}/exams/catalog`));
+  }
+
+  previewDiagnosticExams(
+    admissionId: string,
+    draft: DiagnosticExamDraft,
+  ): Promise<DiagnosticExamResponse> {
+    return firstValueFrom(
+      this.http.post<DiagnosticExamResponse>(
+        `${this.baseUrl}/admissions/${admissionId}/exams/preview`,
+        draft,
+      ),
+    );
   }
 
   documents(admissionId: string): Promise<ClinicalDocument[]> {

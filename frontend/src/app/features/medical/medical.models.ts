@@ -4,6 +4,8 @@ export interface MedicalPatient {
   id: string;
   fullName: string;
   birthDate: string | null;
+  cns: string | null;
+  motherName: string | null;
   sex: string;
   weightKg: number | null;
   diagnosis: string | null;
@@ -14,6 +16,9 @@ export interface MedicalPatient {
 export interface MedicalAdmission {
   id: string;
   admittedAt: string;
+  provisionalCareUnitId: string | null;
+  provisionalCareUnitName: string | null;
+  origin: string | null;
   patient: MedicalPatient;
 }
 
@@ -42,9 +47,30 @@ export interface MedicalCareUnit {
 export interface MedicalWorkspace {
   hospitalId: string;
   careUnits: MedicalCareUnit[];
+  unassignedAdmissions: MedicalAdmission[];
 }
 
-export type ClinicalFormKind = 'PRESCRIPTION' | 'EVOLUTION' | 'PROCEDURE' | 'AIH';
+export interface AdmitPatientPayload {
+  bedId: string;
+  fullName: string;
+  birthDate: string | null;
+  cns: string | null;
+  motherName: string | null;
+  sex: string;
+  weightKg: number | null;
+  diagnosis: string | null;
+  comorbidities: string | null;
+  allergies: string | null;
+}
+
+export interface AdmitProvisionalPatientPayload extends Omit<AdmitPatientPayload, 'bedId'> {
+  careUnitId: string;
+  origin: string | null;
+}
+
+export type UpdatePatientPayload = Omit<AdmitPatientPayload, 'bedId'>;
+
+export type ClinicalFormKind = 'PRESCRIPTION' | 'EVOLUTION' | 'PROCEDURE' | 'AIH' | 'EXAM';
 
 export interface PrescriptionStarterClinic {
   code: string;
@@ -85,7 +111,8 @@ export type ClinicalFieldType =
   | 'CRITICAL_CARE_PLAN'
   | 'MEDICATION_THERAPY_PLAN'
   | 'PROCEDURE_PLAN'
-  | 'AIH_PLAN';
+  | 'AIH_PLAN'
+  | 'DIAGNOSTIC_EXAM_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -928,6 +955,98 @@ export interface AihResponse {
   };
   billingAudit: {
     alerts: string[];
+  };
+}
+
+export interface DiagnosticExamOption {
+  code: string;
+  label: string;
+}
+
+export interface DiagnosticExamDefinition extends DiagnosticExamOption {
+  tussCode: string | null;
+  sigtapCode: string | null;
+  highCost: boolean;
+  supplies: string[];
+}
+
+export interface DiagnosticXrayProfile extends DiagnosticExamOption {
+  tussCode: string | null;
+  sigtapCode: string | null;
+  pairedSite: boolean;
+  incidences: DiagnosticExamOption[];
+  defaultIncidences: string[];
+}
+
+export interface DiagnosticUltrasoundDefinition extends DiagnosticExamOption {
+  tussCode: string | null;
+  sigtapCode: string | null;
+  pairedSite: boolean;
+  justifications: DiagnosticExamOption[];
+}
+
+export interface DiagnosticExamCatalog {
+  clinicalContexts: DiagnosticExamOption[];
+  quickPacks: Array<{
+    code: string;
+    label: string;
+    bloodExamCodes: string[];
+    urineExamCodes: string[];
+    tomographyRegion: string | null;
+    xrayRegion: string | null;
+    ultrasoundCode: string | null;
+    ecg: boolean;
+  }>;
+  bloodExams: DiagnosticExamDefinition[];
+  urineExams: DiagnosticExamDefinition[];
+  tomographyRegions: DiagnosticExamDefinition[];
+  contrastOptions: DiagnosticExamOption[];
+  tomographyJustifications: DiagnosticExamOption[];
+  xrayProfiles: DiagnosticXrayProfile[];
+  lateralities: DiagnosticExamOption[];
+  ultrasoundExams: DiagnosticUltrasoundDefinition[];
+  ecgPriorities: DiagnosticExamOption[];
+  ecgJustifications: DiagnosticExamOption[];
+}
+
+export interface DiagnosticExamDraft {
+  clinicalContext: string;
+  bloodExams: string[];
+  urineExams: string[];
+  laboratoryClinicalJustification: string;
+  tomography: {
+    region: string;
+    contrast: string;
+    clinicalJustification: string;
+    previousCreatinineMgDl: string;
+  } | null;
+  xray: {
+    region: string;
+    laterality: string;
+    incidences: string[];
+    clinicalJustification: string;
+  } | null;
+  ultrasound: {
+    type: string;
+    laterality: string;
+    clinicalJustification: string;
+  } | null;
+  electrocardiogram: {
+    type: string;
+    priority: string;
+    clinicalJustification: string;
+  } | null;
+}
+
+export interface DiagnosticExamResponse {
+  structuredExams: {
+    summaryLine: string;
+    requestDetails: string;
+    duplicateReviewItems: string[];
+  };
+  billingAudit: {
+    suppliesEquipmentForReview: string[];
+    auditAlerts: string[];
   };
 }
 

@@ -20,6 +20,8 @@ public final class ClinicalRequests {
         @NotNull UUID bedId,
         @NotBlank @Size(max = 180) String fullName,
         LocalDate birthDate,
+        @Pattern(regexp = "[0-9]*") @Size(max = 20) String cns,
+        @Size(max = 180) String motherName,
         @NotBlank @Pattern(regexp = "FEMININO|MASCULINO|OUTRO|NAO_INFORMADO") String sex,
         @DecimalMin("0.10") @DecimalMax("500.00") BigDecimal weightKg,
         @Size(max = 1000) String diagnosis,
@@ -27,9 +29,25 @@ public final class ClinicalRequests {
         @Size(max = 2000) String allergies
     ) {}
 
+    public record AdmitPatientWithoutBed(
+        @NotNull UUID careUnitId,
+        @NotBlank @Size(max = 180) String fullName,
+        LocalDate birthDate,
+        @Pattern(regexp = "[0-9]*") @Size(max = 20) String cns,
+        @Size(max = 180) String motherName,
+        @NotBlank @Pattern(regexp = "FEMININO|MASCULINO|OUTRO|NAO_INFORMADO") String sex,
+        @DecimalMin("0.10") @DecimalMax("500.00") BigDecimal weightKg,
+        @Size(max = 1000) String diagnosis,
+        @Size(max = 2000) String comorbidities,
+        @Size(max = 2000) String allergies,
+        @Size(max = 200) String origin
+    ) {}
+
     public record UpdatePatient(
         @NotBlank @Size(max = 180) String fullName,
         LocalDate birthDate,
+        @Pattern(regexp = "[0-9]*") @Size(max = 20) String cns,
+        @Size(max = 180) String motherName,
         @NotBlank @Pattern(regexp = "FEMININO|MASCULINO|OUTRO|NAO_INFORMADO") String sex,
         @DecimalMin("0.10") @DecimalMax("500.00") BigDecimal weightKg,
         @Size(max = 1000) String diagnosis,
@@ -39,8 +57,10 @@ public final class ClinicalRequests {
 
     public record Transfer(@NotNull UUID targetBedId) {}
 
+    public record AllocateBed(@NotNull UUID targetBedId) {}
+
     public record Discharge(
-        @NotBlank @Pattern(regexp = "OBITO|TRANSFERENCIA|ALTA_MELHORA") String reason
+        @NotBlank @Pattern(regexp = "OBITO|TRANSFERENCIA|ALTA_MELHORA|CANCELAMENTO") String reason
     ) {}
 
     public record SaveDocument(
