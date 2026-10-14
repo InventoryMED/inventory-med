@@ -1,6 +1,6 @@
 # Arquitetura oficial do Inventory MED
 
-**Versão:** 1.4
+**Versão:** 1.6
 
 **Data da decisão:** 02/10/2026 — atualização funcional em 13/10/2026
 
@@ -25,6 +25,8 @@ por:
 - evoluções médicas e impressão;
 - procedimentos beira-leito e AIH digital com impressão;
 - solicitações estruturadas de exames laboratoriais, de imagem e ECG com impressão;
+- resumos clínicos de alta, transferência hospitalar e óbito com impressão;
+- receitas médicas ambulatoriais, de alta e de controle especial com impressão segura;
 - auditoria das operações sensíveis.
 
 O sistema não será dividido em microserviços. A primeira versão será um monólito
@@ -177,7 +179,7 @@ SQL SERVER EXPRESS
     +-- transferências e altas
     +-- prescrições e itens
     +-- evoluções
-    +-- procedimentos, AIHs e solicitações de exames
+    +-- procedimentos, AIHs, solicitações de exames, resumos clínicos e receitas médicas
     +-- auditoria clínica
 ```
 
@@ -235,6 +237,55 @@ banco hospitalar.
 - o documento finalizado é imutável e segue a política de retificação dos demais
   documentos clínicos.
 
+### Resumo clínico e encerramento da internação
+
+Alta hospitalar, transferência para outro hospital e óbito exigem um resumo clínico
+finalizado na mesma internação antes de o backend encerrar a admissão ou liberar o
+leito. O vínculo é persistido em `admission.outcome_summary_document_id` e não pode ser
+informado como conteúdo livre pelo navegador.
+
+- o resumo registra o desfecho, síntese clínica, autoria, data e os dados específicos
+  de alta, transferência externa ou óbito;
+- a API confirma que o documento pertence à internação ativa, está finalizado e possui
+  tipo de desfecho compatível com o encerramento solicitado;
+- a transferência interna entre leitos não encerra a internação e continua usando o
+  fluxo próprio de transferência;
+- `ALTA UTI PARA ENFERMARIA` pode constar no resumo, mas não libera leito nem encerra a
+  internação; a movimentação deve ocorrer pelo fluxo de transferência interna;
+- cancelamento de uma admissão provisória continua sendo evento administrativo e não
+  exige resumo clínico;
+- os códigos de motivo de saída são referências de auditoria e devem ser conferidos na
+  competência SIGTAP e no contrato vigentes antes do faturamento;
+- a finalização atual registra autoria e data na auditoria interna. Assinatura digital
+  ICP-Brasil somente será declarada quando houver integração homologada.
+
+### Receitas médicas ambulatoriais e de alta
+
+Receitas médicas são documentos clínicos vinculados à internação e persistidos somente
+no banco do hospital selecionado. A API deriva hospital, paciente, alergias e autoria da
+sessão e da internação; o navegador não escolhe esses vínculos.
+
+- receituário comum gera uma via para o paciente;
+- receituário de controle especial gera duas vias identificadas para farmácia e
+  paciente, com campos de comprador e fornecedor;
+- a finalização exige confirmação explícita de revisão médica e é registrada na
+  auditoria clínica;
+- a API faz uma checagem textual conservadora entre medicamentos digitados e alergias
+  registradas, bloqueando correspondências claras. Essa checagem não substitui revisão
+  clínica, farmacológica ou um catálogo estruturado de princípios ativos;
+- até a integração com catálogo oficial, o medicamento permanece em texto livre e a
+  interface informa que princípio ativo, concentração e apresentação devem ser
+  conferidos;
+- Notificação de Receita B não será apresentada como documento válido enquanto o
+  sistema não possuir integração com SNCR, numeração controlada e assinatura eletrônica
+  qualificada. A prévia disponível é identificada como rascunho não válido para
+  dispensação;
+- uma receita finalizada é imutável. Duplicar uma receita cria uma nova emissão que
+  exige revisão e nova autoria;
+- a primeira etapa duplica apenas receitas da mesma internação. Consulta entre
+  internações depende da futura decisão sobre identificador único do paciente e nunca
+  poderá atravessar hospitais.
+
 O SQL Server Express limita cada banco a 10 GB. O uso será monitorado; uma mudança de
 edição ou banco será avaliada antes que qualquer unidade se aproxime desse limite.
 
@@ -285,6 +336,8 @@ br.com.inventorymed
 +-- evolutions
 +-- procedures
 +-- aih
++-- clinicalsummaries
++-- medicalrecipes
 +-- transfers
 +-- discharges
 +-- audit
@@ -312,9 +365,11 @@ Cada módulo pode conter:
 - toda operação clínica valida a unidade selecionada na sessão;
 - admissões sem leito só aceitam uma unidade assistencial ativa do banco hospitalar
   selecionado na sessão;
-- prescrições, evoluções, procedimentos, AIHs e solicitações de exames não são sobrescritos
-  silenciosamente: mudanças relevantes geram novo documento, versão ou evento de
-  auditoria;
+- prescrições, evoluções, procedimentos, AIHs, solicitações de exames, resumos clínicos
+  e receitas médicas não são sobrescritos silenciosamente: mudanças relevantes geram
+  novo documento, versão ou evento de auditoria;
+- o encerramento clínico de uma internação exige resumo clínico finalizado e compatível,
+  validado no backend;
 - Flyway é o único meio normal de alterar a estrutura dos bancos;
 - a aplicação não utiliza a conta `sa`.
 
@@ -339,8 +394,8 @@ não equivale a autoria médica.
 
 ### Invariante dos documentos clínicos
 
-Documentos clínicos, inclusive prescrições, evoluções, procedimentos, AIHs e solicitações
-de exames, seguem um
+Documentos clínicos, inclusive prescrições, evoluções, procedimentos, AIHs, solicitações
+de exames, resumos clínicos e receitas médicas, seguem um
 modelo de histórico somente acrescentável:
 
 ```text
@@ -477,6 +532,8 @@ src/app
     +-- procedures
     +-- aih
     +-- diagnostic-exams
+    +-- clinical-summaries
+    +-- medical-recipes
 ```
 
 Regras:

@@ -544,6 +544,44 @@ describe('App', () => {
     );
   });
 
+  it('should open the clinical summary page from an occupied bed', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    const store = app.store;
+    store.resetDemo();
+    store.selectHospital(INITIAL_HOSPITALS[0].id);
+    const bed = store.activeHospital().rooms[0].beds[0];
+    store.admitPatient(bed.id, { name: 'Paciente resumo clínico' });
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    app.openClinicalSummary(store.findBed(bed.id));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining('flow=clinical-summary'),
+      '_blank',
+      'noopener',
+    );
+  });
+
+  it('should open the medical recipe page from an occupied bed', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance as any;
+    const store = app.store;
+    store.resetDemo();
+    store.selectHospital(INITIAL_HOSPITALS[0].id);
+    const bed = store.activeHospital().rooms[0].beds[0];
+    store.admitPatient(bed.id, { name: 'Paciente receita médica' });
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    app.openMedicalRecipe(store.findBed(bed.id));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining('flow=medical-recipe'),
+      '_blank',
+      'noopener',
+    );
+  });
+
   it('should convert evolution choices into the published template contract', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance as any;

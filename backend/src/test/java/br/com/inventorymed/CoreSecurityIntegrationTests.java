@@ -28,6 +28,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.UUID;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -1455,6 +1456,224 @@ class CoreSecurityIntegrationTests {
         );
         assertThat(firstHospitalExamDocuments).isEqualTo(1);
         assertThat(secondHospitalExamDocuments).isZero();
+
+        UUID recipeTemplateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
+                    "JOIN dbo.form_template t ON t.id = v.template_id " +
+                    "WHERE t.kind = 'MEDICAL_RECIPE' AND v.status = 'PUBLISHED'",
+                UUID.class
+            )
+        );
+        String recipeFieldType = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT f.field_type FROM dbo.form_field f " +
+                    "JOIN dbo.form_section s ON s.id = f.section_id " +
+                    "WHERE s.version_id = ? AND s.section_key = 'MEDICAL_RECIPE' " +
+                    "AND f.field_key = 'RECIPE'",
+                String.class,
+                recipeTemplateVersionId
+            )
+        );
+        assertThat(recipeFieldType).isEqualTo("MEDICAL_RECIPE_PLAN");
+
+        String commonRecipe = """
+            {
+              "recipeType":"COMMON",
+              "items":[{
+                "route":"ORAL",
+                "medication":"LOSARTANA 50 MG",
+                "quantity":"30 COMPRIMIDOS",
+                "dosage":"TOMAR 1 COMPRIMIDO PELA MANHÃ",
+                "recommendations":null
+              }],
+              "buyerName":null,
+              "buyerIdentityDocument":null,
+              "buyerAddress":null,
+              "physicianAttestation":true
+            }
+            """;
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/medical-recipes/preview")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(commonRecipe)
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.finalizationAllowed").value(true))
+            .andExpect(jsonPath("$.copyLabels[0]").value("VIA DO PACIENTE"));
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"MEDICAL_RECIPE",
+                          "values":{"MEDICAL_RECIPE.RECIPE":%s},
+                          "finalizeDocument":true
+                        }
+                        """.formatted(recipeTemplateVersionId, commonRecipe)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.kind").value("MEDICAL_RECIPE"))
+            .andExpect(jsonPath("$.status").value("FINALIZED"))
+            .andExpect(
+                jsonPath("$.values['MEDICAL_RECIPE.RECIPE'].request.items[0].medication")
+                    .value("LOSARTANA 50 MG")
+            );
+
+        String notificationB = commonRecipe.replace("COMMON", "NOTIFICATION_B");
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"MEDICAL_RECIPE",
+                          "values":{"MEDICAL_RECIPE.RECIPE":%s},
+                          "finalizeDocument":true
+                        }
+                        """.formatted(recipeTemplateVersionId, notificationB)
+                    )
+            )
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("SNCR")));
+
+        Integer firstHospitalRecipeDocuments = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'MEDICAL_RECIPE'",
+                Integer.class
+            )
+        );
+        Integer secondHospitalRecipeDocuments = tenantJdbc.read(secondHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'MEDICAL_RECIPE'",
+                Integer.class
+            )
+        );
+        assertThat(firstHospitalRecipeDocuments).isEqualTo(1);
+        assertThat(secondHospitalRecipeDocuments).isZero();
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/discharge")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"reason\":\"ALTA_MELHORA\"}")
+            )
+            .andExpect(status().isBadRequest())
+            .andExpect(
+                jsonPath("$.message")
+                    .value(org.hamcrest.Matchers.containsString("resumo clínico"))
+            );
+
+        UUID summaryTemplateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
+                    "JOIN dbo.form_template t ON t.id = v.template_id " +
+                    "WHERE t.kind = 'CLINICAL_SUMMARY' AND v.status = 'PUBLISHED'",
+                UUID.class
+            )
+        );
+        String summaryFieldType = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT f.field_type FROM dbo.form_field f " +
+                    "JOIN dbo.form_section s ON s.id = f.section_id " +
+                    "WHERE s.version_id = ? AND s.section_key = 'CLINICAL_SUMMARY' " +
+                    "AND f.field_key = 'REPORT'",
+                String.class,
+                summaryTemplateVersionId
+            )
+        );
+        assertThat(summaryFieldType).isEqualTo("CLINICAL_SUMMARY_PLAN");
+
+        MvcResult summaryResult = mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"CLINICAL_SUMMARY",
+                          "values":{
+                            "CLINICAL_SUMMARY.REPORT":{
+                              "outcomeType":"ALTA_HOSPITALAR",
+                              "dischargeCondition":"MELHORADO",
+                              "clinicalSummary":"Paciente evoluiu com melhora clínica.",
+                              "primaryCid":"J18.9",
+                              "dischargeMedications":[],
+                              "dischargeOrientations":["RETORNAR À UBS EM 7 DIAS"],
+                              "transfer":null,
+                              "death":null,
+                              "physicianAttestation":true
+                            }
+                          },
+                          "finalizeDocument":true
+                        }
+                        """.formatted(summaryTemplateVersionId)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.kind").value("CLINICAL_SUMMARY"))
+            .andExpect(jsonPath("$.status").value("FINALIZED"))
+            .andExpect(
+                jsonPath("$.values['CLINICAL_SUMMARY.REPORT'].outcomeReference.dischargeReason")
+                    .value("ALTA_MELHORA")
+            )
+            .andReturn();
+        UUID summaryDocumentId = firstUuid(
+            summaryResult.getResponse().getContentAsString(),
+            "id"
+        );
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/discharge")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {"reason":"ALTA_MELHORA","clinicalSummaryDocumentId":"%s"}
+                        """.formatted(summaryDocumentId)
+                    )
+            )
+            .andExpect(status().isNoContent());
+
+        Map<String, Object> outcomeRecord = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForMap(
+                "SELECT discharge_reason, outcome_summary_document_id FROM dbo.admission " +
+                    "WHERE id = ? AND status = 'DISCHARGED'",
+                admissionId
+            )
+        );
+        assertThat(outcomeRecord.get("discharge_reason")).isEqualTo("ALTA_MELHORA");
+        assertThat(String.valueOf(outcomeRecord.get("outcome_summary_document_id")))
+            .isEqualToIgnoringCase(summaryDocumentId.toString());
+        Integer secondHospitalSummaries = tenantJdbc.read(secondHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'CLINICAL_SUMMARY'",
+                Integer.class
+            )
+        );
+        assertThat(secondHospitalSummaries).isZero();
 
         Integer firstHospitalPatients = tenantJdbc.read(firstHospital.getId(), jdbc ->
             jdbc.queryForObject("SELECT COUNT(*) FROM dbo.patient", Integer.class)

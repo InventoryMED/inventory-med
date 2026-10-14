@@ -5,5 +5,7 @@ public enum FormKind {
     EVOLUTION,
     PROCEDURE,
     AIH,
-    EXAM
+    EXAM,
+    CLINICAL_SUMMARY,
+    MEDICAL_RECIPE
 }

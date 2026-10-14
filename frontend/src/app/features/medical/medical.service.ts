@@ -14,6 +14,9 @@ import {
   ClinicalDocument,
   ClinicalFormKind,
   ClinicalFormTemplate,
+  ClinicalSummaryCatalog,
+  ClinicalSummaryDraft,
+  ClinicalSummaryResponse,
   CriticalCareCatalog,
   CriticalCareDraft,
   CriticalCareResponse,
@@ -27,6 +30,9 @@ import {
   IsolationPrecautionDraft,
   IsolationPrecautionResponse,
   MedicalAdmission,
+  MedicalRecipeCatalog,
+  MedicalRecipeDraft,
+  MedicalRecipeResponse,
   MedicalWorkspace,
   MedicationTherapyCatalog,
   MedicationTherapyDraft,
@@ -91,9 +97,16 @@ export class MedicalService {
     );
   }
 
-  discharge(admissionId: string, reason: string): Promise<void> {
+  discharge(
+    admissionId: string,
+    reason: string,
+    clinicalSummaryDocumentId: string | null = null,
+  ): Promise<void> {
     return firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/admissions/${admissionId}/discharge`, { reason }),
+      this.http.post<void>(`${this.baseUrl}/admissions/${admissionId}/discharge`, {
+        reason,
+        clinicalSummaryDocumentId,
+      }),
     );
   }
 
@@ -267,6 +280,36 @@ export class MedicalService {
     return firstValueFrom(
       this.http.post<DiagnosticExamResponse>(
         `${this.baseUrl}/admissions/${admissionId}/exams/preview`,
+        draft,
+      ),
+    );
+  }
+
+  clinicalSummaryCatalog(): Promise<ClinicalSummaryCatalog> {
+    return firstValueFrom(
+      this.http.get<ClinicalSummaryCatalog>(`${this.baseUrl}/clinical-summaries/catalog`),
+    );
+  }
+
+  previewClinicalSummary(draft: ClinicalSummaryDraft): Promise<ClinicalSummaryResponse> {
+    return firstValueFrom(
+      this.http.post<ClinicalSummaryResponse>(`${this.baseUrl}/clinical-summaries/preview`, draft),
+    );
+  }
+
+  medicalRecipeCatalog(): Promise<MedicalRecipeCatalog> {
+    return firstValueFrom(
+      this.http.get<MedicalRecipeCatalog>(`${this.baseUrl}/medical-recipes/catalog`),
+    );
+  }
+
+  previewMedicalRecipe(
+    admissionId: string,
+    draft: MedicalRecipeDraft,
+  ): Promise<MedicalRecipeResponse> {
+    return firstValueFrom(
+      this.http.post<MedicalRecipeResponse>(
+        `${this.baseUrl}/admissions/${admissionId}/medical-recipes/preview`,
         draft,
       ),
     );

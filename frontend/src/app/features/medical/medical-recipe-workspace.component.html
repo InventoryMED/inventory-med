@@ -1,0 +1,357 @@
+<div class="recipe-shell">
+  <header class="recipe-appbar no-print">
+    <div class="recipe-brand"><img src="inventory-med-logo.png" alt="INVENTORY MED" /></div>
+    <div class="recipe-context">
+      <span>CONTINUIDADE DO TRATAMENTO</span>
+      <strong>RECEITAS MÉDICAS • {{ hospitalName }}</strong>
+    </div>
+    <button type="button" class="back-button" (click)="back.emit()">VOLTAR AOS LEITOS</button>
+  </header>
+
+  <main class="recipe-main">
+    <app-clinical-documentation-tabs
+      activeTab="MEDICAL_RECIPE"
+      (tabChange)="moduleChange.emit($event)"
+    />
+
+    <section class="patient-header" aria-label="DADOS DO PACIENTE">
+      <div class="patient-primary">
+        <span>PACIENTE</span><strong>{{ patient.name }}</strong>
+      </div>
+      <div>
+        <span>NASCIMENTO</span><strong>{{ patient.birthDate || 'NÃO INFORMADO' }}</strong>
+      </div>
+      <div>
+        <span>SEXO</span><strong>{{ patient.sex || 'NÃO INFORMADO' }}</strong>
+      </div>
+      <div>
+        <span>PESO</span><strong>{{ patient.weightKg ? patient.weightKg + ' KG' : '—' }}</strong>
+      </div>
+      <div>
+        <span>UNIDADE</span><strong>{{ unitName }}</strong>
+      </div>
+      <div>
+        <span>QUARTO / LEITO</span><strong>{{ roomName || 'PROVISÓRIO' }} • {{ bedCode }}</strong>
+      </div>
+      <div>
+        <span>INTERNAÇÃO</span><strong>{{ formatDate(patient.admissionAt) }}</strong>
+      </div>
+      <div class="patient-wide" [class.allergy-alert]="patient.allergies">
+        <span>ALERGIAS REGISTRADAS</span
+        ><strong>{{ patient.allergies || 'NÃO INFORMADAS' }}</strong>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <section class="state-card no-print">CARREGANDO MODELO E HISTÓRICO DE RECEITAS...</section>
+    } @else {
+      @if (message()) {
+        <p class="feedback no-print" role="status">{{ message() }}</p>
+      }
+
+      <section class="history-card no-print">
+        <div>
+          <span class="section-kicker">HISTÓRICO DA INTERNAÇÃO</span>
+          <h2>RECEITAS FINALIZADAS</h2>
+          <p>A DUPLICAÇÃO COPIA SOMENTE OS ITENS. O MÉDICO DEVE REVISAR E ASSUMIR NOVA AUTORIA.</p>
+        </div>
+        @if (documents().length) {
+          <div class="history-content">
+            <div class="history-list">
+              @for (document of documents(); track document.id) {
+                <button type="button" (click)="openDocument(document)">
+                  <strong>RECEITA {{ document.versionNumber }}</strong>
+                  <span>{{ formatDate(document.finalizedAt ?? document.createdAt) }}</span>
+                </button>
+              }
+            </div>
+            <button type="button" class="duplicate-button" (click)="duplicateLast()">
+              DUPLICAR ÚLTIMA RECEITA
+            </button>
+          </div>
+        } @else {
+          <p>NENHUMA RECEITA FINALIZADA NESTA INTERNAÇÃO.</p>
+        }
+      </section>
+
+      <form class="recipe-form no-print" [formGroup]="form" (ngSubmit)="finalizeDocument()">
+        <section class="form-section">
+          <header>
+            <span class="section-number">01</span>
+            <div>
+              <span class="section-kicker">FORMATO</span>
+              <h2>TIPO DE RECEITUÁRIO</h2>
+            </div>
+          </header>
+          <div class="type-options" role="radiogroup" aria-label="TIPO DE RECEITUÁRIO">
+            @for (option of catalog()?.recipeTypes ?? []; track option.code) {
+              <button
+                type="button"
+                [class.selected]="form.controls.recipeType.value === option.code"
+                [class.restricted]="!option.enabled"
+                (click)="selectRecipeType(option.code)"
+              >
+                <strong>{{ option.label }}</strong>
+                @if (!option.enabled) {
+                  <small>FINALIZAÇÃO INDISPONÍVEL</small>
+                }
+              </button>
+            }
+          </div>
+          @if (form.controls.recipeType.value === 'NOTIFICATION_B') {
+            <div class="legal-alert">
+              <strong>RASCUNHO DE APOIO — NÃO VÁLIDO PARA DISPENSAÇÃO.</strong>
+              <span
+                >A EMISSÃO VÁLIDA DEPENDE DE SNCR, NUMERAÇÃO CONTROLADA E ASSINATURA
+                QUALIFICADA.</span
+              >
+            </div>
+          }
+        </section>
+
+        <section class="form-section">
+          <header>
+            <span class="section-number">02</span>
+            <div>
+              <span class="section-kicker">MEDICAMENTOS</span>
+              <h2>ITENS DA RECEITA</h2>
+            </div>
+          </header>
+          @if (!catalog()?.medicationCatalogIntegrated) {
+            <p class="catalog-notice">
+              CATÁLOGO ANVISA/DEF AINDA NÃO INTEGRADO. DIGITE A DENOMINAÇÃO COMPLETA E CONFIRA
+              PRINCÍPIO ATIVO, CONCENTRAÇÃO E APRESENTAÇÃO.
+            </p>
+          }
+          <div class="recipe-table" formArrayName="items">
+            <div class="recipe-table-head" aria-hidden="true">
+              <span>SEL.</span><span>LINHA</span><span>USO / VIA</span><span>MEDICAMENTO</span
+              ><span>QUANTIDADE</span><span>POSOLOGIA</span><span>RECOMENDAÇÕES</span>
+            </div>
+            @for (row of items.controls; track row; let index = $index) {
+              <div class="recipe-table-row" [formGroupName]="index">
+                <label class="selection-cell"
+                  ><span class="sr-only">SELECIONAR LINHA {{ index + 1 }}</span
+                  ><input type="checkbox" formControlName="selected"
+                /></label>
+                <strong class="line-number">{{ index + 1 }}</strong>
+                <label
+                  ><span class="mobile-label">USO / VIA</span
+                  ><select formControlName="route">
+                    <option value="">SELECIONE</option>
+                    @for (route of catalog()?.routes ?? []; track route.code) {
+                      <option [value]="route.code">{{ route.label }}</option>
+                    }
+                  </select></label
+                >
+                <label
+                  ><span class="mobile-label">MEDICAMENTO</span
+                  ><input
+                    formControlName="medication"
+                    maxlength="180"
+                    placeholder="NOME, CONCENTRAÇÃO E APRESENTAÇÃO"
+                /></label>
+                <label
+                  ><span class="mobile-label">QUANTIDADE</span
+                  ><input
+                    formControlName="quantity"
+                    maxlength="80"
+                    placeholder="EX.: 30 COMPRIMIDOS"
+                /></label>
+                <label
+                  ><span class="mobile-label">POSOLOGIA</span
+                  ><input
+                    formControlName="dosage"
+                    maxlength="500"
+                    placeholder="EX.: TOMAR 1 CP DE 8/8H"
+                /></label>
+                <label
+                  ><span class="mobile-label">RECOMENDAÇÕES</span
+                  ><input formControlName="recommendations" maxlength="1000" placeholder="OPCIONAL"
+                /></label>
+              </div>
+            }
+          </div>
+          <div class="row-actions">
+            <button type="button" class="secondary-button" (click)="addRow()">
+              + INCLUIR LINHA
+            </button>
+            <button type="button" class="remove-button" (click)="removeSelectedRows()">
+              − EXCLUIR SELECIONADAS
+            </button>
+          </div>
+        </section>
+
+        @if (form.controls.recipeType.value === 'SPECIAL_CONTROL') {
+          <section class="form-section">
+            <header>
+              <span class="section-number">03</span>
+              <div>
+                <span class="section-kicker">CONTROLE ESPECIAL</span>
+                <h2>IDENTIFICAÇÃO DO COMPRADOR</h2>
+              </div>
+            </header>
+            <div class="buyer-grid">
+              <label
+                ><span>NOME DO COMPRADOR</span><input formControlName="buyerName" maxlength="180"
+              /></label>
+              <label
+                ><span>RG / DOCUMENTO</span
+                ><input formControlName="buyerIdentityDocument" maxlength="40"
+              /></label>
+              <label class="wide"
+                ><span>ENDEREÇO</span><input formControlName="buyerAddress" maxlength="300"
+              /></label>
+            </div>
+            <p class="field-note">
+              OS CAMPOS PODEM SER COMPLETADOS MANUALMENTE NA FARMÁCIA QUANDO NECESSÁRIO.
+            </p>
+          </section>
+        }
+
+        <section class="attestation-section">
+          <label>
+            <input type="checkbox" formControlName="physicianAttestation" />
+            <span
+              ><strong>CONFIRMO QUE REVISEI MEDICAMENTOS, POSOLOGIAS E ALERGIAS.</strong
+              ><small
+                >A IDENTIDADE, A DATA E O HOSPITAL SERÃO REGISTRADOS NA AUDITORIA. A CHECAGEM
+                TEXTUAL NÃO SUBSTITUI A REVISÃO MÉDICA.</small
+              ></span
+            >
+          </label>
+        </section>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="busy()"
+            (click)="generatePreview()"
+          >
+            GERAR PRÉVIA
+          </button>
+          <button type="button" class="secondary-button" [disabled]="busy()" (click)="print()">
+            {{
+              form.controls.recipeType.value === 'NOTIFICATION_B' ? 'IMPRIMIR RASCUNHO' : 'IMPRIMIR'
+            }}
+          </button>
+          <button type="submit" class="primary-button" [disabled]="busy() || !canFinalize()">
+            FINALIZAR RECEITA
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (preview(); as document) {
+      @if (document.allergyConflicts.length) {
+        <section class="allergy-block no-print" role="alert">
+          <strong>FINALIZAÇÃO BLOQUEADA POR ALERGIA REGISTRADA</strong>
+          @for (conflict of document.allergyConflicts; track conflict) {
+            <span>{{ conflict }}</span>
+          }
+        </section>
+      }
+      @if (document.blockingReasons.length) {
+        <section class="blocking-list no-print">
+          <strong>PENDÊNCIAS PARA FINALIZAÇÃO</strong>
+          <ul>
+            @for (reason of document.blockingReasons; track reason) {
+              <li>{{ reason }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      <section class="recipe-print-area">
+        @for (copy of document.copyLabels; track copy) {
+          <article
+            class="recipe-copy"
+            [class.notification-b-draft]="document.request.recipeType === 'NOTIFICATION_B'"
+          >
+            @if (document.request.recipeType === 'NOTIFICATION_B') {
+              <div class="draft-watermark">RASCUNHO • NÃO VÁLIDO</div>
+            }
+            <header class="print-header">
+              <img src="inventory-med-logo.png" alt="INVENTORY MED" />
+              <div>
+                <span>{{ hospitalName }}</span>
+                <h1>{{ document.printTitle }}</h1>
+                <small>{{ copy }}</small>
+              </div>
+              <div class="document-status">
+                <strong>{{ printStatus() }}</strong
+                ><span>{{ printDate() | date: 'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            </header>
+            <div class="print-patient-grid">
+              <div class="wide">
+                <span>PACIENTE</span><strong>{{ patient.name }}</strong>
+              </div>
+              <div>
+                <span>NASCIMENTO</span><strong>{{ patient.birthDate || '—' }}</strong>
+              </div>
+              <div>
+                <span>SEXO</span><strong>{{ patient.sex || '—' }}</strong>
+              </div>
+              <div class="wide allergy-print">
+                <span>ALERGIAS</span><strong>{{ patient.allergies || 'NÃO INFORMADAS' }}</strong>
+              </div>
+            </div>
+            <ol class="print-items">
+              @for (item of document.request.items; track $index) {
+                <li>
+                  <div class="medicine-line">
+                    <strong>{{ item.medication }}</strong
+                    ><span>{{ item.quantity }}</span>
+                  </div>
+                  <p>
+                    <b>USO {{ routeLabel(item.route) }}:</b> {{ item.dosage }}
+                  </p>
+                  @if (item.recommendations) {
+                    <p><b>RECOMENDAÇÕES:</b> {{ item.recommendations }}</p>
+                  }
+                </li>
+              }
+            </ol>
+            @if (document.request.recipeType === 'SPECIAL_CONTROL') {
+              <section class="buyer-print">
+                <h2>IDENTIFICAÇÃO DO COMPRADOR</h2>
+                <p>
+                  <strong>NOME:</strong>
+                  {{ document.request.buyerName || '________________________________________' }}
+                </p>
+                <p>
+                  <strong>RG / DOCUMENTO:</strong>
+                  {{ document.request.buyerIdentityDocument || '________________________' }}
+                </p>
+                <p>
+                  <strong>ENDEREÇO:</strong>
+                  {{ document.request.buyerAddress || '____________________________________' }}
+                </p>
+                <h2>IDENTIFICAÇÃO DO FORNECEDOR</h2>
+                <p>ESTABELECIMENTO: ____________________________________ DATA: ____/____/______</p>
+                <p>RESPONSÁVEL: _________________________________________</p>
+              </section>
+            }
+            <footer class="signature-footer">
+              <div>
+                <span></span><strong>{{ professionalName }}</strong
+                ><small>MÉDICO RESPONSÁVEL • ASSINATURA E CARIMBO</small>
+              </div>
+              <div>
+                <span></span><strong>DATA DA EMISSÃO</strong
+                ><small>{{ printDate() | date: 'dd/MM/yyyy' }}</small>
+              </div>
+            </footer>
+            <section class="print-notices">
+              @for (notice of document.safetyNotices; track notice) {
+                <small>{{ notice }}</small>
+              }
+            </section>
+          </article>
+        }
+      </section>
+    }
+  </main>
+</div>

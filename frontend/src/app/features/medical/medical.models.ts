@@ -70,7 +70,14 @@ export interface AdmitProvisionalPatientPayload extends Omit<AdmitPatientPayload
 
 export type UpdatePatientPayload = Omit<AdmitPatientPayload, 'bedId'>;
 
-export type ClinicalFormKind = 'PRESCRIPTION' | 'EVOLUTION' | 'PROCEDURE' | 'AIH' | 'EXAM';
+export type ClinicalFormKind =
+  | 'PRESCRIPTION'
+  | 'EVOLUTION'
+  | 'PROCEDURE'
+  | 'AIH'
+  | 'EXAM'
+  | 'CLINICAL_SUMMARY'
+  | 'MEDICAL_RECIPE';
 
 export interface PrescriptionStarterClinic {
   code: string;
@@ -112,7 +119,9 @@ export type ClinicalFieldType =
   | 'MEDICATION_THERAPY_PLAN'
   | 'PROCEDURE_PLAN'
   | 'AIH_PLAN'
-  | 'DIAGNOSTIC_EXAM_PLAN';
+  | 'DIAGNOSTIC_EXAM_PLAN'
+  | 'CLINICAL_SUMMARY_PLAN'
+  | 'MEDICAL_RECIPE_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -1048,6 +1057,107 @@ export interface DiagnosticExamResponse {
     suppliesEquipmentForReview: string[];
     auditAlerts: string[];
   };
+}
+
+export type ClinicalSummaryOutcome = 'ALTA_HOSPITALAR' | 'TRANSFERENCIA_HOSPITALAR' | 'OBITO';
+
+export interface ClinicalSummaryOption {
+  code: string;
+  label: string;
+  exitReferenceCode: string | null;
+}
+
+export interface ClinicalSummaryCatalog {
+  outcomeTypes: ClinicalSummaryOption[];
+  dischargeConditions: ClinicalSummaryOption[];
+  transferReasons: ClinicalSummaryOption[];
+  devices: ClinicalSummaryOption[];
+  necropsyOptions: ClinicalSummaryOption[];
+  orientationSuggestions: ClinicalSummaryOption[];
+}
+
+export interface ClinicalSummaryMedication {
+  medication: string;
+  dosage: string;
+  duration: string;
+}
+
+export interface ClinicalSummaryDraft {
+  outcomeType: ClinicalSummaryOutcome;
+  dischargeCondition: string | null;
+  clinicalSummary: string;
+  primaryCid: string | null;
+  dischargeMedications: ClinicalSummaryMedication[];
+  dischargeOrientations: string[];
+  transfer: {
+    reason: string;
+    destinationHospital: string;
+    destinationCnes: string | null;
+    devices: string[];
+  } | null;
+  death: {
+    occurredAt: string | null;
+    directCause: string;
+    antecedentCause: string | null;
+    underlyingCause: string;
+    necropsy: string;
+  } | null;
+  physicianAttestation: boolean;
+}
+
+export interface ClinicalSummaryResponse {
+  request: ClinicalSummaryDraft;
+  outcomeReference: {
+    dischargeReason: 'ALTA_MELHORA' | 'TRANSFERENCIA' | 'OBITO';
+    sigtapExitReferenceCode: string | null;
+    sigtapExitReferenceLabel: string;
+    closesAdmission: boolean;
+  };
+  reportText: string;
+  auditAlerts: string[];
+}
+
+export type MedicalRecipeType = 'COMMON' | 'SPECIAL_CONTROL' | 'NOTIFICATION_B';
+
+export interface MedicalRecipeOption {
+  code: string;
+  label: string;
+  enabled: boolean;
+}
+
+export interface MedicalRecipeCatalog {
+  recipeTypes: MedicalRecipeOption[];
+  routes: MedicalRecipeOption[];
+  medicationCatalogIntegrated: boolean;
+  sncrIntegrated: boolean;
+  qualifiedDigitalSignatureIntegrated: boolean;
+}
+
+export interface MedicalRecipeItem {
+  route: string;
+  medication: string;
+  quantity: string;
+  dosage: string;
+  recommendations: string | null;
+}
+
+export interface MedicalRecipeDraft {
+  recipeType: MedicalRecipeType;
+  items: MedicalRecipeItem[];
+  buyerName: string | null;
+  buyerIdentityDocument: string | null;
+  buyerAddress: string | null;
+  physicianAttestation: boolean;
+}
+
+export interface MedicalRecipeResponse {
+  request: MedicalRecipeDraft;
+  printTitle: string;
+  copyLabels: string[];
+  finalizationAllowed: boolean;
+  allergyConflicts: string[];
+  blockingReasons: string[];
+  safetyNotices: string[];
 }
 
 export interface ClinicalDocument {

@@ -56,6 +56,8 @@ public class MedicalWorkspaceController {
     private final BedsideProcedureService bedsideProcedureService;
     private final AihService aihService;
     private final DiagnosticExamService diagnosticExamService;
+    private final ClinicalSummaryService clinicalSummaryService;
+    private final MedicalRecipeService medicalRecipeService;
     private final PrescriptionStarterCatalogService prescriptionStarterCatalogService;
 
     public MedicalWorkspaceController(
@@ -74,6 +76,8 @@ public class MedicalWorkspaceController {
         BedsideProcedureService bedsideProcedureService,
         AihService aihService,
         DiagnosticExamService diagnosticExamService,
+        ClinicalSummaryService clinicalSummaryService,
+        MedicalRecipeService medicalRecipeService,
         PrescriptionStarterCatalogService prescriptionStarterCatalogService
     ) {
         this.sessionContext = sessionContext;
@@ -91,6 +95,8 @@ public class MedicalWorkspaceController {
         this.bedsideProcedureService = bedsideProcedureService;
         this.aihService = aihService;
         this.diagnosticExamService = diagnosticExamService;
+        this.clinicalSummaryService = clinicalSummaryService;
+        this.medicalRecipeService = medicalRecipeService;
         this.prescriptionStarterCatalogService = prescriptionStarterCatalogService;
     }
 
@@ -183,7 +189,8 @@ public class MedicalWorkspaceController {
     ) {
         HospitalSessionContext.Actor actor = sessionContext.requireActor(principal, session, CARE_ROLES);
         workspaceService.discharge(
-            actor.hospitalId(), actor.userId(), admissionId, body.reason(), request.getRemoteAddr()
+            actor.hospitalId(), actor.userId(), admissionId, body.reason(),
+            body.clinicalSummaryDocumentId(), request.getRemoteAddr()
         );
     }
 
@@ -371,6 +378,37 @@ public class MedicalWorkspaceController {
     public DiagnosticExamCatalog diagnosticExamCatalog(HttpSession session) {
         sessionContext.require(session, MEDICAL_ROLES);
         return diagnosticExamService.catalog();
+    }
+
+    @GetMapping("/clinical-summaries/catalog")
+    public ClinicalSummaryCatalog clinicalSummaryCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return clinicalSummaryService.catalog();
+    }
+
+    @PostMapping("/clinical-summaries/preview")
+    public ClinicalSummaryResponse previewClinicalSummary(
+        HttpSession session,
+        @Valid @RequestBody ClinicalSummaryRequest body
+    ) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return clinicalSummaryService.preview(body);
+    }
+
+    @GetMapping("/medical-recipes/catalog")
+    public MedicalRecipeCatalog medicalRecipeCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return medicalRecipeService.catalog();
+    }
+
+    @PostMapping("/admissions/{admissionId}/medical-recipes/preview")
+    public MedicalRecipeResponse previewMedicalRecipe(
+        HttpSession session,
+        @PathVariable UUID admissionId,
+        @Valid @RequestBody MedicalRecipeRequest body
+    ) {
+        HospitalSessionContext.Scope scope = sessionContext.require(session, MEDICAL_ROLES);
+        return medicalRecipeService.preview(scope.hospitalId(), admissionId, body);
     }
 
     @PostMapping("/admissions/{admissionId}/exams/preview")

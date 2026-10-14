@@ -12,7 +12,7 @@ describe('ProvisionalAdmissionsComponent', () => {
     fixture = TestBed.createComponent(ProvisionalAdmissionsComponent);
   });
 
-  it('shows the waiting patient and emits the allocation and exam actions', () => {
+  it('shows the waiting patient and emits the allocation and clinical document actions', () => {
     const admission: ProvisionalAdmission = {
       id: 'admission-1',
       admittedAt: '2026-10-13T12:00:00Z',
@@ -30,8 +30,14 @@ describe('ProvisionalAdmissionsComponent', () => {
     fixture.componentRef.setInput('admissions', [admission]);
     const emitted: ProvisionalAdmission[] = [];
     const examEmitted: ProvisionalAdmission[] = [];
+    const clinicalSummaryEmitted: ProvisionalAdmission[] = [];
+    const medicalRecipeEmitted: ProvisionalAdmission[] = [];
     fixture.componentInstance.allocate.subscribe((value) => emitted.push(value));
     fixture.componentInstance.exams.subscribe((value) => examEmitted.push(value));
+    fixture.componentInstance.clinicalSummary.subscribe((value) =>
+      clinicalSummaryEmitted.push(value),
+    );
+    fixture.componentInstance.medicalRecipe.subscribe((value) => medicalRecipeEmitted.push(value));
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
@@ -50,6 +56,16 @@ describe('ProvisionalAdmissionsComponent', () => {
     );
     examsButton?.click();
     expect(examEmitted).toEqual([admission]);
+    const clinicalSummaryButton = Array.from(element.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('RESUMO CLÍNICO'),
+    );
+    clinicalSummaryButton?.click();
+    expect(clinicalSummaryEmitted).toEqual([admission]);
+    const medicalRecipeButton = Array.from(element.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('RECEITAS MÉDICAS'),
+    );
+    medicalRecipeButton?.click();
+    expect(medicalRecipeEmitted).toEqual([admission]);
   });
 
   it('keeps a single compact patient detail open and filters the waiting list', () => {

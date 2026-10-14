@@ -1,0 +1,774 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  color: #071b31;
+  background: #eef2f6;
+}
+
+.recipe-appbar {
+  display: grid;
+  min-height: 76px;
+  grid-template-columns: 220px 1fr 180px;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 42px;
+  color: #fff;
+  background: #071f39;
+}
+
+.recipe-brand {
+  display: flex;
+  width: 210px;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.recipe-brand img {
+  width: 184px;
+  max-height: 44px;
+  object-fit: contain;
+}
+
+.recipe-context {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  text-align: center;
+}
+
+.recipe-context span,
+.section-kicker {
+  color: #2d6f9f;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.recipe-context span {
+  color: #91bbdc;
+}
+
+.recipe-context strong {
+  font-size: 0.82rem;
+  letter-spacing: 0.035em;
+}
+
+.back-button,
+.secondary-button,
+.primary-button,
+.remove-button,
+.duplicate-button {
+  min-height: 40px;
+  border: 1px solid #aebdcc;
+  border-radius: 7px;
+  padding: 0 16px;
+  color: #09233e;
+  background: #fff;
+  font: inherit;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  cursor: pointer;
+}
+
+.back-button {
+  border-color: #53708b;
+  color: #fff;
+  background: transparent;
+}
+
+.recipe-main {
+  width: min(1480px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 6px 0 48px;
+}
+
+.patient-header,
+.print-patient-grid {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(3, minmax(110px, 0.7fr));
+  border: 1px solid #b9c7d5;
+  background: #fff;
+}
+
+.patient-header > div,
+.print-patient-grid > div {
+  display: grid;
+  min-height: 50px;
+  align-content: center;
+  gap: 4px;
+  padding: 7px 11px;
+  border-right: 1px solid #d2dce5;
+  border-bottom: 1px solid #d2dce5;
+}
+
+.patient-header span,
+.print-patient-grid span {
+  color: #536b82;
+  font-size: 0.57rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.patient-header strong,
+.print-patient-grid strong {
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.patient-primary,
+.patient-wide,
+.print-patient-grid .wide {
+  grid-column: span 2;
+}
+
+.allergy-alert,
+.allergy-print {
+  color: #a21b16;
+  background: #fff2f1;
+}
+
+.state-card,
+.feedback,
+.history-card,
+.form-section,
+.attestation-section,
+.allergy-block,
+.blocking-list,
+.recipe-copy {
+  border: 1px solid #ced8e3;
+  background: #fff;
+}
+
+.state-card,
+.feedback,
+.allergy-block,
+.blocking-list {
+  margin-top: 16px;
+  padding: 15px 18px;
+  font-size: 0.69rem;
+  font-weight: 800;
+}
+
+.feedback,
+.blocking-list {
+  border-color: #8eb4d3;
+  color: #0d4e7d;
+  background: #edf7ff;
+}
+
+.allergy-block {
+  display: grid;
+  gap: 5px;
+  border-color: #d77770;
+  color: #8b1712;
+  background: #fff0ef;
+}
+
+.blocking-list ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.history-card {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.65fr) 1fr;
+  gap: 18px;
+  align-items: center;
+  margin-top: 16px;
+  padding: 18px 20px;
+}
+
+h2,
+p {
+  margin: 0;
+}
+
+.history-card h2,
+.form-section h2 {
+  margin-top: 4px;
+  font-size: 1rem;
+}
+
+.history-card p {
+  margin-top: 5px;
+  color: #65798c;
+  font-size: 0.61rem;
+  line-height: 1.45;
+}
+
+.history-content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.history-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.history-list button {
+  display: grid;
+  min-width: 160px;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #bccbda;
+  border-radius: 6px;
+  color: #0b2a48;
+  background: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-list span {
+  color: #667b8f;
+  font-size: 0.62rem;
+}
+
+.duplicate-button {
+  color: #fff;
+  background: #0a4778;
+}
+
+.recipe-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.form-section {
+  padding: 21px;
+}
+
+.form-section > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 17px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #dce4eb;
+}
+
+.section-number {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 5px;
+  color: #fff;
+  background: #0b3e6a;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.type-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.type-options button {
+  display: grid;
+  min-height: 60px;
+  place-items: center;
+  gap: 4px;
+  border: 1px solid #b8c6d4;
+  border-radius: 7px;
+  color: #102c48;
+  background: #f8fafc;
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.type-options button.selected {
+  border-color: #0a4778;
+  color: #fff;
+  background: #082945;
+}
+
+.type-options button.restricted:not(.selected) {
+  border-color: #dfaaa6;
+  color: #8f1f19;
+  background: #fff5f4;
+}
+
+.type-options small {
+  font-size: 0.55rem;
+}
+
+.legal-alert,
+.catalog-notice {
+  margin-top: 12px;
+  border-left: 4px solid #ae241d;
+  padding: 11px 13px;
+  color: #8d1c16;
+  background: #fff0ef;
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+.legal-alert {
+  display: grid;
+  gap: 3px;
+}
+
+.catalog-notice {
+  margin: 0 0 12px;
+  border-left-color: #b27d17;
+  color: #6f4b08;
+  background: #fff9e8;
+}
+
+.recipe-table {
+  overflow-x: auto;
+  border: 1px solid #bdcad7;
+}
+
+.recipe-table-head,
+.recipe-table-row {
+  display: grid;
+  grid-template-columns: 42px 48px 150px minmax(210px, 1.2fr) 150px minmax(220px, 1.3fr) minmax(
+      180px,
+      1fr
+    );
+}
+
+.recipe-table-head {
+  color: #fff;
+  background: #0a3559;
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+}
+
+.recipe-table-head span {
+  padding: 9px 7px;
+  border-right: 1px solid #43617c;
+}
+
+.recipe-table-row {
+  border-top: 1px solid #d5dee7;
+  background: #fff;
+}
+
+.recipe-table-row:first-of-type {
+  border-top: 0;
+}
+
+.recipe-table-row > * {
+  min-width: 0;
+  border-right: 1px solid #d5dee7;
+}
+
+.selection-cell,
+.line-number {
+  display: grid;
+  place-items: center;
+}
+
+.recipe-table-row input,
+.recipe-table-row select,
+.buyer-grid input {
+  width: 100%;
+  min-height: 45px;
+  border: 0;
+  padding: 9px;
+  color: #0b2137;
+  background: transparent;
+  font: inherit;
+  font-size: 0.68rem;
+  box-sizing: border-box;
+}
+
+.selection-cell input {
+  width: 16px;
+  min-height: 16px;
+  accent-color: #0b4f83;
+}
+
+.line-number {
+  font-size: 0.72rem;
+}
+
+.mobile-label {
+  display: none;
+}
+
+.row-actions,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.remove-button {
+  border-color: #d7a39f;
+  color: #9b1f19;
+  background: #fff5f4;
+}
+
+.buyer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.6fr;
+  gap: 12px;
+}
+
+.buyer-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.buyer-grid label span {
+  color: #263f58;
+  font-size: 0.61rem;
+  font-weight: 850;
+}
+
+.buyer-grid input {
+  border: 1px solid #bdcad7;
+  border-radius: 6px;
+}
+
+.buyer-grid .wide {
+  grid-column: 1 / -1;
+}
+
+.field-note {
+  margin-top: 8px;
+  color: #6a7e91;
+  font-size: 0.58rem;
+}
+
+.attestation-section {
+  padding: 16px 20px;
+  border-left: 4px solid #0b4f83;
+}
+
+.attestation-section label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.attestation-section input {
+  accent-color: #0b4f83;
+}
+
+.attestation-section span {
+  display: grid;
+  gap: 4px;
+}
+
+.attestation-section strong {
+  font-size: 0.71rem;
+}
+
+.attestation-section small {
+  color: #5f7488;
+  font-size: 0.61rem;
+  line-height: 1.45;
+}
+
+.primary-button {
+  border-color: #062845;
+  color: #fff;
+  background: #062845;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.recipe-print-area {
+  display: grid;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.recipe-copy {
+  position: relative;
+  min-height: 980px;
+  overflow: hidden;
+  padding: 28px 32px;
+}
+
+.notification-b-draft {
+  border: 3px solid #1568ac;
+}
+
+.draft-watermark {
+  position: absolute;
+  top: 46%;
+  left: 12%;
+  z-index: 0;
+  transform: rotate(-28deg);
+  color: rgb(164 30 23 / 12%);
+  font-size: 4rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.recipe-copy > *:not(.draft-watermark) {
+  position: relative;
+  z-index: 1;
+}
+
+.print-header {
+  display: grid;
+  grid-template-columns: 180px 1fr 190px;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #092d4d;
+  text-align: center;
+}
+
+.print-header img {
+  width: 165px;
+  max-height: 54px;
+  object-fit: contain;
+}
+
+.print-header div {
+  display: grid;
+  gap: 3px;
+}
+
+.print-header h1 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.print-header span,
+.print-header small,
+.document-status {
+  color: #4f667c;
+  font-size: 0.61rem;
+  font-weight: 750;
+}
+
+.document-status {
+  padding: 8px;
+  border: 1px solid #b8c6d3;
+}
+
+.print-patient-grid {
+  margin-top: 12px;
+  grid-template-columns: 1.4fr repeat(3, 0.7fr);
+}
+
+.print-patient-grid > div {
+  min-height: 40px;
+  padding: 6px 8px;
+}
+
+.print-items {
+  margin: 26px 0 0;
+  padding-left: 28px;
+}
+
+.print-items li {
+  margin-bottom: 22px;
+  padding: 0 0 12px 5px;
+  border-bottom: 1px solid #c4ced7;
+  font-size: 0.78rem;
+}
+
+.medicine-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 0.88rem;
+}
+
+.print-items p {
+  margin-top: 7px;
+  line-height: 1.45;
+}
+
+.buyer-print {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  margin-top: 26px;
+  border: 1px solid #aab9c7;
+  padding: 12px;
+  font-size: 0.68rem;
+}
+
+.buyer-print h2 {
+  grid-column: 1 / -1;
+  margin: 2px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #aab9c7;
+  font-size: 0.7rem;
+}
+
+.signature-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 80px;
+  margin-top: 90px;
+}
+
+.signature-footer div {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+.signature-footer span {
+  display: block;
+  border-top: 1px solid #20394e;
+}
+
+.signature-footer strong {
+  font-size: 0.68rem;
+}
+
+.signature-footer small,
+.print-notices small {
+  color: #607487;
+  font-size: 0.55rem;
+}
+
+.print-notices {
+  display: grid;
+  gap: 3px;
+  margin-top: 26px;
+  border-top: 1px solid #d2dae2;
+  padding-top: 8px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+@media (max-width: 980px) {
+  .recipe-appbar {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 14px 20px;
+  }
+
+  .recipe-main {
+    width: min(100% - 20px, 760px);
+  }
+
+  .patient-header,
+  .print-patient-grid,
+  .history-card,
+  .buyer-grid,
+  .type-options {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .patient-primary,
+  .patient-wide,
+  .print-patient-grid .wide,
+  .history-card > *,
+  .buyer-grid .wide {
+    grid-column: 1 / -1;
+  }
+
+  .history-content,
+  .print-header {
+    grid-template-columns: 1fr;
+  }
+
+  .recipe-table-head {
+    display: none;
+  }
+
+  .recipe-table-row {
+    grid-template-columns: 40px 40px 1fr;
+    padding: 8px;
+  }
+
+  .recipe-table-row > label:not(.selection-cell) {
+    grid-column: 1 / -1;
+    border: 1px solid #d5dee7;
+  }
+
+  .mobile-label {
+    display: block;
+    padding: 6px 9px 0;
+    color: #526c84;
+    font-size: 0.55rem;
+    font-weight: 800;
+  }
+}
+
+@media (max-width: 620px) {
+  .patient-header,
+  .print-patient-grid,
+  .type-options,
+  .buyer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-primary,
+  .patient-wide,
+  .print-patient-grid .wide,
+  .buyer-grid .wide {
+    grid-column: 1;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 9mm;
+  }
+
+  :host,
+  .recipe-shell,
+  .recipe-main,
+  .recipe-print-area {
+    width: 100%;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    color: #000;
+    background: #fff;
+  }
+
+  .no-print,
+  app-clinical-documentation-tabs,
+  .patient-header {
+    display: none !important;
+  }
+
+  .recipe-copy {
+    min-height: calc(279mm - 18mm);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    break-after: page;
+  }
+
+  .recipe-copy:last-child {
+    break-after: auto;
+  }
+
+  .print-items li,
+  .buyer-print,
+  .signature-footer {
+    break-inside: avoid;
+  }
+}

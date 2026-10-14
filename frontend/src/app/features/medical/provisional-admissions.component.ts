@@ -29,6 +29,8 @@ export class ProvisionalAdmissionsComponent {
   readonly procedures = output<ProvisionalAdmission>();
   readonly exams = output<ProvisionalAdmission>();
   readonly aih = output<ProvisionalAdmission>();
+  readonly clinicalSummary = output<ProvisionalAdmission>();
+  readonly medicalRecipe = output<ProvisionalAdmission>();
   readonly allocate = output<ProvisionalAdmission>();
   readonly discharge = output<ProvisionalAdmission>();
 

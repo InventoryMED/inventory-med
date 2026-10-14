@@ -8,7 +8,9 @@ export type AppScreen =
   | 'evolution'
   | 'procedure'
   | 'aih'
-  | 'exams';
+  | 'exams'
+  | 'clinical-summary'
+  | 'medical-recipe';
 
 export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE';
 export type DischargeReason = 'ÓBITO' | 'TRANSFERÊNCIA' | 'ALTA MELHORA' | 'CANCELAMENTO';

@@ -9,11 +9,13 @@ import { AdministrationComponent } from './features/administration/administratio
 import { AihWorkspaceComponent } from './features/medical/aih-workspace.component';
 import { BedsideProcedureWorkspaceComponent } from './features/medical/bedside-procedure-workspace.component';
 import { ClinicalDocumentationTab } from './features/medical/clinical-documentation-tabs.component';
+import { ClinicalSummaryWorkspaceComponent } from './features/medical/clinical-summary-workspace.component';
 import { CriticalCarePrescriptionComponent } from './features/medical/critical-care-prescription.component';
 import { DietPrescriptionComponent } from './features/medical/diet-prescription.component';
 import { DiagnosticExamWorkspaceComponent } from './features/medical/diagnostic-exam-workspace.component';
 import { IsolationPrecautionsComponent } from './features/medical/isolation-precautions.component';
 import { MedicationTherapyComponent } from './features/medical/medication-therapy.component';
+import { MedicalRecipeWorkspaceComponent } from './features/medical/medical-recipe-workspace.component';
 import { MonitoringPrescriptionComponent } from './features/medical/monitoring-prescription.component';
 import { NursingCarePrescriptionComponent } from './features/medical/nursing-care-prescription.component';
 import { ProvisionalAdmissionsComponent } from './features/medical/provisional-admissions.component';
@@ -23,6 +25,7 @@ import { VentilatorySupportComponent } from './features/medical/ventilatory-supp
 import {
   ClinicalFormKind,
   ClinicalFormTemplate,
+  ClinicalSummaryOutcome,
   CriticalCareDraft,
   CriticalCareResponse,
   CriticalCareSelection,
@@ -125,6 +128,7 @@ interface HospitalOption {
     AdministrationComponent,
     AihWorkspaceComponent,
     BedsideProcedureWorkspaceComponent,
+    ClinicalSummaryWorkspaceComponent,
     DietPrescriptionComponent,
     DiagnosticExamWorkspaceComponent,
     NursingCarePrescriptionComponent,
@@ -136,6 +140,7 @@ interface HospitalOption {
     TherapeuticSupportComponent,
     CriticalCarePrescriptionComponent,
     MedicationTherapyComponent,
+    MedicalRecipeWorkspaceComponent,
   ],
   selector: 'app-root',
   styleUrl: './app.scss',
@@ -155,6 +160,7 @@ export class App implements OnInit {
   protected readonly patientEditOpen = signal(false);
   protected readonly dischargeOpen = signal(false);
   protected readonly transferOpen = signal(false);
+  protected readonly requestedClinicalSummaryOutcome = signal<ClinicalSummaryOutcome | ''>('');
   protected readonly prescriptionReady = signal(false);
   protected readonly prescriptionStarterCatalog = signal<PrescriptionStarterCatalog | null>(null);
   protected readonly prescriptionStarterLoading = signal(false);
@@ -752,6 +758,16 @@ export class App implements OnInit {
     this.openExamsTab(bed.id);
   }
 
+  protected openClinicalSummary(bed: Bed): void {
+    if (!bed.patient) return;
+    this.openClinicalSummaryTab(bed.id);
+  }
+
+  protected openMedicalRecipe(bed: Bed): void {
+    if (!bed.patient) return;
+    this.openMedicalRecipeTab(bed.id);
+  }
+
   protected openProvisionalPrescription(admission: ProvisionalAdmission): void {
     this.openPrescription(this.provisionalAdmissionAsBed(admission));
   }
@@ -772,9 +788,27 @@ export class App implements OnInit {
     this.openExams(this.provisionalAdmissionAsBed(admission));
   }
 
+  protected openProvisionalClinicalSummary(admission: ProvisionalAdmission): void {
+    this.openClinicalSummary(this.provisionalAdmissionAsBed(admission));
+  }
+
+  protected openProvisionalMedicalRecipe(admission: ProvisionalAdmission): void {
+    this.openMedicalRecipe(this.provisionalAdmissionAsBed(admission));
+  }
+
   protected switchClinicalModule(tab: ClinicalDocumentationTab): void {
-    const flow = tab === 'AIH' ? 'aih' : tab === 'EXAM' ? 'exams' : 'procedure';
+    const flow =
+      tab === 'AIH'
+        ? 'aih'
+        : tab === 'EXAM'
+          ? 'exams'
+          : tab === 'CLINICAL_SUMMARY'
+            ? 'clinical-summary'
+            : tab === 'MEDICAL_RECIPE'
+              ? 'medical-recipe'
+              : 'procedure';
     this.screen.set(flow);
+    if (flow === 'clinical-summary') this.requestedClinicalSummaryOutcome.set('');
     const url = new URL(window.location.href);
     url.searchParams.set('flow', flow);
     window.history.replaceState({}, '', url);
@@ -804,13 +838,20 @@ export class App implements OnInit {
       return;
     }
     const bed = this.selectedBed();
+    const reason = this.dischargeReason;
+    if (reason !== 'CANCELAMENTO') {
+      this.dischargeOpen.set(false);
+      this.dischargeReason = '';
+      this.selectedBedId.set(null);
+      this.openClinicalSummaryTab(bedId, this.clinicalSummaryOutcome(reason));
+      return;
+    }
     if (this.realApiEnabled) {
       if (!bed?.patient?.admissionId) {
         this.showToast('NÃO FOI POSSÍVEL IDENTIFICAR A INTERNAÇÃO.');
         return;
       }
       const patientName = bed.patient.name;
-      const reason = this.dischargeReason;
       try {
         await this.medical.discharge(bed.patient.admissionId, this.dischargeReasonCode(reason));
         await this.refreshRealWorkspace();
@@ -832,7 +873,6 @@ export class App implements OnInit {
       this.showToast('NÃO FOI POSSÍVEL CONCLUIR A ALTA.');
       return;
     }
-    const reason = this.dischargeReason;
     this.dischargeOpen.set(false);
     this.dischargeReason = '';
     this.selectedBedId.set(null);
@@ -1015,6 +1055,12 @@ export class App implements OnInit {
     this.screen.set('rooms');
     this.selectedBedId.set(null);
     window.scrollTo({ top: 0, left: 0 });
+  }
+
+  protected async clinicalOutcomeCompleted(): Promise<void> {
+    if (this.realApiEnabled) await this.refreshRealWorkspace();
+    this.backToRooms();
+    this.showToast('DESFECHO REGISTRADO E CENSO ATUALIZADO.');
   }
 
   protected printPrescription(): void {
@@ -2389,6 +2435,35 @@ export class App implements OnInit {
     window.open(url.toString(), '_blank', 'noopener');
   }
 
+  private openClinicalSummaryTab(bedId: string, outcome: ClinicalSummaryOutcome | '' = ''): void {
+    const hospitalId = this.store.activeHospitalId();
+    if (!hospitalId) return;
+
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('hospital', hospitalId);
+    url.searchParams.set('bed', bedId);
+    url.searchParams.set('flow', 'clinical-summary');
+    if (outcome) url.searchParams.set('outcome', outcome);
+
+    window.open(url.toString(), '_blank', 'noopener');
+  }
+
+  private openMedicalRecipeTab(bedId: string): void {
+    const hospitalId = this.store.activeHospitalId();
+    if (!hospitalId) return;
+
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('hospital', hospitalId);
+    url.searchParams.set('bed', bedId);
+    url.searchParams.set('flow', 'medical-recipe');
+
+    window.open(url.toString(), '_blank', 'noopener');
+  }
+
   private openRequestedView(): boolean {
     const params = new URLSearchParams(window.location.search);
     const hospitalId = params.get('hospital');
@@ -2443,7 +2518,32 @@ export class App implements OnInit {
       this.screen.set('exams');
       return true;
     }
+    if (flow === 'clinical-summary' && bed.status === 'OCCUPIED' && bed.patient) {
+      const outcome = params.get('outcome') ?? '';
+      this.requestedClinicalSummaryOutcome.set(
+        outcome === 'ALTA_HOSPITALAR' ||
+          outcome === 'TRANSFERENCIA_HOSPITALAR' ||
+          outcome === 'OBITO'
+          ? outcome
+          : '',
+      );
+      this.screen.set('clinical-summary');
+      return true;
+    }
+    if (flow === 'medical-recipe' && bed.status === 'OCCUPIED' && bed.patient) {
+      this.screen.set('medical-recipe');
+      return true;
+    }
     return false;
+  }
+
+  private clinicalSummaryOutcome(reason: DischargeReason): ClinicalSummaryOutcome {
+    const outcomes: Record<Exclude<DischargeReason, 'CANCELAMENTO'>, ClinicalSummaryOutcome> = {
+      ÓBITO: 'OBITO',
+      TRANSFERÊNCIA: 'TRANSFERENCIA_HOSPITALAR',
+      'ALTA MELHORA': 'ALTA_HOSPITALAR',
+    };
+    return outcomes[reason as Exclude<DischargeReason, 'CANCELAMENTO'>];
   }
 
   private resetPatientForm(): void {

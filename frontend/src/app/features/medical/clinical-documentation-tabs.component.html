@@ -1,4 +1,4 @@
-<nav class="module-tabs no-print" aria-label="MÓDULO DE PROCEDIMENTOS E AIH">
+<nav class="module-tabs no-print" aria-label="MÓDULOS CLÍNICOS COMPLEMENTARES">
   <button
     type="button"
     [class.active]="activeTab === 'PROCEDURE'"
@@ -28,5 +28,25 @@
     <span>03</span>
     <strong>AIH DIGITAL</strong>
     <small>LAUDO SUS</small>
+  </button>
+  <button
+    type="button"
+    [class.active]="activeTab === 'CLINICAL_SUMMARY'"
+    [attr.aria-current]="activeTab === 'CLINICAL_SUMMARY' ? 'page' : null"
+    (click)="tabChange.emit('CLINICAL_SUMMARY')"
+  >
+    <span>04</span>
+    <strong>RESUMO CLÍNICO</strong>
+    <small>ALTA / TRANSFERÊNCIA / ÓBITO</small>
+  </button>
+  <button
+    type="button"
+    [class.active]="activeTab === 'MEDICAL_RECIPE'"
+    [attr.aria-current]="activeTab === 'MEDICAL_RECIPE' ? 'page' : null"
+    (click)="tabChange.emit('MEDICAL_RECIPE')"
+  >
+    <span>05</span>
+    <strong>RECEITAS MÉDICAS</strong>
+    <small>COMPRA EXTERNA / RENOVAÇÃO</small>
   </button>
 </nav>

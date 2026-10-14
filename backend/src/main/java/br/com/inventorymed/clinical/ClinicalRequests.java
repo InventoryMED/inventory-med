@@ -60,7 +60,8 @@ public final class ClinicalRequests {
     public record AllocateBed(@NotNull UUID targetBedId) {}
 
     public record Discharge(
-        @NotBlank @Pattern(regexp = "OBITO|TRANSFERENCIA|ALTA_MELHORA|CANCELAMENTO") String reason
+        @NotBlank @Pattern(regexp = "OBITO|TRANSFERENCIA|ALTA_MELHORA|CANCELAMENTO") String reason,
+        UUID clinicalSummaryDocumentId
     ) {}
 
     public record SaveDocument(

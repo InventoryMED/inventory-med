@@ -39,6 +39,8 @@ public class ClinicalDocumentService {
     private final BedsideProcedureService bedsideProcedureService;
     private final AihService aihService;
     private final DiagnosticExamService diagnosticExamService;
+    private final ClinicalSummaryService clinicalSummaryService;
+    private final MedicalRecipeService medicalRecipeService;
     private final ObjectMapper objectMapper;
 
     public ClinicalDocumentService(
@@ -57,6 +59,8 @@ public class ClinicalDocumentService {
         BedsideProcedureService bedsideProcedureService,
         AihService aihService,
         DiagnosticExamService diagnosticExamService,
+        ClinicalSummaryService clinicalSummaryService,
+        MedicalRecipeService medicalRecipeService,
         ObjectMapper objectMapper
     ) {
         this.tenantJdbc = tenantJdbc;
@@ -74,6 +78,8 @@ public class ClinicalDocumentService {
         this.bedsideProcedureService = bedsideProcedureService;
         this.aihService = aihService;
         this.diagnosticExamService = diagnosticExamService;
+        this.clinicalSummaryService = clinicalSummaryService;
+        this.medicalRecipeService = medicalRecipeService;
         this.objectMapper = objectMapper;
     }
 
@@ -120,7 +126,8 @@ public class ClinicalDocumentService {
             hospitalId,
             admissionId,
             template,
-            request.values()
+            request.values(),
+            request.finalizeDocument()
         );
         UUID documentId = UUID.randomUUID();
         tenantJdbc.write(hospitalId, jdbc -> {
@@ -178,7 +185,8 @@ public class ClinicalDocumentService {
             hospitalId,
             admissionId,
             template,
-            request.values()
+            request.values(),
+            request.finalizeDocument()
         );
         tenantJdbc.write(hospitalId, jdbc -> {
             int updated = jdbc.update(
@@ -233,7 +241,8 @@ public class ClinicalDocumentService {
         UUID hospitalId,
         UUID admissionId,
         FormTemplateDefinition template,
-        Map<String, Object> values
+        Map<String, Object> values,
+        boolean finalizing
     ) {
         Map<String, FormTemplateDefinition.Field> allowed = new LinkedHashMap<>();
         for (FormTemplateDefinition.Section section : template.sections()) {
@@ -255,7 +264,7 @@ public class ClinicalDocumentService {
                 throw new BusinessValidationException("Preencha o campo obrigatório: " + field.label());
             }
             if (!empty(value)) {
-                normalized.put(key, normalizedValue(hospitalId, admissionId, field, value));
+                normalized.put(key, normalizedValue(hospitalId, admissionId, field, value, finalizing));
             }
         });
         requireContinuousInfusionRates(normalized, "SEDACAO.MEDICAMENTOS", false);
@@ -267,7 +276,8 @@ public class ClinicalDocumentService {
         UUID hospitalId,
         UUID admissionId,
         FormTemplateDefinition.Field field,
-        Object value
+        Object value,
+        boolean finalizing
     ) {
         if (field.type() == FormFieldType.DIET_PLAN) {
             return dietPrescriptionService.normalizeForClinicalDocument(value);
@@ -307,6 +317,17 @@ public class ClinicalDocumentService {
                 hospitalId,
                 admissionId,
                 value
+            );
+        }
+        if (field.type() == FormFieldType.CLINICAL_SUMMARY_PLAN) {
+            return clinicalSummaryService.normalizeForClinicalDocument(value);
+        }
+        if (field.type() == FormFieldType.MEDICAL_RECIPE_PLAN) {
+            return medicalRecipeService.normalizeForClinicalDocument(
+                hospitalId,
+                admissionId,
+                value,
+                finalizing
             );
         }
         validateType(field, value);

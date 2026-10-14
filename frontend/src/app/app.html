@@ -269,6 +269,8 @@
           (procedures)="openProvisionalProcedures($event)"
           (exams)="openProvisionalExams($event)"
           (aih)="openProvisionalAih($event)"
+          (clinicalSummary)="openProvisionalClinicalSummary($event)"
+          (medicalRecipe)="openProvisionalMedicalRecipe($event)"
           (allocate)="openProvisionalAllocation($event)"
           (discharge)="openProvisionalDischarge($event)"
         />
@@ -403,6 +405,20 @@
                                   (click)="openExams(bed)"
                                 >
                                   Exames
+                                </button>
+                                <button
+                                  type="button"
+                                  class="bed-action-button"
+                                  (click)="openClinicalSummary(bed)"
+                                >
+                                  Resumo clínico
+                                </button>
+                                <button
+                                  type="button"
+                                  class="bed-action-button"
+                                  (click)="openMedicalRecipe(bed)"
+                                >
+                                  Receitas médicas
                                 </button>
                                 <button
                                   type="button"
@@ -2369,6 +2385,44 @@
   }
 }
 
+@if (screen() === 'clinical-summary' && activeHospital(); as hospital) {
+  @if (selectedBed(); as bed) {
+    @if (bed.patient; as patient) {
+      <app-clinical-summary-workspace
+        [hospitalName]="hospital.name"
+        [unitName]="selectedUnitName() || 'UNIDADE DE INTERNAÇÃO'"
+        [roomName]="selectedRoomName()"
+        [bedCode]="bed.code"
+        [admissionId]="patient.admissionId || ''"
+        [patient]="patient"
+        [professionalName]="professionalName()"
+        [initialOutcome]="requestedClinicalSummaryOutcome()"
+        (back)="backToRooms()"
+        (moduleChange)="switchClinicalModule($event)"
+        (outcomeCompleted)="clinicalOutcomeCompleted()"
+      />
+    }
+  }
+}
+
+@if (screen() === 'medical-recipe' && activeHospital(); as hospital) {
+  @if (selectedBed(); as bed) {
+    @if (bed.patient; as patient) {
+      <app-medical-recipe-workspace
+        [hospitalName]="hospital.name"
+        [unitName]="selectedUnitName() || 'UNIDADE DE INTERNAÇÃO'"
+        [roomName]="selectedRoomName()"
+        [bedCode]="bed.code"
+        [admissionId]="patient.admissionId || ''"
+        [patient]="patient"
+        [professionalName]="professionalName()"
+        (back)="backToRooms()"
+        (moduleChange)="switchClinicalModule($event)"
+      />
+    }
+  }
+}
+
 @if (dischargeOpen() && selectedBed(); as bed) {
   @if (bed.patient; as patient) {
     <div class="modal-backdrop" (click)="closeDischarge()">
@@ -2389,8 +2443,9 @@
           </button>
         </header>
         <p class="modal-description">
-          Selecione o motivo do encerramento de <strong>{{ patient.name }}</strong> no
-          {{ bed.code }}.
+          Selecione o desfecho de <strong>{{ patient.name }}</strong> no {{ bed.code }}. Para alta,
+          transferência externa ou óbito, o resumo clínico deverá ser finalizado antes da liberação
+          do leito.
         </p>
         <div class="discharge-reasons" role="radiogroup" aria-label="Motivo da alta">
           @for (reason of availableDischargeReasons(); track reason.value) {
@@ -2414,7 +2469,11 @@
         <div class="modal-actions">
           <button type="button" class="ghost-button" (click)="closeDischarge()">Cancelar</button>
           <button type="button" class="danger-button" (click)="confirmDischarge()">
-            Confirmar alta
+            {{
+              dischargeReason === 'CANCELAMENTO'
+                ? 'CONFIRMAR CANCELAMENTO'
+                : 'CONTINUAR PARA RESUMO CLÍNICO'
+            }}
           </button>
         </div>
       </section>

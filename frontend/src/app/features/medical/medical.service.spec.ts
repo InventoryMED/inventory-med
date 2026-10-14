@@ -5,9 +5,11 @@ import { authInterceptor } from '../../auth/auth.interceptor';
 import {
   AihDraft,
   BedsideProcedureDraft,
+  ClinicalSummaryDraft,
   CriticalCareDraft,
   DiagnosticExamDraft,
   MedicationTherapyDraft,
+  MedicalRecipeDraft,
   DietPrescriptionDraft,
   IsolationPrecautionDraft,
   MonitoringPrescriptionDraft,
@@ -41,6 +43,53 @@ describe('MedicalService', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('loads medical recipe rules and previews against the admission in the backend', async () => {
+    const catalogPromise = service.medicalRecipeCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/medical-recipes/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      recipeTypes: [{ code: 'COMMON', label: 'RECEITUÁRIO COMUM', enabled: true }],
+      routes: [{ code: 'ORAL', label: 'ORAL', enabled: true }],
+      medicationCatalogIntegrated: false,
+      sncrIntegrated: false,
+      qualifiedDigitalSignatureIntegrated: false,
+    });
+    expect((await catalogPromise).sncrIntegrated).toBe(false);
+
+    const draft: MedicalRecipeDraft = {
+      recipeType: 'COMMON',
+      items: [
+        {
+          route: 'ORAL',
+          medication: 'LOSARTANA 50 MG',
+          quantity: '30 COMPRIMIDOS',
+          dosage: 'TOMAR 1 COMPRIMIDO PELA MANHÃ',
+          recommendations: null,
+        },
+      ],
+      buyerName: null,
+      buyerIdentityDocument: null,
+      buyerAddress: null,
+      physicianAttestation: true,
+    };
+    const previewPromise = service.previewMedicalRecipe('admission-1', draft);
+    const previewRequest = http.expectOne(
+      '/api/v1/clinical/admissions/admission-1/medical-recipes/preview',
+    );
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      request: draft,
+      printTitle: 'RECEITA MÉDICA',
+      copyLabels: ['VIA DO PACIENTE'],
+      finalizationAllowed: true,
+      allergyConflicts: [],
+      blockingReasons: [],
+      safetyNotices: [],
+    });
+    expect((await previewPromise).finalizationAllowed).toBe(true);
+  });
 
   it('creates an unassigned admission and later allocates the same admission to a bed', async () => {
     const payload = {
@@ -753,5 +802,58 @@ describe('MedicalService', () => {
       billingAudit: { suppliesEquipmentForReview: [], auditAlerts: [] },
     });
     expect((await previewPromise).structuredExams.summaryLine).toContain('PAINEL DE SANGUE');
+  });
+
+  it('loads, previews and links the finalized clinical summary to discharge', async () => {
+    const catalogPromise = service.clinicalSummaryCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/clinical-summaries/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      outcomeTypes: [{ code: 'ALTA_HOSPITALAR', label: 'ALTA HOSPITALAR' }],
+      dischargeConditions: [],
+      transferReasons: [],
+      devices: [],
+      necropsyOptions: [],
+      orientationSuggestions: [],
+    });
+    expect((await catalogPromise).outcomeTypes[0].code).toBe('ALTA_HOSPITALAR');
+
+    const draft: ClinicalSummaryDraft = {
+      outcomeType: 'ALTA_HOSPITALAR',
+      dischargeCondition: 'MELHORADO',
+      clinicalSummary: 'Paciente evoluiu com melhora.',
+      primaryCid: null,
+      dischargeMedications: [],
+      dischargeOrientations: [],
+      transfer: null,
+      death: null,
+      physicianAttestation: true,
+    };
+    const previewPromise = service.previewClinicalSummary(draft);
+    const previewRequest = http.expectOne('/api/v1/clinical/clinical-summaries/preview');
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      request: draft,
+      outcomeReference: {
+        dischargeReason: 'ALTA_MELHORA',
+        sigtapExitReferenceCode: '12',
+        sigtapExitReferenceLabel: 'MELHORADO',
+        closesAdmission: true,
+      },
+      reportText: 'RESUMO',
+      auditAlerts: [],
+    });
+    expect((await previewPromise).outcomeReference.dischargeReason).toBe('ALTA_MELHORA');
+
+    const dischargePromise = service.discharge('admission-1', 'ALTA_MELHORA', 'summary-1');
+    const dischargeRequest = http.expectOne('/api/v1/clinical/admissions/admission-1/discharge');
+    expect(dischargeRequest.request.method).toBe('POST');
+    expect(dischargeRequest.request.body).toEqual({
+      reason: 'ALTA_MELHORA',
+      clinicalSummaryDocumentId: 'summary-1',
+    });
+    dischargeRequest.flush(null);
+    await dischargePromise;
   });
 });

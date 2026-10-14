@@ -305,15 +305,27 @@ public class MedicalWorkspaceService {
         UUID actorId,
         UUID admissionId,
         String reason,
+        UUID clinicalSummaryDocumentId,
         String sourceIp
     ) {
         tenantJdbc.write(hospitalId, jdbc -> {
             UUID bedId = requiredActiveBed(jdbc, admissionId);
+            UUID validatedSummaryDocumentId = "CANCELAMENTO".equals(reason)
+                ? null
+                : clinicalSummaryDocumentId;
+            requireCompatibleClinicalSummary(
+                jdbc,
+                admissionId,
+                reason,
+                validatedSummaryDocumentId
+            );
             int updated = jdbc.update(
                 "UPDATE dbo.admission SET status = 'DISCHARGED', discharged_at = SYSUTCDATETIME(), " +
-                "discharge_reason = ?, updated_by = ?, updated_at = SYSUTCDATETIME(), " +
+                "discharge_reason = ?, outcome_summary_document_id = ?, updated_by = ?, " +
+                "updated_at = SYSUTCDATETIME(), " +
                 "row_version = row_version + 1 WHERE id = ? AND status = 'ACTIVE'",
                 reason,
+                validatedSummaryDocumentId,
                 actorId,
                 admissionId
             );
@@ -330,6 +342,7 @@ public class MedicalWorkspaceService {
             Map<String, Object> auditDetails = new LinkedHashMap<>();
             auditDetails.put("bedId", bedId);
             auditDetails.put("reason", reason);
+            auditDetails.put("clinicalSummaryDocumentId", validatedSummaryDocumentId);
             auditWriter.success(
                 jdbc,
                 actorId,
@@ -341,6 +354,44 @@ public class MedicalWorkspaceService {
             );
             return null;
         });
+    }
+
+    private void requireCompatibleClinicalSummary(
+        JdbcTemplate jdbc,
+        UUID admissionId,
+        String reason,
+        UUID documentId
+    ) {
+        if ("CANCELAMENTO".equals(reason)) return;
+        if (documentId == null) {
+            throw new BusinessValidationException(
+                "Finalize o resumo clínico antes de encerrar a internação"
+            );
+        }
+        String expectedOutcome = switch (reason) {
+            case "ALTA_MELHORA" -> "ALTA_HOSPITALAR";
+            case "TRANSFERENCIA" -> "TRANSFERENCIA_HOSPITALAR";
+            case "OBITO" -> "OBITO";
+            default -> throw new BusinessValidationException("Motivo de encerramento inválido");
+        };
+        Integer validSummary = jdbc.queryForObject(
+            "SELECT COUNT(*) FROM dbo.clinical_document WHERE id = ? AND admission_id = ? " +
+            "AND kind = 'CLINICAL_SUMMARY' AND status = 'FINALIZED' " +
+            "AND JSON_VALUE(content_json, '$.\"CLINICAL_SUMMARY.REPORT\".request.outcomeType') = ? " +
+            "AND (? <> 'ALTA_MELHORA' OR ISNULL(JSON_VALUE(content_json, " +
+            "'$.\"CLINICAL_SUMMARY.REPORT\".request.dischargeCondition'), '') " +
+            "<> 'ALTA_UTI_PARA_ENFERMARIA')",
+            Integer.class,
+            documentId,
+            admissionId,
+            expectedOutcome,
+            reason
+        );
+        if (validSummary == null || validSummary == 0) {
+            throw new BusinessValidationException(
+                "O resumo clínico finalizado não corresponde ao desfecho selecionado"
+            );
+        }
     }
 
     private MedicalWorkspaceResponse loadWorkspace(JdbcTemplate jdbc, UUID hospitalId) {
