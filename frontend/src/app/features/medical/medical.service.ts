@@ -44,6 +44,9 @@ import {
   NursingCarePrescriptionDraft,
   NursingCarePrescriptionResponse,
   PrescriptionStarterCatalog,
+  ReferralCatalog,
+  ReferralDraft,
+  ReferralResponse,
   RehabilitationCatalog,
   RehabilitationDraft,
   RehabilitationResponse,
@@ -300,6 +303,19 @@ export class MedicalService {
   medicalRecipeCatalog(): Promise<MedicalRecipeCatalog> {
     return firstValueFrom(
       this.http.get<MedicalRecipeCatalog>(`${this.baseUrl}/medical-recipes/catalog`),
+    );
+  }
+
+  referralCatalog(): Promise<ReferralCatalog> {
+    return firstValueFrom(this.http.get<ReferralCatalog>(`${this.baseUrl}/referrals/catalog`));
+  }
+
+  previewReferral(admissionId: string, payload: ReferralDraft): Promise<ReferralResponse> {
+    return firstValueFrom(
+      this.http.post<ReferralResponse>(
+        `${this.baseUrl}/admissions/${admissionId}/referrals/preview`,
+        payload,
+      ),
     );
   }
 

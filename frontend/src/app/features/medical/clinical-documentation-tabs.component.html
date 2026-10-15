@@ -49,4 +49,14 @@
     <strong>RECEITAS MÉDICAS</strong>
     <small>COMPRA EXTERNA / RENOVAÇÃO</small>
   </button>
+  <button
+    type="button"
+    [class.active]="activeTab === 'REFERRAL'"
+    [attr.aria-current]="activeTab === 'REFERRAL' ? 'page' : null"
+    (click)="tabChange.emit('REFERRAL')"
+  >
+    <span>06</span>
+    <strong>ENCAMINHAMENTO</strong>
+    <small>REFERÊNCIA ESPECIALIZADA</small>
+  </button>
 </nav>

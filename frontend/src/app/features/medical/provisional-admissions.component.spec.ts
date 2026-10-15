@@ -32,12 +32,14 @@ describe('ProvisionalAdmissionsComponent', () => {
     const examEmitted: ProvisionalAdmission[] = [];
     const clinicalSummaryEmitted: ProvisionalAdmission[] = [];
     const medicalRecipeEmitted: ProvisionalAdmission[] = [];
+    const referralEmitted: ProvisionalAdmission[] = [];
     fixture.componentInstance.allocate.subscribe((value) => emitted.push(value));
     fixture.componentInstance.exams.subscribe((value) => examEmitted.push(value));
     fixture.componentInstance.clinicalSummary.subscribe((value) =>
       clinicalSummaryEmitted.push(value),
     );
     fixture.componentInstance.medicalRecipe.subscribe((value) => medicalRecipeEmitted.push(value));
+    fixture.componentInstance.referral.subscribe((value) => referralEmitted.push(value));
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
@@ -66,6 +68,11 @@ describe('ProvisionalAdmissionsComponent', () => {
     );
     medicalRecipeButton?.click();
     expect(medicalRecipeEmitted).toEqual([admission]);
+    const referralButton = Array.from(element.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('ENCAMINHAMENTO'),
+    );
+    referralButton?.click();
+    expect(referralEmitted).toEqual([admission]);
   });
 
   it('keeps a single compact patient detail open and filters the waiting list', () => {

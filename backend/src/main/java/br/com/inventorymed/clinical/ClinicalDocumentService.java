@@ -41,6 +41,7 @@ public class ClinicalDocumentService {
     private final DiagnosticExamService diagnosticExamService;
     private final ClinicalSummaryService clinicalSummaryService;
     private final MedicalRecipeService medicalRecipeService;
+    private final ReferralService referralService;
     private final ObjectMapper objectMapper;
 
     public ClinicalDocumentService(
@@ -61,6 +62,7 @@ public class ClinicalDocumentService {
         DiagnosticExamService diagnosticExamService,
         ClinicalSummaryService clinicalSummaryService,
         MedicalRecipeService medicalRecipeService,
+        ReferralService referralService,
         ObjectMapper objectMapper
     ) {
         this.tenantJdbc = tenantJdbc;
@@ -80,6 +82,7 @@ public class ClinicalDocumentService {
         this.diagnosticExamService = diagnosticExamService;
         this.clinicalSummaryService = clinicalSummaryService;
         this.medicalRecipeService = medicalRecipeService;
+        this.referralService = referralService;
         this.objectMapper = objectMapper;
     }
 
@@ -329,6 +332,9 @@ public class ClinicalDocumentService {
                 value,
                 finalizing
             );
+        }
+        if (field.type() == FormFieldType.REFERRAL_PLAN) {
+            return referralService.normalizeForClinicalDocument(value, finalizing);
         }
         validateType(field, value);
         return value;

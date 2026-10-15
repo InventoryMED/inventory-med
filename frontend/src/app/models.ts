@@ -10,7 +10,8 @@ export type AppScreen =
   | 'aih'
   | 'exams'
   | 'clinical-summary'
-  | 'medical-recipe';
+  | 'medical-recipe'
+  | 'referral';
 
 export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'MAINTENANCE';
 export type DischargeReason = 'ÓBITO' | 'TRANSFERÊNCIA' | 'ALTA MELHORA' | 'CANCELAMENTO';

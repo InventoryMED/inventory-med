@@ -10,6 +10,7 @@ import {
   DiagnosticExamDraft,
   MedicationTherapyDraft,
   MedicalRecipeDraft,
+  ReferralDraft,
   DietPrescriptionDraft,
   IsolationPrecautionDraft,
   MonitoringPrescriptionDraft,
@@ -89,6 +90,51 @@ describe('MedicalService', () => {
       safetyNotices: [],
     });
     expect((await previewPromise).finalizationAllowed).toBe(true);
+  });
+
+  it('loads referral rules and previews against the selected admission', async () => {
+    const catalogPromise = service.referralCatalog();
+    const catalogRequest = http.expectOne('/api/v1/clinical/referrals/catalog');
+    expect(catalogRequest.request.method).toBe('GET');
+    catalogRequest.flush({
+      specialties: [{ code: 'PULMONOLOGY', label: 'PNEUMOLOGIA' }],
+      priorities: [{ code: 'MEDIUM', label: 'MÉDIA PRIORIDADE' }],
+      deadlines: [{ code: 'UP_TO_15_DAYS', label: 'ATÉ 15 DIAS' }],
+      destinations: [{ code: 'PUBLIC_REGULATION', label: 'REDE PÚBLICA' }],
+      attachments: [],
+      regulationSystemIntegrated: false,
+    });
+    expect((await catalogPromise).regulationSystemIntegrated).toBe(false);
+
+    const draft: ReferralDraft = {
+      specialtyCode: 'PULMONOLOGY',
+      specialtyDetail: null,
+      priority: 'MEDIUM',
+      deadline: 'UP_TO_15_DAYS',
+      clinicalJustification: 'REAVALIAÇÃO APÓS ALTA HOSPITALAR.',
+      destination: 'PUBLIC_REGULATION',
+      attachments: [],
+      physicianAttestation: true,
+    };
+    const previewPromise = service.previewReferral('admission-1', draft);
+    const previewRequest = http.expectOne(
+      '/api/v1/clinical/admissions/admission-1/referrals/preview',
+    );
+    expect(previewRequest.request.method).toBe('POST');
+    expect(previewRequest.request.body).toEqual(draft);
+    previewRequest.flush({
+      request: draft,
+      specialtyLabel: 'PNEUMOLOGIA',
+      priorityLabel: 'MÉDIA PRIORIDADE',
+      deadlineLabel: 'ATÉ 15 DIAS',
+      destinationLabel: 'REDE PÚBLICA',
+      attachmentLabels: [],
+      summaryLine: 'GUIA DE ENCAMINHAMENTO — PNEUMOLOGIA',
+      finalizationAllowed: true,
+      blockingReasons: [],
+      safetyNotices: [],
+    });
+    expect((await previewPromise).specialtyLabel).toBe('PNEUMOLOGIA');
   });
 
   it('creates an unassigned admission and later allocates the same admission to a bed', async () => {

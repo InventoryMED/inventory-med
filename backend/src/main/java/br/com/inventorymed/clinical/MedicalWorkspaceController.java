@@ -58,6 +58,7 @@ public class MedicalWorkspaceController {
     private final DiagnosticExamService diagnosticExamService;
     private final ClinicalSummaryService clinicalSummaryService;
     private final MedicalRecipeService medicalRecipeService;
+    private final ReferralService referralService;
     private final PrescriptionStarterCatalogService prescriptionStarterCatalogService;
 
     public MedicalWorkspaceController(
@@ -78,6 +79,7 @@ public class MedicalWorkspaceController {
         DiagnosticExamService diagnosticExamService,
         ClinicalSummaryService clinicalSummaryService,
         MedicalRecipeService medicalRecipeService,
+        ReferralService referralService,
         PrescriptionStarterCatalogService prescriptionStarterCatalogService
     ) {
         this.sessionContext = sessionContext;
@@ -97,6 +99,7 @@ public class MedicalWorkspaceController {
         this.diagnosticExamService = diagnosticExamService;
         this.clinicalSummaryService = clinicalSummaryService;
         this.medicalRecipeService = medicalRecipeService;
+        this.referralService = referralService;
         this.prescriptionStarterCatalogService = prescriptionStarterCatalogService;
     }
 
@@ -409,6 +412,22 @@ public class MedicalWorkspaceController {
     ) {
         HospitalSessionContext.Scope scope = sessionContext.require(session, MEDICAL_ROLES);
         return medicalRecipeService.preview(scope.hospitalId(), admissionId, body);
+    }
+
+    @GetMapping("/referrals/catalog")
+    public ReferralCatalog referralCatalog(HttpSession session) {
+        sessionContext.require(session, MEDICAL_ROLES);
+        return referralService.catalog();
+    }
+
+    @PostMapping("/admissions/{admissionId}/referrals/preview")
+    public ReferralResponse previewReferral(
+        HttpSession session,
+        @PathVariable UUID admissionId,
+        @Valid @RequestBody ReferralRequest body
+    ) {
+        HospitalSessionContext.Scope scope = sessionContext.require(session, MEDICAL_ROLES);
+        return referralService.preview(scope.hospitalId(), admissionId, body);
     }
 
     @PostMapping("/admissions/{admissionId}/exams/preview")

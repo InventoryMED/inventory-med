@@ -1,0 +1,346 @@
+<div class="referral-shell">
+  <header class="referral-appbar no-print">
+    <div class="referral-brand"><img src="inventory-med-logo.png" alt="INVENTORY MED" /></div>
+    <div class="referral-context">
+      <span>ENCAMINHAMENTO MÉDICO</span><strong>{{ hospitalName }}</strong>
+    </div>
+    <button type="button" class="back-button" (click)="back.emit()">VOLTAR AOS LEITOS</button>
+  </header>
+
+  <main class="referral-main">
+    <app-clinical-documentation-tabs
+      class="no-print"
+      activeTab="REFERRAL"
+      (tabChange)="moduleChange.emit($event)"
+    />
+
+    <section class="patient-header" aria-label="DADOS DO PACIENTE">
+      <div class="patient-primary">
+        <span>PACIENTE</span><strong>{{ patient.name }}</strong>
+      </div>
+      <div>
+        <span>NASCIMENTO</span><strong>{{ patient.birthDate || '—' }}</strong>
+      </div>
+      <div>
+        <span>SEXO</span><strong>{{ patient.sex || '—' }}</strong>
+      </div>
+      <div>
+        <span>PESO</span><strong>{{ patient.weightKg ? patient.weightKg + ' KG' : '—' }}</strong>
+      </div>
+      <div>
+        <span>UNIDADE / LEITO</span><strong>{{ unitName }} • {{ roomName }} • {{ bedCode }}</strong>
+      </div>
+      <div class="patient-wide">
+        <span>DIAGNÓSTICO</span><strong>{{ patient.diagnosis || 'NÃO INFORMADO' }}</strong>
+      </div>
+      <div>
+        <span>COMORBIDADES</span><strong>{{ patient.comorbidities || 'NÃO INFORMADAS' }}</strong>
+      </div>
+      <div class="allergy-alert">
+        <span>ALERGIAS</span><strong>{{ patient.allergies || 'NÃO INFORMADAS' }}</strong>
+      </div>
+    </section>
+
+    @if (message()) {
+      <section class="feedback no-print" role="status">{{ message() }}</section>
+    }
+
+    <section class="history-card no-print">
+      <div>
+        <span class="section-kicker">HISTÓRICO DA INTERNAÇÃO</span>
+        <h2>ENCAMINHAMENTOS FINALIZADOS</h2>
+        <p>DOCUMENTOS FINALIZADOS SÃO IMUTÁVEIS E PERMANECEM DISPONÍVEIS PARA CONSULTA.</p>
+      </div>
+      <div class="history-list">
+        @for (document of documents(); track document.id) {
+          <button type="button" (click)="openDocument(document)">
+            <strong>ENCAMINHAMENTO {{ document.versionNumber }}</strong>
+            <span>{{ formatDate(document.finalizedAt) }}</span>
+          </button>
+        } @empty {
+          <span class="history-empty">NENHUM ENCAMINHAMENTO FINALIZADO NESTA INTERNAÇÃO.</span>
+        }
+      </div>
+    </section>
+
+    @if (loading()) {
+      <section class="state-card no-print">CARREGANDO REGRAS DO ENCAMINHAMENTO...</section>
+    } @else if (catalog(); as options) {
+      <form class="referral-form no-print" [formGroup]="form" (ngSubmit)="finalizeDocument()">
+        <section class="form-section">
+          <header>
+            <span class="section-number">01</span>
+            <div>
+              <span class="section-kicker">DESTINO ASSISTENCIAL</span>
+              <h2>ESPECIALIDADE OU ÁREA DA SAÚDE</h2>
+            </div>
+          </header>
+          <div class="field-grid">
+            <label>
+              <span>ESPECIALIDADE *</span>
+              <select formControlName="specialtyCode">
+                <option value="">SELECIONE A ESPECIALIDADE</option>
+                @for (option of options.specialties; track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span>SUBESPECIALIDADE / DETALHE</span>
+              <input
+                formControlName="specialtyDetail"
+                maxlength="180"
+                placeholder="EX.: CIRURGIA DE MÃO, ELETROFISIOLOGIA"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <header>
+            <span class="section-number">02</span>
+            <div>
+              <span class="section-kicker">REGULAÇÃO</span>
+              <h2>PRIORIDADE E PRAZO RECOMENDADO</h2>
+            </div>
+          </header>
+          <div class="field-grid">
+            <label>
+              <span>NÍVEL DE PRIORIDADE *</span>
+              <select formControlName="priority">
+                @for (option of options.priorities; track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span>PRAZO SUGERIDO *</span>
+              <select formControlName="deadline">
+                @for (option of options.deadlines; track option.code) {
+                  <option [value]="option.code">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <p class="field-note">
+            O PRAZO É UMA RECOMENDAÇÃO CLÍNICA E PODERÁ SER REAVALIADO PELA CENTRAL DE REGULAÇÃO.
+          </p>
+        </section>
+
+        <section class="form-section">
+          <header>
+            <span class="section-number">03</span>
+            <div>
+              <span class="section-kicker">INFORMAÇÃO CLÍNICA</span>
+              <h2>JUSTIFICATIVA E MOTIVO DO ENCAMINHAMENTO</h2>
+            </div>
+          </header>
+          <label class="textarea-field">
+            <span>RESUMO DO QUADRO E INDICAÇÃO *</span>
+            <textarea
+              formControlName="clinicalJustification"
+              maxlength="5000"
+              rows="7"
+              placeholder="DESCREVA A CONDUTA REALIZADA, A NECESSIDADE DO ESPECIALISTA E OS ACHADOS RELEVANTES. NÃO INVENTE DADOS AUSENTES."
+            ></textarea>
+          </label>
+        </section>
+
+        <section class="form-section two-columns">
+          <div>
+            <header>
+              <span class="section-number">04</span>
+              <div>
+                <span class="section-kicker">ENTREGUES AO PACIENTE</span>
+                <h2>DOCUMENTOS E EXAMES ANEXOS</h2>
+              </div>
+            </header>
+            <div class="check-list">
+              @for (option of options.attachments; track option.code) {
+                <label>
+                  <input
+                    #attachment
+                    type="checkbox"
+                    [checked]="attachmentSelected(option.code)"
+                    (change)="toggleAttachment(option.code, attachment.checked)"
+                  />
+                  <span>{{ option.label }}</span>
+                </label>
+              }
+            </div>
+            <p class="field-note">TODOS OS ITENS DESTA SEÇÃO SÃO OPCIONAIS.</p>
+          </div>
+          <div>
+            <header>
+              <span class="section-number">05</span>
+              <div>
+                <span class="section-kicker">FLUXO DE ATENDIMENTO</span>
+                <h2>DESTINO DO ENCAMINHAMENTO</h2>
+              </div>
+            </header>
+            <div class="radio-list">
+              @for (option of options.destinations; track option.code) {
+                <label>
+                  <input type="radio" formControlName="destination" [value]="option.code" />
+                  <span>{{ option.label }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        </section>
+
+        @if (!options.regulationSystemIntegrated) {
+          <section class="integration-notice">
+            <strong>SEM INTEGRAÇÃO AUTOMÁTICA COM SISTEMAS DE REGULAÇÃO</strong>
+            <span
+              >A GUIA DEVERÁ SER PROTOCOLADA NO FLUXO DEFINIDO PELO HOSPITAL OU PELO GESTOR
+              RESPONSÁVEL.</span
+            >
+          </section>
+        }
+
+        <section class="attestation-section">
+          <label>
+            <input type="checkbox" formControlName="physicianAttestation" />
+            <span
+              ><strong
+                >CONFIRMO QUE REVISEI A INDICAÇÃO, A PRIORIDADE, O PRAZO E OS DADOS
+                CLÍNICOS.</strong
+              ><small
+                >A AUTORIA, O HOSPITAL, A INTERNAÇÃO E A DATA SERÃO REGISTRADOS NA AUDITORIA.</small
+              ></span
+            >
+          </label>
+        </section>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="busy()"
+            (click)="generatePreview()"
+          >
+            GERAR PRÉVIA
+          </button>
+          <button type="button" class="secondary-button" [disabled]="busy()" (click)="print()">
+            IMPRIMIR
+          </button>
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="busy() || !form.controls.physicianAttestation.value"
+          >
+            FINALIZAR ENCAMINHAMENTO
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (preview(); as document) {
+      @if (document.blockingReasons.length) {
+        <section class="blocking-list no-print">
+          <strong>PENDÊNCIAS PARA FINALIZAÇÃO</strong>
+          <ul>
+            @for (reason of document.blockingReasons; track reason) {
+              <li>{{ reason }}</li>
+            }
+          </ul>
+        </section>
+      }
+      <section class="referral-print-area">
+        <article class="referral-sheet">
+          <header class="print-header">
+            <img src="inventory-med-logo.png" alt="INVENTORY MED" />
+            <div>
+              <span>{{ hospitalName }}</span>
+              <h1>GUIA DE ENCAMINHAMENTO MÉDICO</h1>
+              <small>REFERÊNCIA PARA ATENDIMENTO ESPECIALIZADO</small>
+            </div>
+            <div class="document-status">
+              <strong>{{ printStatus() }}</strong
+              ><span>{{ printDate() | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+          </header>
+          <section class="print-patient-grid">
+            <div class="wide">
+              <span>PACIENTE</span><strong>{{ patient.name }}</strong>
+            </div>
+            <div>
+              <span>NASCIMENTO</span><strong>{{ patient.birthDate || '—' }}</strong>
+            </div>
+            <div>
+              <span>SEXO</span><strong>{{ patient.sex || '—' }}</strong>
+            </div>
+            <div>
+              <span>PESO</span
+              ><strong>{{ patient.weightKg ? patient.weightKg + ' KG' : '—' }}</strong>
+            </div>
+            <div class="wide">
+              <span>UNIDADE / LEITO</span
+              ><strong>{{ unitName }} • {{ roomName }} • {{ bedCode }}</strong>
+            </div>
+            <div>
+              <span>INTERNAÇÃO</span
+              ><strong>{{ patient.admissionAt | date: 'dd/MM/yyyy HH:mm' }}</strong>
+            </div>
+            <div class="wide">
+              <span>DIAGNÓSTICO</span><strong>{{ patient.diagnosis || 'NÃO INFORMADO' }}</strong>
+            </div>
+            <div>
+              <span>COMORBIDADES</span
+              ><strong>{{ patient.comorbidities || 'NÃO INFORMADAS' }}</strong>
+            </div>
+            <div class="allergy-print">
+              <span>ALERGIAS</span><strong>{{ patient.allergies || 'NÃO INFORMADAS' }}</strong>
+            </div>
+          </section>
+          <section class="print-referral-grid">
+            <div class="wide">
+              <span>ESPECIALIDADE / ÁREA</span><strong>{{ document.specialtyLabel }}</strong>
+            </div>
+            <div>
+              <span>PRIORIDADE</span><strong>{{ document.priorityLabel }}</strong>
+            </div>
+            <div>
+              <span>PRAZO RECOMENDADO</span><strong>{{ document.deadlineLabel }}</strong>
+            </div>
+            <div class="full">
+              <span>DESTINO</span><strong>{{ document.destinationLabel }}</strong>
+            </div>
+          </section>
+          <section class="print-block">
+            <h2>JUSTIFICATIVA CLÍNICA E MOTIVO DO ENCAMINHAMENTO</h2>
+            <p>{{ document.request.clinicalJustification }}</p>
+          </section>
+          <section class="print-block">
+            <h2>DOCUMENTOS / EXAMES ENTREGUES AO PACIENTE</h2>
+            @if (document.attachmentLabels.length) {
+              <ul>
+                @for (attachment of document.attachmentLabels; track attachment) {
+                  <li>✓ {{ attachment }}</li>
+                }
+              </ul>
+            } @else {
+              <p>NENHUM DOCUMENTO OU EXAME INFORMADO COMO ENTREGUE.</p>
+            }
+          </section>
+          <section class="print-notices">
+            @for (notice of document.safetyNotices; track notice) {
+              <small>{{ notice }}</small>
+            }
+          </section>
+          <footer class="signature-footer">
+            <div>
+              <span></span><strong>{{ professionalName }}</strong
+              ><small>MÉDICO RESPONSÁVEL • ASSINATURA E CARIMBO</small>
+            </div>
+            <div>
+              <span></span><strong>DATA DA EMISSÃO</strong
+              ><small>{{ printDate() | date: 'dd/MM/yyyy' }}</small>
+            </div>
+          </footer>
+        </article>
+      </section>
+    }
+  </main>
+</div>

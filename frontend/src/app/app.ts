@@ -20,6 +20,7 @@ import { MonitoringPrescriptionComponent } from './features/medical/monitoring-p
 import { NursingCarePrescriptionComponent } from './features/medical/nursing-care-prescription.component';
 import { ProvisionalAdmissionsComponent } from './features/medical/provisional-admissions.component';
 import { RehabilitationPrescriptionComponent } from './features/medical/rehabilitation-prescription.component';
+import { ReferralWorkspaceComponent } from './features/medical/referral-workspace.component';
 import { TherapeuticSupportComponent } from './features/medical/therapeutic-support.component';
 import { VentilatorySupportComponent } from './features/medical/ventilatory-support.component';
 import {
@@ -141,6 +142,7 @@ interface HospitalOption {
     CriticalCarePrescriptionComponent,
     MedicationTherapyComponent,
     MedicalRecipeWorkspaceComponent,
+    ReferralWorkspaceComponent,
   ],
   selector: 'app-root',
   styleUrl: './app.scss',
@@ -768,6 +770,11 @@ export class App implements OnInit {
     this.openMedicalRecipeTab(bed.id);
   }
 
+  protected openReferral(bed: Bed): void {
+    if (!bed.patient) return;
+    this.openReferralTab(bed.id);
+  }
+
   protected openProvisionalPrescription(admission: ProvisionalAdmission): void {
     this.openPrescription(this.provisionalAdmissionAsBed(admission));
   }
@@ -796,17 +803,20 @@ export class App implements OnInit {
     this.openMedicalRecipe(this.provisionalAdmissionAsBed(admission));
   }
 
+  protected openProvisionalReferral(admission: ProvisionalAdmission): void {
+    this.openReferral(this.provisionalAdmissionAsBed(admission));
+  }
+
   protected switchClinicalModule(tab: ClinicalDocumentationTab): void {
-    const flow =
-      tab === 'AIH'
-        ? 'aih'
-        : tab === 'EXAM'
-          ? 'exams'
-          : tab === 'CLINICAL_SUMMARY'
-            ? 'clinical-summary'
-            : tab === 'MEDICAL_RECIPE'
-              ? 'medical-recipe'
-              : 'procedure';
+    const flows: Record<ClinicalDocumentationTab, AppScreen> = {
+      PROCEDURE: 'procedure',
+      EXAM: 'exams',
+      AIH: 'aih',
+      CLINICAL_SUMMARY: 'clinical-summary',
+      MEDICAL_RECIPE: 'medical-recipe',
+      REFERRAL: 'referral',
+    };
+    const flow = flows[tab];
     this.screen.set(flow);
     if (flow === 'clinical-summary') this.requestedClinicalSummaryOutcome.set('');
     const url = new URL(window.location.href);
@@ -2464,6 +2474,20 @@ export class App implements OnInit {
     window.open(url.toString(), '_blank', 'noopener');
   }
 
+  private openReferralTab(bedId: string): void {
+    const hospitalId = this.store.activeHospitalId();
+    if (!hospitalId) return;
+
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('hospital', hospitalId);
+    url.searchParams.set('bed', bedId);
+    url.searchParams.set('flow', 'referral');
+
+    window.open(url.toString(), '_blank', 'noopener');
+  }
+
   private openRequestedView(): boolean {
     const params = new URLSearchParams(window.location.search);
     const hospitalId = params.get('hospital');
@@ -2532,6 +2556,10 @@ export class App implements OnInit {
     }
     if (flow === 'medical-recipe' && bed.status === 'OCCUPIED' && bed.patient) {
       this.screen.set('medical-recipe');
+      return true;
+    }
+    if (flow === 'referral' && bed.status === 'OCCUPIED' && bed.patient) {
+      this.screen.set('referral');
       return true;
     }
     return false;

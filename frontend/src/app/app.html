@@ -271,6 +271,7 @@
           (aih)="openProvisionalAih($event)"
           (clinicalSummary)="openProvisionalClinicalSummary($event)"
           (medicalRecipe)="openProvisionalMedicalRecipe($event)"
+          (referral)="openProvisionalReferral($event)"
           (allocate)="openProvisionalAllocation($event)"
           (discharge)="openProvisionalDischarge($event)"
         />
@@ -419,6 +420,13 @@
                                   (click)="openMedicalRecipe(bed)"
                                 >
                                   Receitas médicas
+                                </button>
+                                <button
+                                  type="button"
+                                  class="bed-action-button"
+                                  (click)="openReferral(bed)"
+                                >
+                                  Encaminhamento
                                 </button>
                                 <button
                                   type="button"
@@ -2409,6 +2417,24 @@
   @if (selectedBed(); as bed) {
     @if (bed.patient; as patient) {
       <app-medical-recipe-workspace
+        [hospitalName]="hospital.name"
+        [unitName]="selectedUnitName() || 'UNIDADE DE INTERNAÇÃO'"
+        [roomName]="selectedRoomName()"
+        [bedCode]="bed.code"
+        [admissionId]="patient.admissionId || ''"
+        [patient]="patient"
+        [professionalName]="professionalName()"
+        (back)="backToRooms()"
+        (moduleChange)="switchClinicalModule($event)"
+      />
+    }
+  }
+}
+
+@if (screen() === 'referral' && activeHospital(); as hospital) {
+  @if (selectedBed(); as bed) {
+    @if (bed.patient; as patient) {
+      <app-referral-workspace
         [hospitalName]="hospital.name"
         [unitName]="selectedUnitName() || 'UNIDADE DE INTERNAÇÃO'"
         [roomName]="selectedRoomName()"

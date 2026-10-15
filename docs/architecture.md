@@ -1,8 +1,8 @@
 # Arquitetura oficial do Inventory MED
 
-**Versão:** 1.6
+**Versão:** 1.7
 
-**Data da decisão:** 02/10/2026 — atualização funcional em 13/10/2026
+**Data da decisão:** 02/10/2026 — atualização funcional em 15/10/2026
 
 **Status:** arquitetura oficial a ser seguida
 
@@ -27,6 +27,7 @@ por:
 - solicitações estruturadas de exames laboratoriais, de imagem e ECG com impressão;
 - resumos clínicos de alta, transferência hospitalar e óbito com impressão;
 - receitas médicas ambulatoriais, de alta e de controle especial com impressão segura;
+- encaminhamentos médicos para atenção especializada com impressão;
 - auditoria das operações sensíveis.
 
 O sistema não será dividido em microserviços. A primeira versão será um monólito
@@ -179,7 +180,7 @@ SQL SERVER EXPRESS
     +-- transferências e altas
     +-- prescrições e itens
     +-- evoluções
-    +-- procedimentos, AIHs, solicitações de exames, resumos clínicos e receitas médicas
+    +-- procedimentos, AIHs, solicitações de exames, resumos clínicos, receitas e encaminhamentos
     +-- auditoria clínica
 ```
 
@@ -286,6 +287,25 @@ sessão e da internação; o navegador não escolhe esses vínculos.
   internações depende da futura decisão sobre identificador único do paciente e nunca
   poderá atravessar hospitais.
 
+### Encaminhamentos médicos especializados
+
+Encaminhamentos são documentos clínicos vinculados à internação e persistidos somente
+no banco do hospital selecionado. A API deriva hospital, paciente e autoria da sessão e
+da internação; o navegador não escolhe livremente esses vínculos.
+
+- especialidade, prioridade, prazo recomendado, destino e tipos de anexo usam catálogo
+  controlado e validado pelo backend;
+- a justificativa clínica é obrigatória e nunca é inventada ou completada pelo sistema;
+- exames e documentos entregues ao paciente são opcionais;
+- o prazo informado representa recomendação clínica e pode ser reavaliado pela central
+  de regulação conforme os protocolos vigentes;
+- selecionar SISREG, CROSS ou outra rede como destino não significa integração nem
+  protocolo automático. A interface informa essa limitação enquanto não houver
+  integração homologada;
+- a finalização exige confirmação explícita do médico e produz documento imutável e
+  auditável na internação;
+- o histórico apresentado permanece restrito à mesma internação e ao mesmo hospital.
+
 O SQL Server Express limita cada banco a 10 GB. O uso será monitorado; uma mudança de
 edição ou banco será avaliada antes que qualquer unidade se aproxime desse limite.
 
@@ -338,6 +358,7 @@ br.com.inventorymed
 +-- aih
 +-- clinicalsummaries
 +-- medicalrecipes
++-- referrals
 +-- transfers
 +-- discharges
 +-- audit
@@ -365,8 +386,8 @@ Cada módulo pode conter:
 - toda operação clínica valida a unidade selecionada na sessão;
 - admissões sem leito só aceitam uma unidade assistencial ativa do banco hospitalar
   selecionado na sessão;
-- prescrições, evoluções, procedimentos, AIHs, solicitações de exames, resumos clínicos
-  e receitas médicas não são sobrescritos silenciosamente: mudanças relevantes geram
+- prescrições, evoluções, procedimentos, AIHs, solicitações de exames, resumos clínicos,
+  receitas médicas e encaminhamentos não são sobrescritos silenciosamente: mudanças relevantes geram
   novo documento, versão ou evento de auditoria;
 - o encerramento clínico de uma internação exige resumo clínico finalizado e compatível,
   validado no backend;
@@ -395,7 +416,7 @@ não equivale a autoria médica.
 ### Invariante dos documentos clínicos
 
 Documentos clínicos, inclusive prescrições, evoluções, procedimentos, AIHs, solicitações
-de exames, resumos clínicos e receitas médicas, seguem um
+de exames, resumos clínicos, receitas médicas e encaminhamentos, seguem um
 modelo de histórico somente acrescentável:
 
 ```text
@@ -534,6 +555,7 @@ src/app
     +-- diagnostic-exams
     +-- clinical-summaries
     +-- medical-recipes
+    +-- referrals
 ```
 
 Regras:

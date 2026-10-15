@@ -77,7 +77,8 @@ export type ClinicalFormKind =
   | 'AIH'
   | 'EXAM'
   | 'CLINICAL_SUMMARY'
-  | 'MEDICAL_RECIPE';
+  | 'MEDICAL_RECIPE'
+  | 'REFERRAL';
 
 export interface PrescriptionStarterClinic {
   code: string;
@@ -121,7 +122,8 @@ export type ClinicalFieldType =
   | 'AIH_PLAN'
   | 'DIAGNOSTIC_EXAM_PLAN'
   | 'CLINICAL_SUMMARY_PLAN'
-  | 'MEDICAL_RECIPE_PLAN';
+  | 'MEDICAL_RECIPE_PLAN'
+  | 'REFERRAL_PLAN';
 
 export type DietType = 'ORAL' | 'ENTERAL' | 'PARENTERAL' | 'JEJUM';
 
@@ -1156,6 +1158,44 @@ export interface MedicalRecipeResponse {
   copyLabels: string[];
   finalizationAllowed: boolean;
   allergyConflicts: string[];
+  blockingReasons: string[];
+  safetyNotices: string[];
+}
+
+export interface ReferralOption {
+  code: string;
+  label: string;
+}
+
+export interface ReferralCatalog {
+  specialties: ReferralOption[];
+  priorities: ReferralOption[];
+  deadlines: ReferralOption[];
+  destinations: ReferralOption[];
+  attachments: ReferralOption[];
+  regulationSystemIntegrated: boolean;
+}
+
+export interface ReferralDraft {
+  specialtyCode: string;
+  specialtyDetail: string | null;
+  priority: 'URGENT_HIGH' | 'MEDIUM' | 'ELECTIVE';
+  deadline: 'UP_TO_7_DAYS' | 'UP_TO_15_DAYS' | 'UP_TO_30_DAYS' | 'REGULATION_DISCRETION';
+  clinicalJustification: string;
+  destination: 'PUBLIC_REGULATION' | 'HOSPITAL_SPECIALTY_CLINIC' | 'INSURANCE_PRIVATE';
+  attachments: string[];
+  physicianAttestation: boolean;
+}
+
+export interface ReferralResponse {
+  request: ReferralDraft;
+  specialtyLabel: string;
+  priorityLabel: string;
+  deadlineLabel: string;
+  destinationLabel: string;
+  attachmentLabels: string[];
+  summaryLine: string;
+  finalizationAllowed: boolean;
   blockingReasons: string[];
   safetyNotices: string[];
 }

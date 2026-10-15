@@ -7,5 +7,6 @@ public enum FormKind {
     AIH,
     EXAM,
     CLINICAL_SUMMARY,
-    MEDICAL_RECIPE
+    MEDICAL_RECIPE,
+    REFERRAL
 }

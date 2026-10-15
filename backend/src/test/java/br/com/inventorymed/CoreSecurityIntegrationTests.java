@@ -1567,6 +1567,90 @@ class CoreSecurityIntegrationTests {
         assertThat(firstHospitalRecipeDocuments).isEqualTo(1);
         assertThat(secondHospitalRecipeDocuments).isZero();
 
+        UUID referralTemplateVersionId = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT TOP 1 v.id FROM dbo.form_template_version v " +
+                    "JOIN dbo.form_template t ON t.id = v.template_id " +
+                    "WHERE t.kind = 'REFERRAL' AND v.status = 'PUBLISHED'",
+                UUID.class
+            )
+        );
+        String referralFieldType = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT f.field_type FROM dbo.form_field f " +
+                    "JOIN dbo.form_section s ON s.id = f.section_id " +
+                    "WHERE s.version_id = ? AND s.section_key = 'REFERRAL' " +
+                    "AND f.field_key = 'REQUEST'",
+                String.class,
+                referralTemplateVersionId
+            )
+        );
+        assertThat(referralFieldType).isEqualTo("REFERRAL_PLAN");
+
+        String referral = """
+            {
+              "specialtyCode":"PULMONOLOGY",
+              "specialtyDetail":null,
+              "priority":"MEDIUM",
+              "deadline":"UP_TO_15_DAYS",
+              "clinicalJustification":"REAVALIAÇÃO PNEUMOLÓGICA APÓS A INTERNAÇÃO.",
+              "destination":"PUBLIC_REGULATION",
+              "attachments":["DISCHARGE_SUMMARY"],
+              "physicianAttestation":true
+            }
+            """;
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/referrals/preview")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(referral)
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.finalizationAllowed").value(true))
+            .andExpect(jsonPath("$.specialtyLabel").value("PNEUMOLOGIA"));
+
+        mockMvc
+            .perform(
+                post("/clinical/admissions/" + admissionId + "/documents")
+                    .cookie(sessionCookie, csrfCookie)
+                    .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                          "templateVersionId":"%s",
+                          "kind":"REFERRAL",
+                          "values":{"REFERRAL.REQUEST":%s},
+                          "finalizeDocument":true
+                        }
+                        """.formatted(referralTemplateVersionId, referral)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.kind").value("REFERRAL"))
+            .andExpect(jsonPath("$.status").value("FINALIZED"))
+            .andExpect(
+                jsonPath("$.values['REFERRAL.REQUEST'].destinationLabel")
+                    .value("REDE PÚBLICA / REGULAÇÃO SUS")
+            );
+
+        Integer firstHospitalReferrals = tenantJdbc.read(firstHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'REFERRAL'",
+                Integer.class
+            )
+        );
+        Integer secondHospitalReferrals = tenantJdbc.read(secondHospital.getId(), jdbc ->
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM dbo.clinical_document WHERE kind = 'REFERRAL'",
+                Integer.class
+            )
+        );
+        assertThat(firstHospitalReferrals).isEqualTo(1);
+        assertThat(secondHospitalReferrals).isZero();
+
         mockMvc
             .perform(
                 post("/clinical/admissions/" + admissionId + "/discharge")
