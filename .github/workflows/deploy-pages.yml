@@ -2,7 +2,7 @@ name: Publicar protótipo no GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [codex/structured-diet]
   workflow_dispatch:
 
 permissions:

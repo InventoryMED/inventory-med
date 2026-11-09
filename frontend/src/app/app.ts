@@ -553,7 +553,16 @@ export class App implements OnInit {
       void this.restoreAuthenticatedSession();
       return;
     }
-    this.openRequestedView();
+    if (this.openRequestedView()) return;
+
+    const firstHospital = this.store.hospitals()[0];
+    if (!firstHospital) {
+      this.screen.set('hospital-select');
+      return;
+    }
+    this.store.selectHospital(firstHospital.id);
+    this.screen.set('rooms');
+    this.expandedRooms.set(new Set(firstHospital.rooms.map((room) => room.id)));
   }
 
   protected async login(): Promise<void> {
